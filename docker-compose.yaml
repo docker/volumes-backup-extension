@@ -1,3 +1,0 @@
-services:
-  vackup-docker-extension:
-    image: ${DESKTOP_PLUGIN_IMAGE}

@@ -1,7 +1,7 @@
-import React from 'react';
-import Button from '@mui/material/Button';
-import { createDockerDesktopClient } from '@docker/extension-api-client';
-import { Stack, TextField, Typography } from '@mui/material';
+import React, { useEffect } from "react";
+import { DataGrid } from "@mui/x-data-grid";
+import { createDockerDesktopClient } from "@docker/extension-api-client";
+import { Stack, Button, Typography } from "@mui/material";
 
 // Note: This line relies on Docker Desktop's presence as a host application.
 // If you're running this React app in a browser, it won't work properly.
@@ -11,42 +11,76 @@ function useDockerDesktopClient() {
   return client;
 }
 
+const columns = [
+  { field: "id", headerName: "ID", width: 70, hide: true },
+  { field: "volumeDriver", headerName: "Driver", width: 70 },
+  { field: "volumeName", headerName: "Volume name", width: 260 },
+  { field: "volumeMountPoint", headerName: "Mount point", width: 260 },
+  { field: "volumeSize", headerName: "Size", width: 130 },
+  {
+    field: "export",
+    headerName: "Action",
+    width: 130,
+    renderCell: (params) => (
+      <Button
+        variant="contained"
+        onClick={() => console.log("exporting volume", params.row.volumeName)}
+      >
+        Export
+      </Button>
+    ),
+  },
+];
+
 export function App() {
-  const [response, setResponse] = React.useState<string>();
+  const [rows, setRows] = React.useState([]);
   const ddClient = useDockerDesktopClient();
 
-  const fetchAndDisplayResponse = async () => {
-    const result = await ddClient.extension.vm?.service?.get('/hello');
-    setResponse(JSON.stringify(result));
-  };
+  useEffect(() => {
+    const listVolumes = async () => {
+      const result = await ddClient.docker.cli.exec("volume", [
+        "ls",
+        "--format",
+        "'{{ json . }}'",
+      ]);
+      console.log(result);
+      if (result.stderr !== "") {
+        ddClient.desktopUI.toast.error(result.stderr);
+      } else {
+        const volumes = result.parseJsonLines();
+        const rows = volumes.map((volume, index) => {
+          return {
+            id: index,
+            volumeDriver: volume.Driver,
+            volumeName: volume.Name,
+            volumeMountPoint: volume.Mountpoint,
+            volumeSize: volume.Size,
+          };
+        });
+
+        setRows(rows);
+      }
+    };
+
+    listVolumes();
+  }, []); // run it once, only when component is mounted
 
   return (
     <>
-      <Typography variant="h3">Docker extension demo</Typography>
+      <Typography variant="h3">Vackup Extension</Typography>
       <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
-        This is a basic page rendered with MUI, using Docker's theme. Read the
-        MUI documentation to learn more. Using MUI in a conventional way and
-        avoiding custom styling will help make sure your extension continues to
-        look great as Docker's theme evolves.
-      </Typography>
-      <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
-        Pressing the below button will trigger a request to the backend. Its
-        response will appear in the textarea.
+        Easily backup and restore docker volumes.
       </Typography>
       <Stack direction="row" alignItems="start" spacing={2} sx={{ mt: 4 }}>
-        <Button variant="contained" onClick={fetchAndDisplayResponse}>
-          Call backend
-        </Button>
-
-        <TextField
-          label="Backend response"
-          sx={{ width: 480 }}
-          disabled
-          multiline
-          variant="outlined"
-          minRows={5}
-          value={response ?? ''}
-        />
+        <div style={{ height: 400, width: "100%" }}>
+          <DataGrid
+            rows={rows}
+            columns={columns}
+            pageSize={5}
+            rowsPerPageOptions={[5]}
+            checkboxSelection={false}
+          />
+        </div>
       </Stack>
     </>
   );
