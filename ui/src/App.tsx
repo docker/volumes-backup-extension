@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { DataGrid } from "@mui/x-data-grid";
 import { createDockerDesktopClient } from "@docker/extension-api-client";
-import { Stack, Button, Typography } from "@mui/material";
+import { Stack, Button, Typography, Box, LinearProgress } from "@mui/material";
 
 // Note: This line relies on Docker Desktop's presence as a host application.
 // If you're running this React app in a browser, it won't work properly.
@@ -14,6 +14,7 @@ function useDockerDesktopClient() {
 export function App() {
   const [rows, setRows] = React.useState([]);
   const [exportPath, setExportPath] = React.useState<string>("");
+  const [loading, setLoading] = React.useState<boolean>(false);
   const ddClient = useDockerDesktopClient();
 
   const columns = [
@@ -36,7 +37,7 @@ export function App() {
           <Button
             variant="contained"
             onClick={onClick}
-            disabled={exportPath === ""}
+            disabled={exportPath === "" || loading}
           >
             Export
           </Button>
@@ -88,6 +89,8 @@ export function App() {
   };
 
   const exportVolume = async (volumeName: string) => {
+    setLoading(true);
+
     const filename = "backup.tar.gz";
 
     try {
@@ -118,6 +121,8 @@ export function App() {
       ddClient.desktopUI.toast.error(
         `Failed to backup volume ${volumeName} to ${exportPath}: ${error.code}`
       );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -128,9 +133,22 @@ export function App() {
         Easily backup and restore docker volumes.
       </Typography>
       <Stack direction="column" alignItems="start" spacing={2} sx={{ mt: 4 }}>
-        <Button variant="contained" onClick={selectExportDirectory}>
+        <Button
+          variant="contained"
+          onClick={selectExportDirectory}
+          disabled={loading}
+        >
           Choose path
         </Button>
+        <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
+          {exportPath}
+        </Typography>
+        {loading && (
+          <Box sx={{ width: "100%" }}>
+            <LinearProgress />
+          </Box>
+        )}
+
         <div style={{ height: 400, width: "100%" }}>
           <DataGrid
             rows={rows}
