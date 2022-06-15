@@ -48,16 +48,17 @@ export function App() {
 
   useEffect(() => {
     const listVolumes = async () => {
-      const result = await ddClient.docker.cli.exec("volume", [
-        "ls",
+      const result = await ddClient.docker.cli.exec("system", [
+        "df",
+        "-v",
         "--format",
-        "'{{ json . }}'",
+        "'{{ json .Volumes }}'",
       ]);
 
       if (result.stderr !== "") {
         ddClient.desktopUI.toast.error(result.stderr);
       } else {
-        const volumes = result.parseJsonLines();
+        const volumes = result.parseJsonObject();
         const rows = volumes.map((volume, index) => {
           return {
             id: index,
