@@ -23,23 +23,6 @@ export function App() {
     { field: "volumeMountPoint", headerName: "Mount point", width: 260 },
     { field: "volumeSize", headerName: "Size", width: 130 },
     {
-      field: "exportPath",
-      headerName: "Export path",
-      width: 130,
-      renderCell: (params) => {
-        const onClick = (e) => {
-          e.stopPropagation(); // don't select this row after clicking
-          selectExportDirectory();
-        };
-
-        return (
-          <Button variant="contained" onClick={onClick}>
-            Choose path
-          </Button>
-        );
-      },
-    },
-    {
       field: "export",
       headerName: "Action",
       width: 130,
@@ -144,7 +127,10 @@ export function App() {
       <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
         Easily backup and restore docker volumes.
       </Typography>
-      <Stack direction="row" alignItems="start" spacing={2} sx={{ mt: 4 }}>
+      <Stack direction="column" alignItems="start" spacing={2} sx={{ mt: 4 }}>
+        <Button variant="contained" onClick={selectExportDirectory}>
+          Choose path
+        </Button>
         <div style={{ height: 400, width: "100%" }}>
           <DataGrid
             rows={rows}
