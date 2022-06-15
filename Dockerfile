@@ -24,3 +24,5 @@ LABEL org.opencontainers.image.title="vackup-docker-extension" \
 COPY metadata.json .
 COPY docker.svg .
 COPY --from=client-builder /ui/build ui
+
+RUN mkdir -p /vackup
