@@ -46,9 +46,6 @@ export function App() {
       renderCell: (params) => {
         const onClick = (e) => {
           e.stopPropagation(); // don't select this row after clicking
-
-          console.log("exporting volume", params.row.volumeName);
-          console.log(params);
           exportVolume(params.row.volumeName);
         };
 
@@ -92,6 +89,7 @@ export function App() {
     };
 
     listVolumes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // run it once, only when component is mounted
 
   const selectExportDirectory = () => {
@@ -102,38 +100,42 @@ export function App() {
           return;
         }
 
-        console.log("export path", result.filePaths[0]);
         setExportPath(result.filePaths[0]);
       });
   };
 
   const exportVolume = async (volumeName: string) => {
-    console.log("export");
-
     const filename = "backup.tar.gz";
 
-    const output = await ddClient.docker.cli.exec("run", [
-      "--rm",
-      `-v=${volumeName}:/vackup-volume `,
-      `-v=${exportPath}:/vackup `,
-      "busybox",
-      "tar",
-      "-zcvf",
-      `/vackup/${filename}`,
-      "/vackup-volume",
-    ]);
-    console.log(output);
-    if (output.stderr !== "") {
-      //"tar: removing leading '/' from member names\n"
-      if (!output.stderr.includes("tar: removing leading")) {
-        // this is an error we may want to display
-        ddClient.desktopUI.toast.error(output.stderr);
-        return;
+    try {
+      const output = await ddClient.docker.cli.exec("run", [
+        "--rm",
+        `-v=${volumeName}:/vackup-volume `,
+        `-v=${exportPath}:/vackup `,
+        "busybox",
+        "tar",
+        "-zcvf",
+        `/vackup/${filename}`,
+        "/vackup-volume",
+      ]);
+      console.log(output);
+      if (output.stderr !== "") {
+        //"tar: removing leading '/' from member names\n"
+        if (!output.stderr.includes("tar: removing leading")) {
+          // this is an error we may want to display
+          ddClient.desktopUI.toast.error(output.stderr);
+          return;
+        }
       }
+      ddClient.desktopUI.toast.success(
+        `Volume ${volumeName} exported to ${exportPath}`
+      );
+    } catch (error) {
+      console.error(error);
+      ddClient.desktopUI.toast.error(
+        `Failed to backup volume ${volumeName} to ${exportPath}: ${error.code}`
+      );
     }
-    ddClient.desktopUI.toast.success(
-      `Volume ${volumeName} exported to ${exportPath}`
-    );
   };
 
   return (
