@@ -1,7 +1,15 @@
 import React, { useEffect } from "react";
 import { DataGrid } from "@mui/x-data-grid";
 import { createDockerDesktopClient } from "@docker/extension-api-client";
-import { Stack, Button, Typography, Box, LinearProgress } from "@mui/material";
+import {
+  Stack,
+  Button,
+  Typography,
+  Box,
+  LinearProgress,
+  Badge,
+  Tooltip,
+} from "@mui/material";
 
 // Note: This line relies on Docker Desktop's presence as a host application.
 // If you're running this React app in a browser, it won't work properly.
@@ -20,13 +28,40 @@ export function App() {
   const columns = [
     { field: "id", headerName: "ID", width: 70, hide: true },
     { field: "volumeDriver", headerName: "Driver", width: 70 },
-    { field: "volumeName", headerName: "Volume name", width: 260 },
+    {
+      field: "volumeName",
+      headerName: "Volume name",
+      width: 320,
+      renderCell: (params) => {
+        return params.row.volumeLinks > 0 ? (
+          <Tooltip
+            title={`In use by ${params.row.volumeLinks} container(s)`}
+            placeholder="right"
+          >
+            <Badge
+              badgeContent={params.row.volumeLinks}
+              color="primary"
+              anchorOrigin={{
+                vertical: "top",
+                horizontal: "right",
+              }}
+            >
+              <Box m={0.5}>{params.row.volumeName}</Box>
+            </Badge>
+          </Tooltip>
+        ) : (
+          <Box m={0.5}>{params.row.volumeName}</Box>
+        );
+      },
+    },
+    { field: "volumeLinks", hide: true },
     { field: "volumeMountPoint", headerName: "Mount point", width: 260 },
     { field: "volumeSize", headerName: "Size", width: 130 },
     {
       field: "export",
       headerName: "Action",
       width: 130,
+      sortable: false,
       renderCell: (params) => {
         const onClick = (e) => {
           e.stopPropagation(); // don't select this row after clicking
@@ -59,15 +94,18 @@ export function App() {
         ddClient.desktopUI.toast.error(result.stderr);
       } else {
         const volumes = result.parseJsonObject();
-        const rows = volumes.map((volume, index) => {
-          return {
-            id: index,
-            volumeDriver: volume.Driver,
-            volumeName: volume.Name,
-            volumeMountPoint: volume.Mountpoint,
-            volumeSize: volume.Size,
-          };
-        });
+        const rows = volumes
+          .sort((a, b) => a.Name.localeCompare(b.Name))
+          .map((volume, index) => {
+            return {
+              id: index,
+              volumeDriver: volume.Driver,
+              volumeName: volume.Name,
+              volumeLinks: volume.Links,
+              volumeMountPoint: volume.Mountpoint,
+              volumeSize: volume.Size,
+            };
+          });
 
         setRows(rows);
       }
@@ -157,6 +195,7 @@ export function App() {
             pageSize={5}
             rowsPerPageOptions={[5]}
             checkboxSelection={false}
+            disableSelectionOnClick={true}
           />
         </div>
       </Stack>
