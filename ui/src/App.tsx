@@ -228,7 +228,7 @@ export function App() {
         ddClient.desktopUI.toast.error(output.stderr);
       }
 
-      return output.stdout;
+      return output.stdout.trim();
     } catch (error) {
       ddClient.desktopUI.toast.error(
         `Failed to get containers for volume ${volumeName}: ${error.stderr} Error code: ${error.code}`
