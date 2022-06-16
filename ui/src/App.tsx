@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { DataGrid } from "@mui/x-data-grid";
+import { DataGrid, GridCellParams } from "@mui/x-data-grid";
 import { createDockerDesktopClient } from "@docker/extension-api-client";
 import {
   Stack,
@@ -21,8 +21,12 @@ function useDockerDesktopClient() {
 
 export function App() {
   const [rows, setRows] = React.useState([]);
+  const [volumeContainersMap, setVolumeContainersMap] = React.useState<
+    Record<string, string[]>
+  >({});
+  const [volumes, setVolumes] = React.useState([]);
   const [exportPath, setExportPath] = React.useState<string>("");
-  const [loading, setLoading] = React.useState<boolean>(false);
+  const [exportLoading, setExportLoading] = React.useState<boolean>(false);
   const ddClient = useDockerDesktopClient();
 
   const columns = [
@@ -32,29 +36,25 @@ export function App() {
       field: "volumeName",
       headerName: "Volume name",
       width: 320,
-      renderCell: (params) => {
-        return params.row.volumeLinks > 0 ? (
-          <Tooltip
-            title={`In use by ${params.row.volumeLinks} container(s)`}
-            placeholder="right"
-          >
-            <Badge
-              badgeContent={params.row.volumeLinks}
-              color="primary"
-              anchorOrigin={{
-                vertical: "top",
-                horizontal: "right",
-              }}
-            >
-              <Box m={0.5}>{params.row.volumeName}</Box>
-            </Badge>
-          </Tooltip>
-        ) : (
-          <Box m={0.5}>{params.row.volumeName}</Box>
-        );
-      },
     },
     { field: "volumeLinks", hide: true },
+    {
+      field: "volumeContainers",
+      headerName: "Containers",
+      width: 260,
+      renderCell: (params) => {
+        if (params.row.volumeContainers) {
+          return (
+            <Box display="flex" flexDirection="column">
+              {params.row.volumeContainers.map((container) => (
+                <Typography key={container}>{container}</Typography>
+              ))}
+            </Box>
+          );
+        }
+        return <></>;
+      },
+    },
     { field: "volumeMountPoint", headerName: "Mount point", width: 260 },
     { field: "volumeSize", headerName: "Size", width: 130 },
     {
@@ -68,11 +68,27 @@ export function App() {
           exportVolume(params.row.volumeName);
         };
 
+        if (exportPath === "") {
+          return (
+            <Tooltip title="Choose a path first">
+              <span>
+                <Button
+                  variant="contained"
+                  onClick={onClick}
+                  disabled={exportPath === "" || exportLoading}
+                >
+                  Export
+                </Button>
+              </span>
+            </Tooltip>
+          );
+        }
+
         return (
           <Button
             variant="contained"
             onClick={onClick}
-            disabled={exportPath === "" || loading}
+            disabled={exportPath === "" || exportLoading}
           >
             Export
           </Button>
@@ -81,39 +97,68 @@ export function App() {
     },
   ];
 
+  const handleCellClick = (params: GridCellParams) => {
+    if (params.colDef.field === "volumeName") {
+      ddClient.desktopUI.navigate.viewVolume(params.row.volumeName);
+    }
+  };
+
   useEffect(() => {
     const listVolumes = async () => {
-      const result = await ddClient.docker.cli.exec("system", [
-        "df",
-        "-v",
-        "--format",
-        "'{{ json .Volumes }}'",
-      ]);
+      try {
+        const result = await ddClient.docker.cli.exec("system", [
+          "df",
+          "-v",
+          "--format",
+          "'{{ json .Volumes }}'",
+        ]);
 
-      if (result.stderr !== "") {
-        ddClient.desktopUI.toast.error(result.stderr);
-      } else {
-        const volumes = result.parseJsonObject();
-        const rows = volumes
-          .sort((a, b) => a.Name.localeCompare(b.Name))
-          .map((volume, index) => {
-            return {
-              id: index,
-              volumeDriver: volume.Driver,
-              volumeName: volume.Name,
-              volumeLinks: volume.Links,
-              volumeMountPoint: volume.Mountpoint,
-              volumeSize: volume.Size,
-            };
+        if (result.stderr !== "") {
+          ddClient.desktopUI.toast.error(result.stderr);
+        } else {
+          const volumes = result.parseJsonObject();
+
+          volumes.forEach((volume) => {
+            getContainersForVolume(volume.Name).then((containers) => {
+              setVolumeContainersMap((current) => {
+                const next = { ...current };
+                next[volume.Name] = containers;
+                return next;
+              });
+            });
           });
 
-        setRows(rows);
+          setVolumes(volumes);
+        }
+      } catch (error) {
+        ddClient.desktopUI.toast.error(
+          `Failed to list volumes: ${error.stderr}`
+        );
       }
     };
 
     listVolumes();
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // run it once, only when component is mounted
+
+  useEffect(() => {
+    const rows = volumes
+      .sort((a, b) => a.Name.localeCompare(b.Name))
+      .map((volume, index) => {
+        return {
+          id: index,
+          volumeDriver: volume.Driver,
+          volumeName: volume.Name,
+          volumeLinks: volume.Links,
+          volumeContainers: volumeContainersMap[volume.Name],
+          volumeMountPoint: volume.Mountpoint,
+          volumeSize: volume.Size,
+        };
+      });
+
+    setRows(rows);
+  }, [volumeContainersMap]);
 
   const selectExportDirectory = () => {
     ddClient.desktopUI.dialog
@@ -128,7 +173,7 @@ export function App() {
   };
 
   const exportVolume = async (volumeName: string) => {
-    setLoading(true);
+    setExportLoading(true);
 
     try {
       const output = await ddClient.docker.cli.exec("run", [
@@ -141,7 +186,6 @@ export function App() {
         `/vackup/${volumeName}.tar.gz`,
         "/vackup-volume",
       ]);
-      console.log(output);
       if (output.stderr !== "") {
         //"tar: removing leading '/' from member names\n"
         if (!output.stderr.includes("tar: removing leading")) {
@@ -154,12 +198,33 @@ export function App() {
         `Volume ${volumeName} exported to ${exportPath}`
       );
     } catch (error) {
-      console.error(error);
       ddClient.desktopUI.toast.error(
         `Failed to backup volume ${volumeName} to ${exportPath}: ${error.code}`
       );
     } finally {
-      setLoading(false);
+      setExportLoading(false);
+    }
+  };
+
+  const getContainersForVolume = async (
+    volumeName: string
+  ): Promise<string[]> => {
+    try {
+      const output = await ddClient.docker.cli.exec("ps", [
+        "-a",
+        `--filter="volume=${volumeName}"`,
+        `--format='{{ .Names}}'`,
+      ]);
+
+      if (output.stderr !== "") {
+        ddClient.desktopUI.toast.error(output.stderr);
+      }
+
+      return output.stdout.trim().split(" ");
+    } catch (error) {
+      ddClient.desktopUI.toast.error(
+        `Failed to get containers for volume ${volumeName}: ${error.stderr} Error code: ${error.code}`
+      );
     }
   };
 
@@ -173,20 +238,20 @@ export function App() {
         <Button
           variant="contained"
           onClick={selectExportDirectory}
-          disabled={loading}
+          disabled={exportLoading}
         >
-          Choose path
+          Choose a path
         </Button>
         <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
           {exportPath}
         </Typography>
-        {loading && (
+        {exportLoading && (
           <Box sx={{ width: "100%" }}>
             <LinearProgress />
           </Box>
         )}
 
-        <div style={{ height: 400, width: "100%" }}>
+        <Box width="100%">
           <DataGrid
             rows={rows}
             columns={columns}
@@ -194,8 +259,20 @@ export function App() {
             rowsPerPageOptions={[5]}
             checkboxSelection={false}
             disableSelectionOnClick={true}
+            autoHeight
+            getRowHeight={() => "auto"}
+            onCellClick={handleCellClick}
+            sx={{
+              "&.MuiDataGrid-root--densityCompact .MuiDataGrid-cell": { py: 1 },
+              "&.MuiDataGrid-root--densityStandard .MuiDataGrid-cell": {
+                py: 1,
+              },
+              "&.MuiDataGrid-root--densityComfortable .MuiDataGrid-cell": {
+                py: 2,
+              },
+            }}
           />
-        </div>
+        </Box>
       </Stack>
     </>
   );

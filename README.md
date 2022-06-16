@@ -10,7 +10,7 @@ This example is part of the YouTube Livestream [Introducing Docker Extensions](h
 Install Docker Extension with the [Extensions CLI](https://docs.docker.com/desktop/extensions-sdk/#prerequisites).
 
 ```bash
-  docker extension install felipecruz/vackup-docker-extension:0.0.1
+  docker extension install felipecruz/vackup-docker-extension:0.0.2
 ```
 
 ## Run Locally
