@@ -47,11 +47,8 @@ export function App() {
           return (
             <Box display="flex" flexDirection="column">
               {params.row.volumeContainers.map((container) => (
-                  <Typography key={container}>
-                    {container}
-                  </Typography>
-                )
-              )}
+                <Typography key={container}>{container}</Typography>
+              ))}
             </Box>
           );
         }
@@ -70,6 +67,22 @@ export function App() {
           e.stopPropagation(); // don't select this row after clicking
           exportVolume(params.row.volumeName);
         };
+
+        if (exportPath === "") {
+          return (
+            <Tooltip title="Choose a path first">
+              <span>
+                <Button
+                  variant="contained"
+                  onClick={onClick}
+                  disabled={exportPath === "" || exportLoading}
+                >
+                  Export
+                </Button>
+              </span>
+            </Tooltip>
+          );
+        }
 
         return (
           <Button
@@ -193,7 +206,9 @@ export function App() {
     }
   };
 
-  const getContainersForVolume = async (volumeName: string): Promise<string[]> => {
+  const getContainersForVolume = async (
+    volumeName: string
+  ): Promise<string[]> => {
     try {
       const output = await ddClient.docker.cli.exec("ps", [
         "-a",
@@ -225,7 +240,7 @@ export function App() {
           onClick={selectExportDirectory}
           disabled={exportLoading}
         >
-          Choose path
+          Choose a path
         </Button>
         <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
           {exportPath}
@@ -248,12 +263,16 @@ export function App() {
             getRowHeight={() => "auto"}
             onCellClick={handleCellClick}
             sx={{
-              '&.MuiDataGrid-root--densityCompact .MuiDataGrid-cell': { py: 1 },
-              '&.MuiDataGrid-root--densityStandard .MuiDataGrid-cell': { py: 1 },
-              '&.MuiDataGrid-root--densityComfortable .MuiDataGrid-cell': { py: 2 },
+              "&.MuiDataGrid-root--densityCompact .MuiDataGrid-cell": { py: 1 },
+              "&.MuiDataGrid-root--densityStandard .MuiDataGrid-cell": {
+                py: 1,
+              },
+              "&.MuiDataGrid-root--densityComfortable .MuiDataGrid-cell": {
+                py: 2,
+              },
             }}
           />
-          </Box>
+        </Box>
       </Stack>
     </>
   );
