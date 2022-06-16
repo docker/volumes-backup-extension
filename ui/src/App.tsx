@@ -130,8 +130,6 @@ export function App() {
   const exportVolume = async (volumeName: string) => {
     setLoading(true);
 
-    const filename = "backup.tar.gz";
-
     try {
       const output = await ddClient.docker.cli.exec("run", [
         "--rm",
@@ -140,7 +138,7 @@ export function App() {
         "busybox",
         "tar",
         "-zcvf",
-        `/vackup/${filename}`,
+        `/vackup/${volumeName}.tar.gz`,
         "/vackup-volume",
       ]);
       console.log(output);
