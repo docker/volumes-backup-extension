@@ -12,13 +12,13 @@ RUN npm run build
 
 FROM alpine
 LABEL org.opencontainers.image.title="vackup-docker-extension" \
-    org.opencontainers.image.description="My awesome Docker extension" \
+    org.opencontainers.image.description="Easily backup and restore docker volumes." \
     org.opencontainers.image.vendor="Felipe" \
     com.docker.desktop.extension.api.version=">= 0.2.3" \
     com.docker.extension.screenshots="" \
     com.docker.extension.detailed-description="" \
-    com.docker.extension.publisher-url="" \
-    com.docker.extension.additional-urls="" \
+    com.docker.extension.publisher-url="https://github.com/felipecruz91/vackup-docker-extension" \
+    com.docker.extension.additional-urls="[{\"title\":\"Author\", \"url\":\"https://twitter.com/felipecruz\"}]" \
     com.docker.extension.changelog=""
 
 COPY metadata.json .

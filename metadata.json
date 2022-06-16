@@ -2,7 +2,7 @@
   "icon": "docker.svg",
   "ui": {
     "dashboard-tab": {
-      "title": "Vackup-Docker-Extension",
+      "title": "Vackup",
       "src": "index.html",
       "root": "ui"
     }
