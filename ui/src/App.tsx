@@ -55,7 +55,6 @@ export function App() {
         return <></>;
       },
     },
-    { field: "volumeMountPoint", headerName: "Mount point", width: 260 },
     { field: "volumeSize", headerName: "Size", width: 130 },
     {
       field: "export",
@@ -152,7 +151,6 @@ export function App() {
           volumeName: volume.Name,
           volumeLinks: volume.Links,
           volumeContainers: volumeContainersMap[volume.Name],
-          volumeMountPoint: volume.Mountpoint,
           volumeSize: volume.Size,
         };
       });
