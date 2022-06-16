@@ -22,7 +22,7 @@ function useDockerDesktopClient() {
 export function App() {
   const [rows, setRows] = React.useState([]);
   const [volumeContainersMap, setVolumeContainersMap] = React.useState<
-    Record<string, string>
+    Record<string, string[]>
   >({});
   const [volumes, setVolumes] = React.useState([]);
   const [exportPath, setExportPath] = React.useState<string>("");
@@ -65,17 +65,15 @@ export function App() {
       width: 260,
       renderCell: (params) => {
         if (params.row.volumeContainers) {
-          const containers = params.row.volumeContainers.split("\n");
-
           return (
-            <div>
-              {containers.map((container) => (
+            <Box display="flex" flexDirection="column">
+              {params.row.volumeContainers.map((container) => (
                   <Typography key={container}>
                     {container}
                   </Typography>
                 )
               )}
-            </div>
+            </Box>
           );
         }
         return <></>;
@@ -216,7 +214,7 @@ export function App() {
     }
   };
 
-  const getContainersForVolume = async (volumeName: string) => {
+  const getContainersForVolume = async (volumeName: string): Promise<string[]> => {
     try {
       const output = await ddClient.docker.cli.exec("ps", [
         "-a",
@@ -228,7 +226,7 @@ export function App() {
         ddClient.desktopUI.toast.error(output.stderr);
       }
 
-      return output.stdout.trim();
+      return output.stdout.trim().split(" ");
     } catch (error) {
       ddClient.desktopUI.toast.error(
         `Failed to get containers for volume ${volumeName}: ${error.stderr} Error code: ${error.code}`
