@@ -22,7 +22,7 @@ function useDockerDesktopClient() {
 export function App() {
   const [rows, setRows] = React.useState([]);
   const [volumeContainersMap, setVolumeContainersMap] = React.useState<
-    Record<string, string>
+    Record<string, string[]>
   >({});
   const [volumes, setVolumes] = React.useState([]);
   const [exportPath, setExportPath] = React.useState<string>("");
@@ -36,27 +36,6 @@ export function App() {
       field: "volumeName",
       headerName: "Volume name",
       width: 320,
-      renderCell: (params) => {
-        return params.row.volumeLinks > 0 ? (
-          <Tooltip
-            title={`In use by ${params.row.volumeLinks} container(s)`}
-            placeholder="right"
-          >
-            <Badge
-              badgeContent={params.row.volumeLinks}
-              color="primary"
-              anchorOrigin={{
-                vertical: "top",
-                horizontal: "right",
-              }}
-            >
-              <Box m={0.5}>{params.row.volumeName}</Box>
-            </Badge>
-          </Tooltip>
-        ) : (
-          <Box m={0.5}>{params.row.volumeName}</Box>
-        );
-      },
     },
     { field: "volumeLinks", hide: true },
     {
@@ -65,21 +44,15 @@ export function App() {
       width: 260,
       renderCell: (params) => {
         if (params.row.volumeContainers) {
-          const containers = params.row.volumeContainers.split("\n");
-
           return (
-            <div>
-              {containers.map((container) => {
-                return (
-                  <>
-                    <Typography key={container} component="span">
-                      {container}
-                    </Typography>
-                    <br />
-                  </>
-                );
-              })}
-            </div>
+            <Box display="flex" flexDirection="column">
+              {params.row.volumeContainers.map((container) => (
+                  <Typography key={container}>
+                    {container}
+                  </Typography>
+                )
+              )}
+            </Box>
           );
         }
         return <></>;
@@ -220,7 +193,7 @@ export function App() {
     }
   };
 
-  const getContainersForVolume = async (volumeName: string) => {
+  const getContainersForVolume = async (volumeName: string): Promise<string[]> => {
     try {
       const output = await ddClient.docker.cli.exec("ps", [
         "-a",
@@ -232,7 +205,7 @@ export function App() {
         ddClient.desktopUI.toast.error(output.stderr);
       }
 
-      return output.stdout;
+      return output.stdout.trim().split(" ");
     } catch (error) {
       ddClient.desktopUI.toast.error(
         `Failed to get containers for volume ${volumeName}: ${error.stderr} Error code: ${error.code}`
@@ -263,7 +236,7 @@ export function App() {
           </Box>
         )}
 
-        <div style={{ height: 400, width: "100%" }}>
+        <Box width="100%">
           <DataGrid
             rows={rows}
             columns={columns}
@@ -271,10 +244,16 @@ export function App() {
             rowsPerPageOptions={[5]}
             checkboxSelection={false}
             disableSelectionOnClick={true}
+            autoHeight
             getRowHeight={() => "auto"}
             onCellClick={handleCellClick}
+            sx={{
+              '&.MuiDataGrid-root--densityCompact .MuiDataGrid-cell': { py: 1 },
+              '&.MuiDataGrid-root--densityStandard .MuiDataGrid-cell': { py: 1 },
+              '&.MuiDataGrid-root--densityComfortable .MuiDataGrid-cell': { py: 2 },
+            }}
           />
-        </div>
+          </Box>
       </Stack>
     </>
   );
