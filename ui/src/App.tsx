@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { DataGrid } from "@mui/x-data-grid";
+import { DataGrid, GridCellParams } from "@mui/x-data-grid";
 import { createDockerDesktopClient } from "@docker/extension-api-client";
 import {
   Stack,
@@ -26,7 +26,7 @@ export function App() {
   >({});
   const [volumes, setVolumes] = React.useState([]);
   const [exportPath, setExportPath] = React.useState<string>("");
-  const [loading, setLoading] = React.useState<boolean>(false);
+  const [exportLoading, setExportLoading] = React.useState<boolean>(false);
   const ddClient = useDockerDesktopClient();
 
   const columns = [
@@ -102,7 +102,7 @@ export function App() {
           <Button
             variant="contained"
             onClick={onClick}
-            disabled={exportPath === "" || loading}
+            disabled={exportPath === "" || exportLoading}
           >
             Export
           </Button>
@@ -110,6 +110,12 @@ export function App() {
       },
     },
   ];
+
+  const handleCellClick = (params: GridCellParams) => {
+    if (params.colDef.field === "volumeName") {
+      ddClient.desktopUI.navigate.viewVolume(params.row.volumeName);
+    }
+  };
 
   useEffect(() => {
     const listVolumes = async () => {
@@ -181,7 +187,7 @@ export function App() {
   };
 
   const exportVolume = async (volumeName: string) => {
-    setLoading(true);
+    setExportLoading(true);
 
     try {
       const output = await ddClient.docker.cli.exec("run", [
@@ -210,7 +216,7 @@ export function App() {
         `Failed to backup volume ${volumeName} to ${exportPath}: ${error.code}`
       );
     } finally {
-      setLoading(false);
+      setExportLoading(false);
     }
   };
 
@@ -244,14 +250,14 @@ export function App() {
         <Button
           variant="contained"
           onClick={selectExportDirectory}
-          disabled={loading}
+          disabled={exportLoading}
         >
           Choose path
         </Button>
         <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
           {exportPath}
         </Typography>
-        {loading && (
+        {exportLoading && (
           <Box sx={{ width: "100%" }}>
             <LinearProgress />
           </Box>
@@ -266,6 +272,7 @@ export function App() {
             checkboxSelection={false}
             disableSelectionOnClick={true}
             getRowHeight={() => "auto"}
+            onCellClick={handleCellClick}
           />
         </div>
       </Stack>
