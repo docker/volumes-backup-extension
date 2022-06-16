@@ -36,27 +36,6 @@ export function App() {
       field: "volumeName",
       headerName: "Volume name",
       width: 320,
-      renderCell: (params) => {
-        return params.row.volumeLinks > 0 ? (
-          <Tooltip
-            title={`In use by ${params.row.volumeLinks} container(s)`}
-            placeholder="right"
-          >
-            <Badge
-              badgeContent={params.row.volumeLinks}
-              color="primary"
-              anchorOrigin={{
-                vertical: "top",
-                horizontal: "right",
-              }}
-            >
-              <Box m={0.5}>{params.row.volumeName}</Box>
-            </Badge>
-          </Tooltip>
-        ) : (
-          <Box m={0.5}>{params.row.volumeName}</Box>
-        );
-      },
     },
     { field: "volumeLinks", hide: true },
     {
