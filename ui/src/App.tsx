@@ -21,6 +21,10 @@ function useDockerDesktopClient() {
 
 export function App() {
   const [rows, setRows] = React.useState([]);
+  const [volumeContainersMap, setVolumeContainersMap] = React.useState<
+    Record<string, string>
+  >({});
+  const [volumes, setVolumes] = React.useState([]);
   const [exportPath, setExportPath] = React.useState<string>("");
   const [loading, setLoading] = React.useState<boolean>(false);
   const ddClient = useDockerDesktopClient();
@@ -55,6 +59,32 @@ export function App() {
       },
     },
     { field: "volumeLinks", hide: true },
+    {
+      field: "volumeContainers",
+      headerName: "Containers",
+      width: 260,
+      renderCell: (params) => {
+        if (params.row.volumeContainers) {
+          const containers = params.row.volumeContainers.split("\n");
+
+          return (
+            <div>
+              {containers.map((container) => {
+                return (
+                  <>
+                    <Typography key={container} component="span">
+                      {container}
+                    </Typography>
+                    <br />
+                  </>
+                );
+              })}
+            </div>
+          );
+        }
+        return <></>;
+      },
+    },
     { field: "volumeMountPoint", headerName: "Mount point", width: 260 },
     { field: "volumeSize", headerName: "Size", width: 130 },
     {
@@ -83,37 +113,60 @@ export function App() {
 
   useEffect(() => {
     const listVolumes = async () => {
-      const result = await ddClient.docker.cli.exec("system", [
-        "df",
-        "-v",
-        "--format",
-        "'{{ json .Volumes }}'",
-      ]);
+      try {
+        const result = await ddClient.docker.cli.exec("system", [
+          "df",
+          "-v",
+          "--format",
+          "'{{ json .Volumes }}'",
+        ]);
 
-      if (result.stderr !== "") {
-        ddClient.desktopUI.toast.error(result.stderr);
-      } else {
-        const volumes = result.parseJsonObject();
-        const rows = volumes
-          .sort((a, b) => a.Name.localeCompare(b.Name))
-          .map((volume, index) => {
-            return {
-              id: index,
-              volumeDriver: volume.Driver,
-              volumeName: volume.Name,
-              volumeLinks: volume.Links,
-              volumeMountPoint: volume.Mountpoint,
-              volumeSize: volume.Size,
-            };
+        if (result.stderr !== "") {
+          ddClient.desktopUI.toast.error(result.stderr);
+        } else {
+          const volumes = result.parseJsonObject();
+
+          volumes.forEach((volume) => {
+            getContainersForVolume(volume.Name).then((containers) => {
+              setVolumeContainersMap((current) => {
+                const next = { ...current };
+                next[volume.Name] = containers;
+                return next;
+              });
+            });
           });
 
-        setRows(rows);
+          setVolumes(volumes);
+        }
+      } catch (error) {
+        ddClient.desktopUI.toast.error(
+          `Failed to list volumes: ${error.stderr}`
+        );
       }
     };
 
     listVolumes();
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // run it once, only when component is mounted
+
+  useEffect(() => {
+    const rows = volumes
+      .sort((a, b) => a.Name.localeCompare(b.Name))
+      .map((volume, index) => {
+        return {
+          id: index,
+          volumeDriver: volume.Driver,
+          volumeName: volume.Name,
+          volumeLinks: volume.Links,
+          volumeContainers: volumeContainersMap[volume.Name],
+          volumeMountPoint: volume.Mountpoint,
+          volumeSize: volume.Size,
+        };
+      });
+
+    setRows(rows);
+  }, [volumeContainersMap]);
 
   const selectExportDirectory = () => {
     ddClient.desktopUI.dialog
@@ -141,7 +194,6 @@ export function App() {
         `/vackup/${volumeName}.tar.gz`,
         "/vackup-volume",
       ]);
-      console.log(output);
       if (output.stderr !== "") {
         //"tar: removing leading '/' from member names\n"
         if (!output.stderr.includes("tar: removing leading")) {
@@ -154,12 +206,31 @@ export function App() {
         `Volume ${volumeName} exported to ${exportPath}`
       );
     } catch (error) {
-      console.error(error);
       ddClient.desktopUI.toast.error(
         `Failed to backup volume ${volumeName} to ${exportPath}: ${error.code}`
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getContainersForVolume = async (volumeName: string) => {
+    try {
+      const output = await ddClient.docker.cli.exec("ps", [
+        "-a",
+        `--filter="volume=${volumeName}"`,
+        `--format='{{ .Names}}'`,
+      ]);
+
+      if (output.stderr !== "") {
+        ddClient.desktopUI.toast.error(output.stderr);
+      }
+
+      return output.stdout;
+    } catch (error) {
+      ddClient.desktopUI.toast.error(
+        `Failed to get containers for volume ${volumeName}: ${error.stderr} Error code: ${error.code}`
+      );
     }
   };
 
@@ -194,6 +265,7 @@ export function App() {
             rowsPerPageOptions={[5]}
             checkboxSelection={false}
             disableSelectionOnClick={true}
+            getRowHeight={() => "auto"}
           />
         </div>
       </Stack>
