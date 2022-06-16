@@ -69,16 +69,12 @@ export function App() {
 
           return (
             <div>
-              {containers.map((container) => {
-                return (
-                  <>
-                    <Typography key={container} component="span">
-                      {container}
-                    </Typography>
-                    <br />
-                  </>
-                );
-              })}
+              {containers.map((container) => (
+                  <Typography key={container}>
+                    {container}
+                  </Typography>
+                )
+              )}
             </div>
           );
         }
@@ -263,7 +259,7 @@ export function App() {
           </Box>
         )}
 
-        <div style={{ height: 400, width: "100%" }}>
+        <Box width="100%">
           <DataGrid
             rows={rows}
             columns={columns}
@@ -271,10 +267,16 @@ export function App() {
             rowsPerPageOptions={[5]}
             checkboxSelection={false}
             disableSelectionOnClick={true}
+            autoHeight
             getRowHeight={() => "auto"}
             onCellClick={handleCellClick}
+            sx={{
+              '&.MuiDataGrid-root--densityCompact .MuiDataGrid-cell': { py: 1 },
+              '&.MuiDataGrid-root--densityStandard .MuiDataGrid-cell': { py: 1 },
+              '&.MuiDataGrid-root--densityComfortable .MuiDataGrid-cell': { py: 2 },
+            }}
           />
-        </div>
+          </Box>
       </Stack>
     </>
   );
