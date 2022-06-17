@@ -10,7 +10,7 @@ RUN --mount=type=cache,target=/usr/src/app/.npm \
 COPY ui /ui
 RUN npm run build
 
-FROM alpine
+FROM alpine:3.16
 LABEL org.opencontainers.image.title="vackup-docker-extension" \
     org.opencontainers.image.description="Easily backup and restore docker volumes." \
     org.opencontainers.image.vendor="Felipe" \
@@ -21,6 +21,7 @@ LABEL org.opencontainers.image.title="vackup-docker-extension" \
     com.docker.extension.additional-urls="[{\"title\":\"Author\", \"url\":\"https://twitter.com/felipecruz\"}]" \
     com.docker.extension.changelog=""
 
+WORKDIR /
 COPY metadata.json .
 COPY docker.svg .
 COPY --from=client-builder /ui/build ui
