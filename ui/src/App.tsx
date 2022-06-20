@@ -16,6 +16,7 @@ import {
 import {
   Download as DownloadIcon,
   Upload as UploadIcon,
+  Delete as DeleteIcon,
 } from "@mui/icons-material";
 
 const sleep = (milliseconds) => {
@@ -87,6 +88,13 @@ export function App() {
           onClick={handleImport(params.row)}
           disabled={path === "" || actionInProgress}
         />,
+        <GridActionsCellItem
+          key={"action_empty_" + params.row.id}
+          icon={<DeleteIcon>Empty</DeleteIcon>}
+          label="Empty"
+          onClick={handleEmpty(params.row)}
+          disabled={actionInProgress}
+        />,
       ],
     },
   ];
@@ -95,13 +103,23 @@ export function App() {
     exportVolume(row.volumeName);
   };
 
-  const handleImport = (row) => () => {
+  const handleImport = (row) => async () => {
     importVolume(row.volumeName);
 
     // hack to reduce the likelihood of having "another disk operation is already running"
-    sleep(1000).then(() => {
-      setReloadTable(!reloadTable);
-    });
+    console.log("Sleeping!");
+    await sleep(1000);
+    console.log("reloading table!");
+    setReloadTable(!reloadTable);
+  };
+
+  const handleEmpty = (row) => async () => {
+    emptyVolume(row.volumeName);
+    // hack to reduce the likelihood of having "another disk operation is already running"
+    console.log("Sleeping!");
+    await sleep(3000);
+    console.log("reloading table!");
+    setReloadTable(!reloadTable);
   };
 
   const handleCellClick = (params: GridCellParams) => {
@@ -242,14 +260,9 @@ export function App() {
         "-xvzf",
         `/vackup`,
       ]);
-      console.log(output);
       if (output.stderr !== "") {
-        //"tar: removing leading '/' from member names\n"
-        if (!output.stderr.includes("tar: removing leading")) {
-          // this is an error we may want to display
-          ddClient.desktopUI.toast.error(output.stderr);
-          return;
-        }
+        ddClient.desktopUI.toast.error(output.stderr);
+        return;
       }
       ddClient.desktopUI.toast.success(
         `File ${volumeName}.tar.gz imported into volume ${volumeName}`
@@ -257,6 +270,34 @@ export function App() {
     } catch (error) {
       ddClient.desktopUI.toast.error(
         `Failed to import file ${volumeName}.tar.gz into volume ${volumeName}: ${error.stderr} Exit code: ${error.code}`
+      );
+    } finally {
+      setActionInProgress(false);
+    }
+  };
+
+  const emptyVolume = async (volumeName: string) => {
+    setActionInProgress(true);
+
+    try {
+      const output = await ddClient.docker.cli.exec("run", [
+        "--rm",
+        `-v=${volumeName}:/vackup-volume `,
+        "busybox",
+        "/bin/sh",
+        "-c",
+        '"rm -rf /vackup-volume/*"',
+      ]);
+      if (output.stderr !== "") {
+        ddClient.desktopUI.toast.error(output.stderr);
+        return;
+      }
+      ddClient.desktopUI.toast.success(
+        `The content of volume ${volumeName} has been removed`
+      );
+    } catch (error) {
+      ddClient.desktopUI.toast.error(
+        `Failed to empty volume ${volumeName}: ${error.stderr} Exit code: ${error.code}`
       );
     } finally {
       setActionInProgress(false);
