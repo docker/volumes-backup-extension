@@ -7,10 +7,8 @@ import {
 import { createDockerDesktopClient } from "@docker/extension-api-client";
 import {
   Stack,
-  Button,
   Typography,
   Box,
-  Grid,
   Backdrop,
   CircularProgress,
 } from "@mui/material";
@@ -25,6 +23,7 @@ import {
 import ExportDialog from "./components/ExportDialog";
 import ImportDialog from "./components/ImportDialog";
 import SaveDialog from "./components/SaveDialog";
+import LoadDialog from "./components/LoadDialog";
 
 const client = createDockerDesktopClient();
 
@@ -50,6 +49,7 @@ export function App() {
   const [openImportDialog, setOpenImportDialog] =
     React.useState<boolean>(false);
   const [openSaveDialog, setOpenSaveDialog] = React.useState<boolean>(false);
+  const [openLoadDialog, setOpenLoadDialog] = React.useState<boolean>(false);
 
   const [volumeName, setVolumeName] = React.useState<string>("");
   const ddClient = useDockerDesktopClient();
@@ -151,20 +151,12 @@ export function App() {
 
   const handleEmpty = (row) => async () => {
     await emptyVolume(row.volumeName);
-    // hack to reduce the likelihood of having "another disk operation is already running"
-    // console.log("Sleeping!");
-    // await sleep(3000);
-    // console.log("reloading table!");
     setReloadTable(!reloadTable);
   };
 
   const handleLoad = (row) => async () => {
-    await loadImage(row.volumeName);
-    // hack to reduce the likelihood of having "another disk operation is already running"
-    // console.log("Sleeping!");
-    // await sleep(3000);
-    // console.log("reloading table!");
-    setReloadTable(!reloadTable);
+    setOpenLoadDialog(true);
+    setVolumeName(row.volumeName);
   };
 
   const handleCellClick = (params: GridCellParams) => {
@@ -257,37 +249,6 @@ export function App() {
     }
   };
 
-  const loadImage = async (volumeName: string) => {
-    setActionInProgress(true);
-
-    const imageName = "my-image";
-
-    try {
-      const output = await ddClient.docker.cli.exec("run", [
-        `--rm`,
-        `-v=${volumeName}:/mount-volume `,
-        imageName,
-        "/bin/sh",
-        "-c",
-        '"cp -Rp /volume-data/. /mount-volume/;"',
-      ]);
-      if (output.stderr !== "") {
-        ddClient.desktopUI.toast.error(output.stderr);
-        return;
-      }
-
-      ddClient.desktopUI.toast.success(
-        `Copied /volume-data from image ${imageName} into volume ${volumeName}`
-      );
-    } catch (error) {
-      ddClient.desktopUI.toast.error(
-        `Failed to copy /volume-data from image ${imageName} to into volume ${volumeName}: ${error.stderr} Exit code: ${error.code}`
-      );
-    } finally {
-      setActionInProgress(false);
-    }
-  };
-
   const getContainersForVolume = async (
     volumeName: string
   ): Promise<string[]> => {
@@ -321,6 +282,11 @@ export function App() {
 
   const handleSaveDialogClose = () => {
     setOpenSaveDialog(false);
+  };
+
+  const handleLoadDialogClose = () => {
+    setOpenLoadDialog(false);
+    setReloadTable(!reloadTable);
   };
 
   return (
@@ -378,6 +344,11 @@ export function App() {
           <SaveDialog
             open={openSaveDialog}
             onClose={handleSaveDialogClose}
+            volumeName={volumeName}
+          />
+          <LoadDialog
+            open={openLoadDialog}
+            onClose={handleLoadDialogClose}
             volumeName={volumeName}
           />
         </Box>
