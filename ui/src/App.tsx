@@ -24,6 +24,7 @@ import {
 } from "@mui/icons-material";
 import ExportDialog from "./components/ExportDialog";
 import ImportDialog from "./components/ImportDialog";
+import SaveDialog from "./components/SaveDialog";
 
 const client = createDockerDesktopClient();
 
@@ -48,6 +49,7 @@ export function App() {
     React.useState<boolean>(false);
   const [openImportDialog, setOpenImportDialog] =
     React.useState<boolean>(false);
+  const [openSaveDialog, setOpenSaveDialog] = React.useState<boolean>(false);
 
   const [volumeName, setVolumeName] = React.useState<string>("");
   const ddClient = useDockerDesktopClient();
@@ -109,7 +111,6 @@ export function App() {
           icon={<LayersIcon>Save</LayersIcon>}
           label="Save"
           onClick={handleSave(params.row)}
-          disabled={actionInProgress}
         />,
         <GridActionsCellItem
           key={"action_load_" + params.row.id}
@@ -143,17 +144,13 @@ export function App() {
     setVolumeName(row.volumeName);
   };
 
-  const handleEmpty = (row) => async () => {
-    await emptyVolume(row.volumeName);
-    // hack to reduce the likelihood of having "another disk operation is already running"
-    // console.log("Sleeping!");
-    // await sleep(3000);
-    // console.log("reloading table!");
-    setReloadTable(!reloadTable);
+  const handleSave = (row) => () => {
+    setOpenSaveDialog(true);
+    setVolumeName(row.volumeName);
   };
 
-  const handleSave = (row) => async () => {
-    await saveVolume(row.volumeName);
+  const handleEmpty = (row) => async () => {
+    await emptyVolume(row.volumeName);
     // hack to reduce the likelihood of having "another disk operation is already running"
     // console.log("Sleeping!");
     // await sleep(3000);
@@ -260,69 +257,6 @@ export function App() {
     }
   };
 
-  const saveVolume = async (volumeName: string) => {
-    setActionInProgress(true);
-
-    const containerName = "save-volume";
-    const imageName = "my-image";
-
-    try {
-      const cpOutput = await ddClient.docker.cli.exec("run", [
-        `--name=${containerName}`,
-        `-v=${volumeName}:/mount-volume `,
-        "busybox",
-        "/bin/sh",
-        "-c",
-        '"cp -Rp /mount-volume/. /volume-data/;"',
-      ]);
-      if (cpOutput.stderr !== "") {
-        ddClient.desktopUI.toast.error(cpOutput.stderr);
-        return;
-      }
-
-      const psOutput = await ddClient.docker.cli.exec("ps", [
-        "-aq",
-        `--filter="name=${containerName}"`,
-      ]);
-      if (psOutput.stderr !== "") {
-        ddClient.desktopUI.toast.error(psOutput.stderr);
-        return;
-      }
-
-      const containerId = psOutput.lines()[0];
-
-      const commitOutput = await ddClient.docker.cli.exec("commit", [
-        containerId,
-        imageName,
-      ]);
-
-      if (commitOutput.stderr !== "") {
-        ddClient.desktopUI.toast.error(commitOutput.stderr);
-        return;
-      }
-
-      const containerRmOutput = await ddClient.docker.cli.exec("container", [
-        "rm",
-        containerId,
-      ]);
-
-      if (containerRmOutput.stderr !== "") {
-        ddClient.desktopUI.toast.error(containerRmOutput.stderr);
-        return;
-      }
-
-      ddClient.desktopUI.toast.success(
-        `Volume ${volumeName} copied into image ${imageName}, under /volume-data`
-      );
-    } catch (error) {
-      ddClient.desktopUI.toast.error(
-        `Failed to copy volume ${volumeName} into image ${imageName}: ${error.stderr} Exit code: ${error.code}`
-      );
-    } finally {
-      setActionInProgress(false);
-    }
-  };
-
   const loadImage = async (volumeName: string) => {
     setActionInProgress(true);
 
@@ -385,6 +319,10 @@ export function App() {
     setReloadTable(!reloadTable);
   };
 
+  const handleSaveDialogClose = () => {
+    setOpenSaveDialog(false);
+  };
+
   return (
     <>
       <Typography variant="h3">Vackup Extension</Typography>
@@ -435,6 +373,11 @@ export function App() {
           <ImportDialog
             open={openImportDialog}
             onClose={handleImportDialogClose}
+            volumeName={volumeName}
+          />
+          <SaveDialog
+            open={openSaveDialog}
+            onClose={handleSaveDialogClose}
             volumeName={volumeName}
           />
         </Box>
