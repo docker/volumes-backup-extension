@@ -17,6 +17,7 @@ import {
   Download as DownloadIcon,
   Upload as UploadIcon,
   Delete as DeleteIcon,
+  Layers as LayersIcon,
 } from "@mui/icons-material";
 
 const sleep = (milliseconds) => {
@@ -37,6 +38,8 @@ export function App() {
   const [volumes, setVolumes] = React.useState([]);
   const [path, setPath] = React.useState<string>("");
   const [reloadTable, setReloadTable] = React.useState<boolean>(false);
+  const [refreshingVolumes, setRefreshingVolumes] =
+    React.useState<boolean>(false);
   const [actionInProgress, setActionInProgress] =
     React.useState<boolean>(false);
   const ddClient = useDockerDesktopClient();
@@ -89,6 +92,13 @@ export function App() {
           disabled={path === "" || actionInProgress}
         />,
         <GridActionsCellItem
+          key={"action_save_" + params.row.id}
+          icon={<LayersIcon>Save</LayersIcon>}
+          label="Save"
+          onClick={handleSave(params.row)}
+          disabled={actionInProgress}
+        />,
+        <GridActionsCellItem
           key={"action_empty_" + params.row.id}
           icon={<DeleteIcon>Empty</DeleteIcon>}
           label="Empty"
@@ -99,26 +109,35 @@ export function App() {
     },
   ];
 
-  const handleExport = (row) => () => {
-    exportVolume(row.volumeName);
+  const handleExport = (row) => async () => {
+    await exportVolume(row.volumeName);
   };
 
   const handleImport = (row) => async () => {
-    importVolume(row.volumeName);
+    await importVolume(row.volumeName);
 
     // hack to reduce the likelihood of having "another disk operation is already running"
-    console.log("Sleeping!");
-    await sleep(1000);
-    console.log("reloading table!");
+    // console.log("Sleeping!");
+    // await sleep(1000);
+    // console.log("reloading table!");
     setReloadTable(!reloadTable);
   };
 
   const handleEmpty = (row) => async () => {
-    emptyVolume(row.volumeName);
+    await emptyVolume(row.volumeName);
     // hack to reduce the likelihood of having "another disk operation is already running"
-    console.log("Sleeping!");
-    await sleep(3000);
-    console.log("reloading table!");
+    // console.log("Sleeping!");
+    // await sleep(3000);
+    // console.log("reloading table!");
+    setReloadTable(!reloadTable);
+  };
+
+  const handleSave = (row) => async () => {
+    await saveVolume(row.volumeName);
+    // hack to reduce the likelihood of having "another disk operation is already running"
+    // console.log("Sleeping!");
+    // await sleep(3000);
+    // console.log("reloading table!");
     setReloadTable(!reloadTable);
   };
 
@@ -304,6 +323,69 @@ export function App() {
     }
   };
 
+  const saveVolume = async (volumeName: string) => {
+    setActionInProgress(true);
+
+    const containerName = "save-volume";
+    const imageName = "my-image";
+
+    try {
+      const cpOutput = await ddClient.docker.cli.exec("run", [
+        `--name=${containerName}`,
+        `-v=${volumeName}:/mount-volume `,
+        "busybox",
+        "/bin/sh",
+        "-c",
+        '"cp -Rp /mount-volume/. /volume-data/;"',
+      ]);
+      if (cpOutput.stderr !== "") {
+        ddClient.desktopUI.toast.error(cpOutput.stderr);
+        return;
+      }
+
+      const psOutput = await ddClient.docker.cli.exec("ps", [
+        "-aq",
+        `--filter="name=${containerName}"`,
+      ]);
+      if (psOutput.stderr !== "") {
+        ddClient.desktopUI.toast.error(psOutput.stderr);
+        return;
+      }
+
+      const containerId = psOutput.lines()[0];
+
+      const commitOutput = await ddClient.docker.cli.exec("commit", [
+        containerId,
+        imageName,
+      ]);
+
+      if (commitOutput.stderr !== "") {
+        ddClient.desktopUI.toast.error(commitOutput.stderr);
+        return;
+      }
+
+      const containerRmOutput = await ddClient.docker.cli.exec("container", [
+        "rm",
+        containerId,
+      ]);
+
+      if (containerRmOutput.stderr !== "") {
+        ddClient.desktopUI.toast.error(containerRmOutput.stderr);
+        return;
+      }
+
+      ddClient.desktopUI.toast.success(
+        `Volume ${volumeName} copied into image ${imageName}, under /volume-data`
+      );
+    } catch (error) {
+      ddClient.desktopUI.toast.error(
+        `Failed to copy volume ${volumeName} into image ${imageName}: ${error.stderr} Exit code: ${error.code}`
+      );
+    } finally {
+      setActionInProgress(false);
+    }
+  };
+
   const getContainersForVolume = async (
     volumeName: string
   ): Promise<string[]> => {
@@ -371,6 +453,7 @@ export function App() {
 
         <Box width="100%">
           <DataGrid
+            loading={refreshingVolumes}
             rows={rows}
             columns={columns}
             pageSize={5}
