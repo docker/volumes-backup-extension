@@ -18,6 +18,7 @@ import {
   Upload as UploadIcon,
   Delete as DeleteIcon,
   Layers as LayersIcon,
+  ArrowCircleDown as ArrowCircleDownIcon,
 } from "@mui/icons-material";
 
 const sleep = (milliseconds) => {
@@ -99,6 +100,13 @@ export function App() {
           disabled={actionInProgress}
         />,
         <GridActionsCellItem
+          key={"action_load_" + params.row.id}
+          icon={<ArrowCircleDownIcon>Load</ArrowCircleDownIcon>}
+          label="Load"
+          onClick={handleLoad(params.row)}
+          disabled={actionInProgress}
+        />,
+        <GridActionsCellItem
           key={"action_empty_" + params.row.id}
           icon={<DeleteIcon>Empty</DeleteIcon>}
           label="Empty"
@@ -134,6 +142,15 @@ export function App() {
 
   const handleSave = (row) => async () => {
     await saveVolume(row.volumeName);
+    // hack to reduce the likelihood of having "another disk operation is already running"
+    // console.log("Sleeping!");
+    // await sleep(3000);
+    // console.log("reloading table!");
+    setReloadTable(!reloadTable);
+  };
+
+  const handleLoad = (row) => async () => {
+    await loadImage(row.volumeName);
     // hack to reduce the likelihood of having "another disk operation is already running"
     // console.log("Sleeping!");
     // await sleep(3000);
@@ -305,7 +322,7 @@ export function App() {
         "busybox",
         "/bin/sh",
         "-c",
-        '"rm -rf /vackup-volume/*"',
+        '"rm -rf /vackup-volume/..?* /vackup-volume/.[!.]* /vackup-volume/*"', // hidden and not-hidden files and folders: .[!.]* matches all dot files except . and files whose name begins with .., and ..?* matches all dot-dot files except ..
       ]);
       if (output.stderr !== "") {
         ddClient.desktopUI.toast.error(output.stderr);
@@ -380,6 +397,37 @@ export function App() {
     } catch (error) {
       ddClient.desktopUI.toast.error(
         `Failed to copy volume ${volumeName} into image ${imageName}: ${error.stderr} Exit code: ${error.code}`
+      );
+    } finally {
+      setActionInProgress(false);
+    }
+  };
+
+  const loadImage = async (volumeName: string) => {
+    setActionInProgress(true);
+
+    const imageName = "my-image";
+
+    try {
+      const output = await ddClient.docker.cli.exec("run", [
+        `--rm`,
+        `-v=${volumeName}:/mount-volume `,
+        imageName,
+        "/bin/sh",
+        "-c",
+        '"cp -Rp /volume-data/. /mount-volume/;"',
+      ]);
+      if (output.stderr !== "") {
+        ddClient.desktopUI.toast.error(output.stderr);
+        return;
+      }
+
+      ddClient.desktopUI.toast.success(
+        `Copied /volume-data from image ${imageName} into volume ${volumeName}`
+      );
+    } catch (error) {
+      ddClient.desktopUI.toast.error(
+        `Failed to copy /volume-data from image ${imageName} to into volume ${volumeName}: ${error.stderr} Exit code: ${error.code}`
       );
     } finally {
       setActionInProgress(false);
