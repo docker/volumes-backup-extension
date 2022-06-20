@@ -22,10 +22,7 @@ import {
   ArrowCircleDown as ArrowCircleDownIcon,
   ExitToApp as ExitToAppIcon,
 } from "@mui/icons-material";
-
-const sleep = (milliseconds) => {
-  return new Promise((resolve) => setTimeout(resolve, milliseconds));
-};
+import ExportDialog from "./components/ExportDialog";
 
 const client = createDockerDesktopClient();
 
@@ -45,6 +42,9 @@ export function App() {
     React.useState<boolean>(false);
   const [actionInProgress, setActionInProgress] =
     React.useState<boolean>(false);
+  const [openExportDialog, setOpenExportDialog] =
+    React.useState<boolean>(false);
+  const [volumeName, setVolumeName] = React.useState<string>("");
   const ddClient = useDockerDesktopClient();
 
   const columns = [
@@ -92,7 +92,7 @@ export function App() {
           icon={<DownloadIcon>Export</DownloadIcon>}
           label="Export"
           onClick={handleExport(params.row)}
-          disabled={path === "" || actionInProgress}
+          // disabled={path === "" || actionInProgress}
         />,
         <GridActionsCellItem
           key={"action_import_" + params.row.id}
@@ -131,7 +131,10 @@ export function App() {
   };
 
   const handleExport = (row) => async () => {
-    await exportVolume(row.volumeName);
+    console.log("handleExport");
+    setOpenExportDialog(true);
+    setVolumeName(row.volumeName);
+    // await exportVolume(row.volumeName);
   };
 
   const handleImport = (row) => async () => {
@@ -233,20 +236,6 @@ export function App() {
     setRows(rows);
   }, [volumeContainersMap]);
 
-  const selectExportDirectory = () => {
-    ddClient.desktopUI.dialog
-      .showOpenDialog({
-        properties: ["openDirectory"],
-      })
-      .then((result) => {
-        if (result.canceled) {
-          return;
-        }
-
-        setPath(result.filePaths[0]);
-      });
-  };
-
   const selectImportTarGzFile = () => {
     ddClient.desktopUI.dialog
       .showOpenDialog({
@@ -260,40 +249,6 @@ export function App() {
 
         setPath(result.filePaths[0]);
       });
-  };
-
-  const exportVolume = async (volumeName: string) => {
-    setActionInProgress(true);
-
-    try {
-      const output = await ddClient.docker.cli.exec("run", [
-        "--rm",
-        `-v=${volumeName}:/vackup-volume `,
-        `-v=${path}:/vackup `,
-        "busybox",
-        "tar",
-        "-zcvf",
-        `/vackup/${volumeName}.tar.gz`,
-        "/vackup-volume",
-      ]);
-      if (output.stderr !== "") {
-        //"tar: removing leading '/' from member names\n"
-        if (!output.stderr.includes("tar: removing leading")) {
-          // this is an error we may want to display
-          ddClient.desktopUI.toast.error(output.stderr);
-          return;
-        }
-      }
-      ddClient.desktopUI.toast.success(
-        `Volume ${volumeName} exported to ${path}`
-      );
-    } catch (error) {
-      ddClient.desktopUI.toast.error(
-        `Failed to backup volume ${volumeName} to ${path}: ${error.code}`
-      );
-    } finally {
-      setActionInProgress(false);
-    }
   };
 
   const importVolume = async (volumeName: string) => {
@@ -469,6 +424,10 @@ export function App() {
     }
   };
 
+  const handleExportDialogClose = () => {
+    setOpenExportDialog(false);
+  };
+
   return (
     <>
       <Typography variant="h3">Vackup Extension</Typography>
@@ -483,16 +442,6 @@ export function App() {
           textAlign="center"
           alignItems="center"
         >
-          <Grid item>
-            <Button
-              variant="contained"
-              onClick={selectExportDirectory}
-              disabled={actionInProgress}
-            >
-              Choose a path to export
-            </Button>
-          </Grid>
-          <Grid item>or</Grid>
           <Grid item>
             <Button
               variant="contained"
@@ -537,6 +486,11 @@ export function App() {
                 py: 2,
               },
             }}
+          />
+          <ExportDialog
+            open={openExportDialog}
+            onClose={handleExportDialogClose}
+            volumeName={volumeName}
           />
         </Box>
       </Stack>
