@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useContext } from "react";
 import {
   DataGrid,
   GridCellParams,
@@ -25,6 +25,7 @@ import ExportDialog from "./components/ExportDialog";
 import ImportDialog from "./components/ImportDialog";
 import SaveDialog from "./components/SaveDialog";
 import LoadDialog from "./components/LoadDialog";
+import { MyContext } from ".";
 
 const client = createDockerDesktopClient();
 
@@ -33,6 +34,7 @@ function useDockerDesktopClient() {
 }
 
 export function App() {
+  const context = useContext(MyContext);
   const [rows, setRows] = React.useState([]);
   const [volumeContainersMap, setVolumeContainersMap] = React.useState<
     Record<string, string[]>
@@ -159,7 +161,7 @@ export function App() {
 
   const handleExport = (row) => () => {
     setOpenExportDialog(true);
-    setVolumeName(row.volumeName);
+    context.actions.setVolumeName(row.volumeName);
   };
 
   const handleImport = (row) => () => {
@@ -359,7 +361,6 @@ export function App() {
             <ExportDialog
               open={openExportDialog}
               onClose={handleExportDialogClose}
-              volumeName={volumeName}
             />
           )}
 

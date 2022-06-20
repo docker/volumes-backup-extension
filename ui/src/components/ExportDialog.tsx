@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useContext } from "react";
 import {
   Button,
   TextField,
@@ -12,8 +12,9 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
-
 import { createDockerDesktopClient } from "@docker/extension-api-client";
+
+import { MyContext } from "../index";
 
 const client = createDockerDesktopClient();
 
@@ -23,16 +24,15 @@ function useDockerDesktopClient() {
 
 export default function ExportDialog({ ...props }) {
   console.log("ExportDialog component rendered.");
-  const [fileName, setFileName] = React.useState<string>(props.volumeName);
+  const context = useContext(MyContext);
+  const ddClient = useDockerDesktopClient();
+
+  const [fileName, setFileName] = React.useState<string>(
+    `${context.store.volumeName}.tar.gz`
+  );
   const [path, setPath] = React.useState<string>("");
   const [actionInProgress, setActionInProgress] =
     React.useState<boolean>(false);
-
-  const ddClient = useDockerDesktopClient();
-
-  useEffect(() => {
-    setFileName(`${props.volumeName}.tar.gz`);
-  }, [props.volumeName]);
 
   const selectExportDirectory = () => {
     ddClient.desktopUI.dialog
@@ -54,7 +54,7 @@ export default function ExportDialog({ ...props }) {
     try {
       const output = await ddClient.docker.cli.exec("run", [
         "--rm",
-        `-v=${props.volumeName}:/vackup-volume `,
+        `-v=${context.store.volumeName}:/vackup-volume `,
         `-v=${path}:/vackup `,
         "busybox",
         "tar",
@@ -71,11 +71,11 @@ export default function ExportDialog({ ...props }) {
         }
       }
       ddClient.desktopUI.toast.success(
-        `Volume ${props.volumeName} exported to ${path}`
+        `Volume ${context.store.volumeName} exported to ${path}`
       );
     } catch (error) {
       ddClient.desktopUI.toast.error(
-        `Failed to backup volume ${props.volumeName} to ${path}: ${error.code}`
+        `Failed to backup volume ${context.store.volumeName} to ${path}: ${error.code}`
       );
     } finally {
       setActionInProgress(false);
@@ -110,7 +110,7 @@ export default function ExportDialog({ ...props }) {
               label="File name"
               fullWidth
               variant="standard"
-              defaultValue={`${props.volumeName}.tar.gz`}
+              defaultValue={`${context.store.volumeName}.tar.gz`}
               spellCheck={false}
               onChange={(e) => {
                 setFileName(e.target.value);
