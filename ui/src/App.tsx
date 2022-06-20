@@ -10,8 +10,9 @@ import {
   Button,
   Typography,
   Box,
-  LinearProgress,
   Grid,
+  Backdrop,
+  CircularProgress,
 } from "@mui/material";
 import {
   Download as DownloadIcon,
@@ -505,13 +506,17 @@ export function App() {
         <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
           {path}
         </Typography>
-        {actionInProgress && (
-          <Box sx={{ width: "100%" }}>
-            <LinearProgress />
-          </Box>
-        )}
 
         <Box width="100%">
+          <Backdrop
+            sx={{
+              backgroundColor: "rgba(245,244,244,0.4)",
+              zIndex: (theme) => theme.zIndex.drawer + 1,
+            }}
+            open={actionInProgress}
+          >
+            <CircularProgress color="info" />
+          </Backdrop>
           <DataGrid
             loading={refreshingVolumes}
             rows={rows}
