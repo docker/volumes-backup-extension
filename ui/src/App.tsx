@@ -23,6 +23,7 @@ import {
   ExitToApp as ExitToAppIcon,
 } from "@mui/icons-material";
 import ExportDialog from "./components/ExportDialog";
+import ImportDialog from "./components/ImportDialog";
 
 const client = createDockerDesktopClient();
 
@@ -42,8 +43,12 @@ export function App() {
     React.useState<boolean>(false);
   const [actionInProgress, setActionInProgress] =
     React.useState<boolean>(false);
+
   const [openExportDialog, setOpenExportDialog] =
     React.useState<boolean>(false);
+  const [openImportDialog, setOpenImportDialog] =
+    React.useState<boolean>(false);
+
   const [volumeName, setVolumeName] = React.useState<string>("");
   const ddClient = useDockerDesktopClient();
 
@@ -92,14 +97,12 @@ export function App() {
           icon={<DownloadIcon>Export</DownloadIcon>}
           label="Export"
           onClick={handleExport(params.row)}
-          // disabled={path === "" || actionInProgress}
         />,
         <GridActionsCellItem
           key={"action_import_" + params.row.id}
           icon={<UploadIcon>Import</UploadIcon>}
           label="Import"
           onClick={handleImport(params.row)}
-          disabled={path === "" || actionInProgress}
         />,
         <GridActionsCellItem
           key={"action_save_" + params.row.id}
@@ -130,21 +133,14 @@ export function App() {
     ddClient.desktopUI.navigate.viewVolume(row.volumeName);
   };
 
-  const handleExport = (row) => async () => {
-    console.log("handleExport");
+  const handleExport = (row) => () => {
     setOpenExportDialog(true);
     setVolumeName(row.volumeName);
-    // await exportVolume(row.volumeName);
   };
 
-  const handleImport = (row) => async () => {
-    await importVolume(row.volumeName);
-
-    // hack to reduce the likelihood of having "another disk operation is already running"
-    // console.log("Sleeping!");
-    // await sleep(1000);
-    // console.log("reloading table!");
-    setReloadTable(!reloadTable);
+  const handleImport = (row) => () => {
+    setOpenImportDialog(true);
+    setVolumeName(row.volumeName);
   };
 
   const handleEmpty = (row) => async () => {
@@ -235,50 +231,6 @@ export function App() {
 
     setRows(rows);
   }, [volumeContainersMap]);
-
-  const selectImportTarGzFile = () => {
-    ddClient.desktopUI.dialog
-      .showOpenDialog({
-        properties: ["openFile"],
-        filters: [{ name: ".tar.gz", extensions: [".tar.gz"] }],
-      })
-      .then((result) => {
-        if (result.canceled) {
-          return;
-        }
-
-        setPath(result.filePaths[0]);
-      });
-  };
-
-  const importVolume = async (volumeName: string) => {
-    setActionInProgress(true);
-
-    try {
-      const output = await ddClient.docker.cli.exec("run", [
-        "--rm",
-        `-v=${volumeName}:/vackup-volume `,
-        `-v=${path}:/vackup `, // e.g. "$HOME/Downloads/my-vol.tar.gz"
-        "busybox",
-        "tar",
-        "-xvzf",
-        `/vackup`,
-      ]);
-      if (output.stderr !== "") {
-        ddClient.desktopUI.toast.error(output.stderr);
-        return;
-      }
-      ddClient.desktopUI.toast.success(
-        `File ${volumeName}.tar.gz imported into volume ${volumeName}`
-      );
-    } catch (error) {
-      ddClient.desktopUI.toast.error(
-        `Failed to import file ${volumeName}.tar.gz into volume ${volumeName}: ${error.stderr} Exit code: ${error.code}`
-      );
-    } finally {
-      setActionInProgress(false);
-    }
-  };
 
   const emptyVolume = async (volumeName: string) => {
     setActionInProgress(true);
@@ -428,6 +380,11 @@ export function App() {
     setOpenExportDialog(false);
   };
 
+  const handleImportDialogClose = () => {
+    setOpenImportDialog(false);
+    setReloadTable(!reloadTable);
+  };
+
   return (
     <>
       <Typography variant="h3">Vackup Extension</Typography>
@@ -435,23 +392,6 @@ export function App() {
         Easily backup and restore docker volumes.
       </Typography>
       <Stack direction="column" alignItems="start" spacing={2} sx={{ mt: 4 }}>
-        <Grid
-          container
-          spacing={2}
-          justifyContent="center"
-          textAlign="center"
-          alignItems="center"
-        >
-          <Grid item>
-            <Button
-              variant="contained"
-              onClick={selectImportTarGzFile}
-              disabled={actionInProgress}
-            >
-              Choose a .tar.gz to import
-            </Button>
-          </Grid>
-        </Grid>
         <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
           {path}
         </Typography>
@@ -490,6 +430,11 @@ export function App() {
           <ExportDialog
             open={openExportDialog}
             onClose={handleExportDialogClose}
+            volumeName={volumeName}
+          />
+          <ImportDialog
+            open={openImportDialog}
+            onClose={handleImportDialogClose}
             volumeName={volumeName}
           />
         </Box>

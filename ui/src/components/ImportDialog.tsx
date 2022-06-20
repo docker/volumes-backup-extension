@@ -1,7 +1,6 @@
 import React, { useEffect } from "react";
 import {
   Button,
-  TextField,
   Typography,
   Grid,
   Backdrop,
@@ -21,7 +20,7 @@ function useDockerDesktopClient() {
   return client;
 }
 
-export default function ExportDialog({ ...props }) {
+export default function ImportDialog({ ...props }) {
   const [fileName, setFileName] = React.useState<string>(props.volumeName);
   const [path, setPath] = React.useState<string>("");
   const [actionInProgress, setActionInProgress] =
@@ -33,10 +32,11 @@ export default function ExportDialog({ ...props }) {
     setFileName(`${props.volumeName}.tar.gz`);
   }, [props.volumeName]);
 
-  const selectExportDirectory = () => {
+  const selectImportTarGzFile = () => {
     ddClient.desktopUI.dialog
       .showOpenDialog({
-        properties: ["openDirectory"],
+        properties: ["openFile"],
+        filters: [{ name: ".tar.gz", extensions: [".tar.gz"] }],
       })
       .then((result) => {
         if (result.canceled) {
@@ -47,44 +47,40 @@ export default function ExportDialog({ ...props }) {
       });
   };
 
-  const exportVolume = async () => {
+  const importVolume = async () => {
     setActionInProgress(true);
 
     try {
       const output = await ddClient.docker.cli.exec("run", [
         "--rm",
         `-v=${props.volumeName}:/vackup-volume `,
-        `-v=${path}:/vackup `,
+        `-v=${path}:/vackup `, // path: e.g. "$HOME/Downloads/my-vol.tar.gz"
         "busybox",
         "tar",
-        "-zcvf",
-        `/vackup/${fileName}`,
-        "/vackup-volume",
+        "-xvzf",
+        `/vackup`,
       ]);
       if (output.stderr !== "") {
-        //"tar: removing leading '/' from member names\n"
-        if (!output.stderr.includes("tar: removing leading")) {
-          // this is an error we may want to display
-          ddClient.desktopUI.toast.error(output.stderr);
-          return;
-        }
+        ddClient.desktopUI.toast.error(output.stderr);
+        return;
       }
       ddClient.desktopUI.toast.success(
-        `Volume ${props.volumeName} exported to ${path}`
+        `File ${fileName} imported into volume ${props.volumeName}`
       );
     } catch (error) {
       ddClient.desktopUI.toast.error(
-        `Failed to backup volume ${props.volumeName} to ${path}: ${error.code}`
+        `Failed to import file ${fileName} into volume ${props.volumeName}: ${error.stderr} Exit code: ${error.code}`
       );
     } finally {
       setActionInProgress(false);
       props.onClose();
+      setPath("");
     }
   };
 
   return (
     <Dialog open={props.open} onClose={props.onClose}>
-      <DialogTitle>Export volume to local directory</DialogTitle>
+      <DialogTitle>Import gzip'ed tarball into a volume</DialogTitle>
       <DialogContent>
         <Backdrop
           sx={{
@@ -96,48 +92,47 @@ export default function ExportDialog({ ...props }) {
           <CircularProgress color="info" />
         </Backdrop>
         <DialogContentText>
-          Creates a gzip'ed tarball in the selected directory from a volume.
+          Extracts a gzip'ed tarball into a volume.
         </DialogContentText>
 
         <Grid container direction="column" spacing={2}>
           <Grid item>
-            <TextField
-              required
-              autoFocus
-              margin="dense"
-              id="file-name"
-              label="File name"
-              fullWidth
-              variant="standard"
-              defaultValue={`${props.volumeName}.tar.gz`}
-              spellCheck={false}
-              onChange={(e) => {
-                setFileName(e.target.value);
-              }}
-            />
+            <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
+              Choose a .tar.gz to import, e.g. file.tar.gz
+            </Typography>
           </Grid>
           <Grid item>
-            <Button variant="contained" onClick={selectExportDirectory}>
-              Select directory
+            <Button variant="contained" onClick={selectImportTarGzFile}>
+              Select file
             </Button>
           </Grid>
 
           {path !== "" && (
             <Grid item>
+              <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+                The file {path} will be imported into volume {props.volumeName}.
+              </Typography>
               <Typography variant="body1" color="text.secondary">
-                The volume will be exported to {path}/{fileName}
+                ⚠️ This will replace all the existing data inside the volume.
               </Typography>
             </Grid>
           )}
         </Grid>
       </DialogContent>
       <DialogActions>
-        <Button onClick={props.onClose}>Cancel</Button>
         <Button
-          onClick={exportVolume}
+          onClick={() => {
+            setPath("");
+            props.onClose();
+          }}
+        >
+          Cancel
+        </Button>
+        <Button
+          onClick={importVolume}
           disabled={path === "" || fileName === ""}
         >
-          Export
+          Import
         </Button>
       </DialogActions>
     </Dialog>
