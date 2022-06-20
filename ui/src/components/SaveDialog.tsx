@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useContext } from "react";
 import {
   Button,
   TextField,
@@ -12,8 +12,9 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
-
 import { createDockerDesktopClient } from "@docker/extension-api-client";
+
+import { MyContext } from "../index";
 
 const client = createDockerDesktopClient();
 
@@ -23,15 +24,13 @@ function useDockerDesktopClient() {
 
 export default function SaveDialog({ ...props }) {
   console.log("SaveDialog component rendered.");
-  const [imageName, setImageName] = React.useState<string>(props.volumeName);
-  const [actionInProgress, setActionInProgress] =
-    React.useState<boolean>(false);
-
   const ddClient = useDockerDesktopClient();
 
-  useEffect(() => {
-    setImageName(`vackup-${props.volumeName}:latest`);
-  }, [props.volumeName]);
+  const context = useContext(MyContext);
+  const defaultImageName = `vackup-${context.store.volumeName}:latest`;
+  const [imageName, setImageName] = React.useState<string>(defaultImageName);
+  const [actionInProgress, setActionInProgress] =
+    React.useState<boolean>(false);
 
   const saveVolume = async () => {
     setActionInProgress(true);
@@ -41,7 +40,7 @@ export default function SaveDialog({ ...props }) {
     try {
       const cpOutput = await ddClient.docker.cli.exec("run", [
         `--name=${containerName}`,
-        `-v=${props.volumeName}:/mount-volume `,
+        `-v=${context.store.volumeName}:/mount-volume `,
         "busybox",
         "/bin/sh",
         "-c",
@@ -84,11 +83,11 @@ export default function SaveDialog({ ...props }) {
       }
 
       ddClient.desktopUI.toast.success(
-        `Volume ${props.volumeName} copied into image ${imageName}, under /volume-data`
+        `Volume ${context.store.volumeName} copied into image ${imageName}, under /volume-data`
       );
     } catch (error) {
       ddClient.desktopUI.toast.error(
-        `Failed to copy volume ${props.volumeName} into image ${imageName}: ${error.stderr} Exit code: ${error.code}`
+        `Failed to copy volume ${context.store.volumeName} into image ${imageName}: ${error.stderr} Exit code: ${error.code}`
       );
     } finally {
       setActionInProgress(false);
@@ -124,8 +123,8 @@ export default function SaveDialog({ ...props }) {
               label="Image name"
               fullWidth
               variant="standard"
-              placeholder={`vackup-${props.volumeName}:latest`}
-              defaultValue={`vackup-${props.volumeName}:latest`}
+              placeholder={defaultImageName}
+              defaultValue={defaultImageName}
               spellCheck={false}
               onChange={(e) => {
                 setImageName(e.target.value);

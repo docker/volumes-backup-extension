@@ -52,7 +52,6 @@ export function App() {
   const [openSaveDialog, setOpenSaveDialog] = React.useState<boolean>(false);
   const [openLoadDialog, setOpenLoadDialog] = React.useState<boolean>(false);
 
-  const [volumeName, setVolumeName] = React.useState<string>("");
   const ddClient = useDockerDesktopClient();
 
   const columns = [
@@ -169,17 +168,17 @@ export function App() {
 
   const handleSave = (row) => () => {
     setOpenSaveDialog(true);
-    setVolumeName(row.volumeName);
+    context.actions.setVolumeName(row.volumeName);
+  };
+
+  const handleLoad = (row) => async () => {
+    setOpenLoadDialog(true);
+    context.actions.setVolumeName(row.volumeName);
   };
 
   const handleEmpty = (row) => async () => {
     await emptyVolume(row.volumeName);
     setReloadTable(!reloadTable);
-  };
-
-  const handleLoad = (row) => async () => {
-    setOpenLoadDialog(true);
-    setVolumeName(row.volumeName);
   };
 
   const handleCellClick = (params: GridCellParams) => {
@@ -333,7 +332,7 @@ export function App() {
             rows={rows}
             columns={columns}
             pageSize={10}
-            rowsPerPageOptions={[5]}
+            rowsPerPageOptions={[10]}
             checkboxSelection={false}
             disableSelectionOnClick={true}
             autoHeight
@@ -365,19 +364,11 @@ export function App() {
           )}
 
           {openSaveDialog && (
-            <SaveDialog
-              open={openSaveDialog}
-              onClose={handleSaveDialogClose}
-              volumeName={volumeName}
-            />
+            <SaveDialog open={openSaveDialog} onClose={handleSaveDialogClose} />
           )}
 
           {openLoadDialog && (
-            <LoadDialog
-              open={openLoadDialog}
-              onClose={handleLoadDialogClose}
-              volumeName={volumeName}
-            />
+            <LoadDialog open={openLoadDialog} onClose={handleLoadDialogClose} />
           )}
         </Box>
       </Stack>
