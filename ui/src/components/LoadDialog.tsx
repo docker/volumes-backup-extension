@@ -22,6 +22,7 @@ function useDockerDesktopClient() {
 }
 
 export default function LoadDialog({ ...props }) {
+  console.log("LoadDialog component rendered.");
   const [imageName, setImageName] = React.useState<string>(props.volumeName);
   const [actionInProgress, setActionInProgress] =
     React.useState<boolean>(false);

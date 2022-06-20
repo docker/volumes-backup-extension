@@ -21,6 +21,7 @@ function useDockerDesktopClient() {
 }
 
 export default function ImportDialog({ ...props }) {
+  console.log("ImportDialog component rendered.");
   const [fileName, setFileName] = React.useState<string>(props.volumeName);
   const [path, setPath] = React.useState<string>("");
   const [actionInProgress, setActionInProgress] =

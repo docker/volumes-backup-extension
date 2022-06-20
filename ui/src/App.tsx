@@ -6,11 +6,12 @@ import {
 } from "@mui/x-data-grid";
 import { createDockerDesktopClient } from "@docker/extension-api-client";
 import {
-  Stack,
-  Typography,
-  Box,
   Backdrop,
+  Box,
   CircularProgress,
+  Stack,
+  Tooltip,
+  Typography,
 } from "@mui/material";
 import {
   Download as DownloadIcon,
@@ -88,43 +89,65 @@ export function App() {
       sortable: false,
       getActions: (params) => [
         <GridActionsCellItem
-          key={"action_navigate_" + params.row.id}
-          icon={<ExitToAppIcon>Navigate</ExitToAppIcon>}
-          label="Navigate"
+          key={"action_view_volume_" + params.row.id}
+          icon={
+            <Tooltip title="View volume">
+              <ExitToAppIcon>View volume</ExitToAppIcon>
+            </Tooltip>
+          }
+          label="View volume"
           onClick={handleNavigate(params.row)}
           disabled={actionInProgress}
         />,
         <GridActionsCellItem
           key={"action_export_" + params.row.id}
-          icon={<DownloadIcon>Export</DownloadIcon>}
-          label="Export"
+          icon={
+            <Tooltip title="Export volume">
+              <DownloadIcon>Export volume</DownloadIcon>
+            </Tooltip>
+          }
+          label="Export volume"
           onClick={handleExport(params.row)}
         />,
         <GridActionsCellItem
           key={"action_import_" + params.row.id}
-          icon={<UploadIcon>Import</UploadIcon>}
-          label="Import"
+          icon={
+            <Tooltip title="Import gzip'ed tarball">
+              <UploadIcon>Import gzip'ed tarball</UploadIcon>
+            </Tooltip>
+          }
+          label="Import gzip'ed tarball"
           onClick={handleImport(params.row)}
         />,
         <GridActionsCellItem
           key={"action_save_" + params.row.id}
-          icon={<LayersIcon>Save</LayersIcon>}
-          label="Save"
+          icon={
+            <Tooltip title="Save to image">
+              <LayersIcon>Save to image</LayersIcon>
+            </Tooltip>
+          }
+          label="Save to image"
           onClick={handleSave(params.row)}
         />,
         <GridActionsCellItem
           key={"action_load_" + params.row.id}
-          icon={<ArrowCircleDownIcon>Load</ArrowCircleDownIcon>}
-          label="Load"
+          icon={
+            <Tooltip title="Load from image">
+              <ArrowCircleDownIcon>Load from image</ArrowCircleDownIcon>
+            </Tooltip>
+          }
+          label="Load from image"
           onClick={handleLoad(params.row)}
-          disabled={actionInProgress}
         />,
         <GridActionsCellItem
           key={"action_empty_" + params.row.id}
-          icon={<DeleteIcon>Empty</DeleteIcon>}
-          label="Empty"
+          icon={
+            <Tooltip title="Empty volume">
+              <DeleteIcon>Empty volume</DeleteIcon>
+            </Tooltip>
+          }
+          label="Empty volume"
           onClick={handleEmpty(params.row)}
-          disabled={actionInProgress}
         />,
       ],
     },
@@ -331,26 +354,38 @@ export function App() {
               },
             }}
           />
-          <ExportDialog
-            open={openExportDialog}
-            onClose={handleExportDialogClose}
-            volumeName={volumeName}
-          />
-          <ImportDialog
-            open={openImportDialog}
-            onClose={handleImportDialogClose}
-            volumeName={volumeName}
-          />
-          <SaveDialog
-            open={openSaveDialog}
-            onClose={handleSaveDialogClose}
-            volumeName={volumeName}
-          />
-          <LoadDialog
-            open={openLoadDialog}
-            onClose={handleLoadDialogClose}
-            volumeName={volumeName}
-          />
+
+          {openExportDialog && (
+            <ExportDialog
+              open={openExportDialog}
+              onClose={handleExportDialogClose}
+              volumeName={volumeName}
+            />
+          )}
+
+          {openImportDialog && (
+            <ImportDialog
+              open={openImportDialog}
+              onClose={handleImportDialogClose}
+              volumeName={volumeName}
+            />
+          )}
+
+          {openSaveDialog && (
+            <SaveDialog
+              open={openSaveDialog}
+              onClose={handleSaveDialogClose}
+              volumeName={volumeName}
+            />
+          )}
+
+          {openLoadDialog && (
+            <LoadDialog
+              open={openLoadDialog}
+              onClose={handleLoadDialogClose}
+              volumeName={volumeName}
+            />
+          )}
         </Box>
       </Stack>
     </>

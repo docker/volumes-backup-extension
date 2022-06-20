@@ -22,6 +22,7 @@ function useDockerDesktopClient() {
 }
 
 export default function ExportDialog({ ...props }) {
+  console.log("ExportDialog component rendered.");
   const [fileName, setFileName] = React.useState<string>(props.volumeName);
   const [path, setPath] = React.useState<string>("");
   const [actionInProgress, setActionInProgress] =

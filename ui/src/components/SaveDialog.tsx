@@ -22,6 +22,7 @@ function useDockerDesktopClient() {
 }
 
 export default function SaveDialog({ ...props }) {
+  console.log("SaveDialog component rendered.");
   const [imageName, setImageName] = React.useState<string>(props.volumeName);
   const [actionInProgress, setActionInProgress] =
     React.useState<boolean>(false);
