@@ -1,4 +1,4 @@
-import React, { useEffect, useContext } from "react";
+import React, { useContext } from "react";
 import {
   Button,
   TextField,
@@ -24,8 +24,8 @@ function useDockerDesktopClient() {
 
 export default function ExportDialog({ ...props }) {
   console.log("ExportDialog component rendered.");
-  const context = useContext(MyContext);
   const ddClient = useDockerDesktopClient();
+  const context = useContext(MyContext);
 
   const [fileName, setFileName] = React.useState<string>(
     `${context.store.volumeName}.tar.gz`

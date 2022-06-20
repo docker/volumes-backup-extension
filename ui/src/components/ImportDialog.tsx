@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useContext } from "react";
 import {
   Button,
   Typography,
@@ -11,8 +11,9 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
-
 import { createDockerDesktopClient } from "@docker/extension-api-client";
+
+import { MyContext } from "../index";
 
 const client = createDockerDesktopClient();
 
@@ -22,16 +23,14 @@ function useDockerDesktopClient() {
 
 export default function ImportDialog({ ...props }) {
   console.log("ImportDialog component rendered.");
-  const [fileName, setFileName] = React.useState<string>(props.volumeName);
+  const ddClient = useDockerDesktopClient();
+
+  const context = useContext(MyContext);
+  const fileName = `${context.store.volumeName}.tar.gz`;
+
   const [path, setPath] = React.useState<string>("");
   const [actionInProgress, setActionInProgress] =
     React.useState<boolean>(false);
-
-  const ddClient = useDockerDesktopClient();
-
-  useEffect(() => {
-    setFileName(`${props.volumeName}.tar.gz`);
-  }, [props.volumeName]);
 
   const selectImportTarGzFile = () => {
     ddClient.desktopUI.dialog
@@ -54,7 +53,7 @@ export default function ImportDialog({ ...props }) {
     try {
       const output = await ddClient.docker.cli.exec("run", [
         "--rm",
-        `-v=${props.volumeName}:/vackup-volume `,
+        `-v=${context.store.volumeName}:/vackup-volume `,
         `-v=${path}:/vackup `, // path: e.g. "$HOME/Downloads/my-vol.tar.gz"
         "busybox",
         "tar",
@@ -66,16 +65,16 @@ export default function ImportDialog({ ...props }) {
         return;
       }
       ddClient.desktopUI.toast.success(
-        `File ${fileName} imported into volume ${props.volumeName}`
+        `File ${fileName} imported into volume ${context.store.volumeName}`
       );
     } catch (error) {
       ddClient.desktopUI.toast.error(
-        `Failed to import file ${fileName} into volume ${props.volumeName}: ${error.stderr} Exit code: ${error.code}`
+        `Failed to import file ${fileName} into volume ${context.store.volumeName}: ${error.stderr} Exit code: ${error.code}`
       );
     } finally {
       setActionInProgress(false);
-      props.onClose();
       setPath("");
+      props.onClose();
     }
   };
 
@@ -111,7 +110,8 @@ export default function ImportDialog({ ...props }) {
           {path !== "" && (
             <Grid item>
               <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-                The file {path} will be imported into volume {props.volumeName}.
+                The file {path} will be imported into volume{" "}
+                {context.store.volumeName}.
               </Typography>
               <Typography variant="body1" color="text.secondary">
                 ⚠️ This will replace all the existing data inside the volume.

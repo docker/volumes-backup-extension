@@ -40,10 +40,8 @@ export function App() {
     Record<string, string[]>
   >({});
   const [volumes, setVolumes] = React.useState([]);
-  const [path, setPath] = React.useState<string>("");
   const [reloadTable, setReloadTable] = React.useState<boolean>(false);
-  const [refreshingVolumes, setRefreshingVolumes] =
-    React.useState<boolean>(false);
+
   const [actionInProgress, setActionInProgress] =
     React.useState<boolean>(false);
 
@@ -166,7 +164,7 @@ export function App() {
 
   const handleImport = (row) => () => {
     setOpenImportDialog(true);
-    setVolumeName(row.volumeName);
+    context.actions.setVolumeName(row.volumeName);
   };
 
   const handleSave = (row) => () => {
@@ -321,10 +319,6 @@ export function App() {
         Easily backup and restore docker volumes.
       </Typography>
       <Stack direction="column" alignItems="start" spacing={2} sx={{ mt: 4 }}>
-        <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
-          {path}
-        </Typography>
-
         <Box width="100%">
           <Backdrop
             sx={{
@@ -336,10 +330,9 @@ export function App() {
             <CircularProgress color="info" />
           </Backdrop>
           <DataGrid
-            loading={refreshingVolumes}
             rows={rows}
             columns={columns}
-            pageSize={5}
+            pageSize={10}
             rowsPerPageOptions={[5]}
             checkboxSelection={false}
             disableSelectionOnClick={true}
@@ -368,7 +361,6 @@ export function App() {
             <ImportDialog
               open={openImportDialog}
               onClose={handleImportDialogClose}
-              volumeName={volumeName}
             />
           )}
 
