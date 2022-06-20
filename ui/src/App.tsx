@@ -19,6 +19,7 @@ import {
   Delete as DeleteIcon,
   Layers as LayersIcon,
   ArrowCircleDown as ArrowCircleDownIcon,
+  ExitToApp as ExitToAppIcon,
 } from "@mui/icons-material";
 
 const sleep = (milliseconds) => {
@@ -75,9 +76,16 @@ export function App() {
     {
       field: "actions",
       type: "actions",
-      width: 130,
+      width: 200,
       sortable: false,
       getActions: (params) => [
+        <GridActionsCellItem
+          key={"action_navigate_" + params.row.id}
+          icon={<ExitToAppIcon>Navigate</ExitToAppIcon>}
+          label="Navigate"
+          onClick={handleNavigate(params.row)}
+          disabled={actionInProgress}
+        />,
         <GridActionsCellItem
           key={"action_export_" + params.row.id}
           icon={<DownloadIcon>Export</DownloadIcon>}
@@ -116,6 +124,10 @@ export function App() {
       ],
     },
   ];
+
+  const handleNavigate = (row) => async () => {
+    ddClient.desktopUI.navigate.viewVolume(row.volumeName);
+  };
 
   const handleExport = (row) => async () => {
     await exportVolume(row.volumeName);
