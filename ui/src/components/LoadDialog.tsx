@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useContext } from "react";
 import {
   Button,
   TextField,
@@ -12,8 +12,9 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
-
 import { createDockerDesktopClient } from "@docker/extension-api-client";
+
+import { MyContext } from "../index";
 
 const client = createDockerDesktopClient();
 
@@ -23,15 +24,13 @@ function useDockerDesktopClient() {
 
 export default function LoadDialog({ ...props }) {
   console.log("LoadDialog component rendered.");
-  const [imageName, setImageName] = React.useState<string>(props.volumeName);
-  const [actionInProgress, setActionInProgress] =
-    React.useState<boolean>(false);
-
   const ddClient = useDockerDesktopClient();
 
-  useEffect(() => {
-    setImageName(`vackup-${props.volumeName}:latest`);
-  }, [props.volumeName]);
+  const context = useContext(MyContext);
+
+  const [imageName, setImageName] = React.useState<string>("");
+  const [actionInProgress, setActionInProgress] =
+    React.useState<boolean>(false);
 
   const loadImage = async () => {
     setActionInProgress(true);
@@ -39,7 +38,7 @@ export default function LoadDialog({ ...props }) {
     try {
       const output = await ddClient.docker.cli.exec("run", [
         `--rm`,
-        `-v=${props.volumeName}:/mount-volume `,
+        `-v=${context.store.volumeName}:/mount-volume `,
         imageName,
         "/bin/sh",
         "-c",
@@ -51,16 +50,16 @@ export default function LoadDialog({ ...props }) {
       }
 
       ddClient.desktopUI.toast.success(
-        `Copied /volume-data from image ${imageName} into volume ${props.volumeName}`
+        `Copied /volume-data from image ${imageName} into volume ${context.store.volumeName}`
       );
     } catch (error) {
       ddClient.desktopUI.toast.error(
-        `Failed to copy /volume-data from image ${imageName} to into volume ${props.volumeName}: ${error.stderr} Exit code: ${error.code}`
+        `Failed to copy /volume-data from image ${imageName} to into volume ${context.store.volumeName}: ${error.stderr} Exit code: ${error.code}`
       );
     } finally {
       setActionInProgress(false);
-      props.onClose();
       setImageName("");
+      props.onClose();
     }
   };
 
@@ -103,12 +102,12 @@ export default function LoadDialog({ ...props }) {
             <Grid item>
               <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
                 The /volume-data from image {imageName} will be copied to volume{" "}
-                {props.volumeName}.
+                {context.store.volumeName}.
               </Typography>
               <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
                 Once the operation is completed, you can inspect the volume
-                contents of {props.volumeName} or export its content into a
-                local directory.
+                contents of {context.store.volumeName} or export its content
+                into a local directory.
               </Typography>
               <Typography variant="body1" color="text.secondary">
                 ⚠️ This will replace any existing data inside the volume.
@@ -120,8 +119,8 @@ export default function LoadDialog({ ...props }) {
       <DialogActions>
         <Button
           onClick={() => {
-            props.onClose();
             setImageName("");
+            props.onClose();
           }}
         >
           Cancel
