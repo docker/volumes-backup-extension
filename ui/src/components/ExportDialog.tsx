@@ -51,17 +51,33 @@ export default function ExportDialog({ ...props }) {
   const exportVolume = async () => {
     setActionInProgress(true);
 
+    console.log(
+      "dockerContextName before exporting volume: ",
+      props.dockerContextName
+    );
+
+    let hostPath = path;
+    if (props.dockerContextName !== "default") {
+      console.log("rewriting host path to /tmp");
+      hostPath = "/tmp";
+    }
+
     try {
-      const output = await ddClient.docker.cli.exec("run", [
-        "--rm",
+      const args = [
+        props.dockerContextName,
+        "run",
+        "--name=export-volume-ctr",
+        "-d", // run it in the background
         `-v=${context.store.volumeName}:/vackup-volume `,
-        `-v=${path}:/vackup `,
+        `-v=${hostPath}:/vackup`,
         "busybox",
-        "tar",
-        "-zcvf",
-        `/vackup/${fileName}`,
-        "/vackup-volume",
-      ]);
+        "/bin/sh",
+        "-c",
+        `"tar -zcvf /vackup/${fileName} /vackup-volume && sleep 120"`,
+      ];
+      console.log(args.join(" "));
+      const output = await ddClient.docker.cli.exec("--context", args);
+      console.log(output);
       if (output.stderr !== "") {
         //"tar: removing leading '/' from member names\n"
         if (!output.stderr.includes("tar: removing leading")) {
@@ -70,14 +86,36 @@ export default function ExportDialog({ ...props }) {
           return;
         }
       }
+
+      if (props.dockerContextName !== "default") {
+        // we need to copy the backup file from the remote Docker host to our local filesystem
+
+        hostPath = path; // restore our host path to bind mount the local filesystem
+
+        const args = [
+          props.dockerContextName, // use the docker context where the export-volume-ctr is running
+          "cp",
+          `export-volume-ctr:/vackup/${fileName}`,
+          `${hostPath}`, // this is finally the path in our local filesystem
+        ];
+        console.log(args.join(" "));
+        const output = await ddClient.docker.cli.exec("--context", args);
+        console.log(output);
+      }
+
       ddClient.desktopUI.toast.success(
         `Volume ${context.store.volumeName} exported to ${path}`
       );
     } catch (error) {
       ddClient.desktopUI.toast.error(
-        `Failed to backup volume ${context.store.volumeName} to ${path}: ${error.code}`
+        `Failed to backup volume ${context.store.volumeName} to ${path}: ${error.stderr} Exit code: ${error.code}`
       );
     } finally {
+      const args = [props.dockerContextName, "rm", "-f", "export-volume-ctr"];
+      console.log(args.join(" "));
+      const output = await ddClient.docker.cli.exec("--context", args);
+      console.log(output);
+
       setActionInProgress(false);
       props.onClose();
     }
