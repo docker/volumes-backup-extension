@@ -1,5 +1,9 @@
 import React, { useEffect } from "react";
-import { DataGrid, GridCellParams } from "@mui/x-data-grid";
+import {
+  DataGrid,
+  GridCellParams,
+  GridActionsCellItem,
+} from "@mui/x-data-grid";
 import { createDockerDesktopClient } from "@docker/extension-api-client";
 import {
   Stack,
@@ -7,12 +11,17 @@ import {
   Typography,
   Box,
   LinearProgress,
-  Badge,
-  Tooltip,
+  Grid,
 } from "@mui/material";
+import {
+  Download as DownloadIcon,
+  Upload as UploadIcon,
+} from "@mui/icons-material";
 
-// Note: This line relies on Docker Desktop's presence as a host application.
-// If you're running this React app in a browser, it won't work properly.
+const sleep = (milliseconds) => {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+};
+
 const client = createDockerDesktopClient();
 
 function useDockerDesktopClient() {
@@ -25,8 +34,10 @@ export function App() {
     Record<string, string[]>
   >({});
   const [volumes, setVolumes] = React.useState([]);
-  const [exportPath, setExportPath] = React.useState<string>("");
-  const [exportLoading, setExportLoading] = React.useState<boolean>(false);
+  const [path, setPath] = React.useState<string>("");
+  const [reloadTable, setReloadTable] = React.useState<boolean>(false);
+  const [actionInProgress, setActionInProgress] =
+    React.useState<boolean>(false);
   const ddClient = useDockerDesktopClient();
 
   const columns = [
@@ -57,44 +68,41 @@ export function App() {
     },
     { field: "volumeSize", headerName: "Size", width: 130 },
     {
-      field: "export",
-      headerName: "Action",
+      field: "actions",
+      type: "actions",
       width: 130,
       sortable: false,
-      renderCell: (params) => {
-        const onClick = (e) => {
-          e.stopPropagation(); // don't select this row after clicking
-          exportVolume(params.row.volumeName);
-        };
-
-        if (exportPath === "") {
-          return (
-            <Tooltip title="Choose a path first">
-              <span>
-                <Button
-                  variant="contained"
-                  onClick={onClick}
-                  disabled={exportPath === "" || exportLoading}
-                >
-                  Export
-                </Button>
-              </span>
-            </Tooltip>
-          );
-        }
-
-        return (
-          <Button
-            variant="contained"
-            onClick={onClick}
-            disabled={exportPath === "" || exportLoading}
-          >
-            Export
-          </Button>
-        );
-      },
+      getActions: (params) => [
+        <GridActionsCellItem
+          key={"action_export_" + params.row.id}
+          icon={<DownloadIcon>Export</DownloadIcon>}
+          label="Export"
+          onClick={handleExport(params.row)}
+          disabled={path === "" || actionInProgress}
+        />,
+        <GridActionsCellItem
+          key={"action_import_" + params.row.id}
+          icon={<UploadIcon>Import</UploadIcon>}
+          label="Import"
+          onClick={handleImport(params.row)}
+          disabled={path === "" || actionInProgress}
+        />,
+      ],
     },
   ];
+
+  const handleExport = (row) => () => {
+    exportVolume(row.volumeName);
+  };
+
+  const handleImport = (row) => () => {
+    importVolume(row.volumeName);
+
+    // hack to reduce the likelihood of having "another disk operation is already running"
+    sleep(1000).then(() => {
+      setReloadTable(!reloadTable);
+    });
+  };
 
   const handleCellClick = (params: GridCellParams) => {
     if (params.colDef.field === "volumeName") {
@@ -139,7 +147,7 @@ export function App() {
     listVolumes();
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // run it once, only when component is mounted
+  }, [reloadTable]);
 
   useEffect(() => {
     const rows = volumes
@@ -160,24 +168,41 @@ export function App() {
 
   const selectExportDirectory = () => {
     ddClient.desktopUI.dialog
-      .showOpenDialog({ properties: ["openDirectory"] })
+      .showOpenDialog({
+        properties: ["openDirectory"],
+      })
       .then((result) => {
         if (result.canceled) {
           return;
         }
 
-        setExportPath(result.filePaths[0]);
+        setPath(result.filePaths[0]);
+      });
+  };
+
+  const selectImportTarGzFile = () => {
+    ddClient.desktopUI.dialog
+      .showOpenDialog({
+        properties: ["openFile"],
+        filters: [{ name: ".tar.gz", extensions: [".tar.gz"] }],
+      })
+      .then((result) => {
+        if (result.canceled) {
+          return;
+        }
+
+        setPath(result.filePaths[0]);
       });
   };
 
   const exportVolume = async (volumeName: string) => {
-    setExportLoading(true);
+    setActionInProgress(true);
 
     try {
       const output = await ddClient.docker.cli.exec("run", [
         "--rm",
         `-v=${volumeName}:/vackup-volume `,
-        `-v=${exportPath}:/vackup `,
+        `-v=${path}:/vackup `,
         "busybox",
         "tar",
         "-zcvf",
@@ -193,14 +218,48 @@ export function App() {
         }
       }
       ddClient.desktopUI.toast.success(
-        `Volume ${volumeName} exported to ${exportPath}`
+        `Volume ${volumeName} exported to ${path}`
       );
     } catch (error) {
       ddClient.desktopUI.toast.error(
-        `Failed to backup volume ${volumeName} to ${exportPath}: ${error.code}`
+        `Failed to backup volume ${volumeName} to ${path}: ${error.code}`
       );
     } finally {
-      setExportLoading(false);
+      setActionInProgress(false);
+    }
+  };
+
+  const importVolume = async (volumeName: string) => {
+    setActionInProgress(true);
+
+    try {
+      const output = await ddClient.docker.cli.exec("run", [
+        "--rm",
+        `-v=${volumeName}:/vackup-volume `,
+        `-v=${path}:/vackup `, // e.g. "$HOME/Downloads/my-vol.tar.gz"
+        "busybox",
+        "tar",
+        "-xvzf",
+        `/vackup`,
+      ]);
+      console.log(output);
+      if (output.stderr !== "") {
+        //"tar: removing leading '/' from member names\n"
+        if (!output.stderr.includes("tar: removing leading")) {
+          // this is an error we may want to display
+          ddClient.desktopUI.toast.error(output.stderr);
+          return;
+        }
+      }
+      ddClient.desktopUI.toast.success(
+        `File ${volumeName}.tar.gz imported into volume ${volumeName}`
+      );
+    } catch (error) {
+      ddClient.desktopUI.toast.error(
+        `Failed to import file ${volumeName}.tar.gz into volume ${volumeName}: ${error.stderr} Exit code: ${error.code}`
+      );
+    } finally {
+      setActionInProgress(false);
     }
   };
 
@@ -233,17 +292,37 @@ export function App() {
         Easily backup and restore docker volumes.
       </Typography>
       <Stack direction="column" alignItems="start" spacing={2} sx={{ mt: 4 }}>
-        <Button
-          variant="contained"
-          onClick={selectExportDirectory}
-          disabled={exportLoading}
+        <Grid
+          container
+          spacing={2}
+          justifyContent="center"
+          textAlign="center"
+          alignItems="center"
         >
-          Choose a path
-        </Button>
+          <Grid item>
+            <Button
+              variant="contained"
+              onClick={selectExportDirectory}
+              disabled={actionInProgress}
+            >
+              Choose a path to export
+            </Button>
+          </Grid>
+          <Grid item>or</Grid>
+          <Grid item>
+            <Button
+              variant="contained"
+              onClick={selectImportTarGzFile}
+              disabled={actionInProgress}
+            >
+              Choose a .tar.gz to import
+            </Button>
+          </Grid>
+        </Grid>
         <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
-          {exportPath}
+          {path}
         </Typography>
-        {exportLoading && (
+        {actionInProgress && (
           <Box sx={{ width: "100%" }}>
             <LinearProgress />
           </Box>
