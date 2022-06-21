@@ -216,16 +216,17 @@ export function App() {
 
               values.forEach((value) => {
                 if (value.status === "rejected") {
+                  ddClient.desktopUI.toast.error(value.reason);
                   return;
                 }
 
                 const { volumeName, containers } = value.value;
-
                 map[volumeName] = containers;
               });
 
               setVolumeContainersMap(map);
             })
+
             .finally(() => {
               setLoadingVolumes(false);
             });
@@ -306,9 +307,8 @@ export function App() {
 
       return { volumeName, containers: output.stdout.trim().split(" ") };
     } catch (error) {
-      ddClient.desktopUI.toast.error(
-        `Failed to get containers for volume ${volumeName}: ${error.stderr} Error code: ${error.code}`
-      );
+      const errorMsg = `Failed to get containers for volume ${volumeName}: ${error.stderr} Error code: ${error.code}`;
+      return Promise.reject(errorMsg);
     }
   };
 
