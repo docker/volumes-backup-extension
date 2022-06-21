@@ -36,7 +36,7 @@ export default function ImportDialog({ ...props }) {
     ddClient.desktopUI.dialog
       .showOpenDialog({
         properties: ["openFile"],
-        filters: [{ name: ".tar.gz", extensions: [".tar.gz"] }],
+        filters: [{ name: ".tar.gz", extensions: ["tar.gz"] }], // should contain extension without wildcards or dots
       })
       .then((result) => {
         if (result.canceled) {
