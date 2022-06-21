@@ -194,7 +194,7 @@ export function App() {
           "df",
           "-v",
           "--format",
-          "'{{ json .Volumes }}'",
+          '"{{ json .Volumes }}"',
         ]);
 
         if (result.stderr !== "") {
@@ -278,7 +278,7 @@ export function App() {
       const output = await ddClient.docker.cli.exec("ps", [
         "-a",
         `--filter="volume=${volumeName}"`,
-        `--format='{{ .Names}}'`,
+        `--format="{{ .Names}}"`,
       ]);
 
       if (output.stderr !== "") {
