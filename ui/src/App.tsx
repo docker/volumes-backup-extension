@@ -9,9 +9,11 @@ import {
   Backdrop,
   Box,
   CircularProgress,
+  LinearProgress,
   Stack,
   Tooltip,
   Typography,
+  Grid,
 } from "@mui/material";
 import {
   Download as DownloadIcon,
@@ -41,6 +43,7 @@ export function App() {
   >({});
   const [volumes, setVolumes] = React.useState([]);
   const [reloadTable, setReloadTable] = React.useState<boolean>(false);
+  const [loadingVolumes, setLoadingVolumes] = React.useState<boolean>(true);
 
   const [actionInProgress, setActionInProgress] =
     React.useState<boolean>(false);
@@ -56,17 +59,17 @@ export function App() {
 
   const columns = [
     { field: "id", headerName: "ID", width: 70, hide: true },
-    { field: "volumeDriver", headerName: "Driver", width: 70 },
+    { field: "volumeDriver", headerName: "Driver" },
     {
       field: "volumeName",
       headerName: "Volume name",
-      width: 320,
+      flex: 1,
     },
     { field: "volumeLinks", hide: true },
     {
       field: "volumeContainers",
       headerName: "Containers",
-      width: 260,
+      flex: 1,
       renderCell: (params) => {
         if (params.row.volumeContainers) {
           return (
@@ -80,11 +83,12 @@ export function App() {
         return <></>;
       },
     },
-    { field: "volumeSize", headerName: "Size", width: 130 },
+    { field: "volumeSize", headerName: "Size" },
     {
       field: "actions",
       type: "actions",
-      width: 200,
+      headerName: "Actions",
+      minWidth: 200,
       sortable: false,
       getActions: (params) => [
         <GridActionsCellItem
@@ -202,19 +206,27 @@ export function App() {
         } else {
           const volumes = result.parseJsonObject();
 
-          volumes.forEach((volume) => {
-            getContainersForVolume(volume.Name).then((containers) => {
-              setVolumeContainersMap((current) => {
-                const next = { ...current };
-                next[volume.Name] = containers;
-                return next;
+          const promises = volumes.map((volume) =>
+            getContainersForVolume(volume.Name)
+          );
+
+          Promise.all(promises)
+            .then((values) => {
+              const map = {};
+              values.map(({ volumeName, containers }) => {
+                return (map[volumeName] = containers);
               });
+
+              setVolumeContainersMap(map);
+            })
+            .finally(() => {
+              setLoadingVolumes(false);
             });
-          });
 
           setVolumes(volumes);
         }
       } catch (error) {
+        setLoadingVolumes(false);
         ddClient.desktopUI.toast.error(
           `Failed to list volumes: ${error.stderr}`
         );
@@ -273,7 +285,7 @@ export function App() {
 
   const getContainersForVolume = async (
     volumeName: string
-  ): Promise<string[]> => {
+  ): Promise<{ volumeName: string; containers: string[] }> => {
     try {
       const output = await ddClient.docker.cli.exec("ps", [
         "-a",
@@ -285,7 +297,7 @@ export function App() {
         ddClient.desktopUI.toast.error(output.stderr);
       }
 
-      return output.stdout.trim().split(" ");
+      return { volumeName, containers: output.stdout.trim().split(" ") };
     } catch (error) {
       ddClient.desktopUI.toast.error(
         `Failed to get containers for volume ${volumeName}: ${error.stderr} Error code: ${error.code}`
@@ -318,36 +330,44 @@ export function App() {
         Easily backup and restore docker volumes.
       </Typography>
       <Stack direction="column" alignItems="start" spacing={2} sx={{ mt: 4 }}>
-        <Box width="100%">
-          <Backdrop
-            sx={{
-              backgroundColor: "rgba(245,244,244,0.4)",
-              zIndex: (theme) => theme.zIndex.drawer + 1,
-            }}
-            open={actionInProgress}
-          >
-            <CircularProgress color="info" />
-          </Backdrop>
-          <DataGrid
-            rows={rows}
-            columns={columns}
-            pageSize={10}
-            rowsPerPageOptions={[10]}
-            checkboxSelection={false}
-            disableSelectionOnClick={true}
-            autoHeight
-            getRowHeight={() => "auto"}
-            onCellClick={handleCellClick}
-            sx={{
-              "&.MuiDataGrid-root--densityCompact .MuiDataGrid-cell": { py: 1 },
-              "&.MuiDataGrid-root--densityStandard .MuiDataGrid-cell": {
-                py: 1,
-              },
-              "&.MuiDataGrid-root--densityComfortable .MuiDataGrid-cell": {
-                py: 2,
-              },
-            }}
-          />
+        <Grid container>
+          <Grid item flex={1}>
+            <Backdrop
+              sx={{
+                backgroundColor: "rgba(245,244,244,0.4)",
+                zIndex: (theme) => theme.zIndex.drawer + 1,
+              }}
+              open={actionInProgress}
+            >
+              <CircularProgress color="info" />
+            </Backdrop>
+            <DataGrid
+              loading={loadingVolumes}
+              components={{
+                LoadingOverlay: LinearProgress,
+              }}
+              rows={rows}
+              columns={columns}
+              pageSize={10}
+              rowsPerPageOptions={[10]}
+              checkboxSelection={false}
+              disableSelectionOnClick={true}
+              autoHeight
+              getRowHeight={() => "auto"}
+              onCellClick={handleCellClick}
+              sx={{
+                "&.MuiDataGrid-root--densityCompact .MuiDataGrid-cell": {
+                  py: 1,
+                },
+                "&.MuiDataGrid-root--densityStandard .MuiDataGrid-cell": {
+                  py: 1,
+                },
+                "&.MuiDataGrid-root--densityComfortable .MuiDataGrid-cell": {
+                  py: 2,
+                },
+              }}
+            />
+          </Grid>
 
           {openExportDialog && (
             <ExportDialog
@@ -370,7 +390,7 @@ export function App() {
           {openLoadDialog && (
             <LoadDialog open={openLoadDialog} onClose={handleLoadDialogClose} />
           )}
-        </Box>
+        </Grid>
       </Stack>
     </>
   );
