@@ -51,15 +51,60 @@ export default function ImportDialog({ ...props }) {
     setActionInProgress(true);
 
     try {
-      const output = await ddClient.docker.cli.exec("run", [
+      let hostPath = path;
+
+      if (props.dockerContextName !== "default") {
+        // create container in remote where to copy the file
+        console.log(
+          "Creating container in remote host to copy the file from local filesystem..."
+        );
+        const runOutput = await ddClient.docker.cli.exec("--context", [
+          `${props.dockerContextName}`,
+          "run",
+          `--name=copy-to-remote-ctr`,
+          "-d",
+          "busybox",
+          "sleep",
+          "120",
+        ]);
+        if (runOutput.stderr !== "") {
+          ddClient.desktopUI.toast.error(runOutput.stderr);
+          return;
+        }
+
+        console.log(
+          `Copying file ${path} to copy-to-remote-ctr:/tmp using docker context ${props.dockerContextName}`
+        );
+
+        const cpOutput = await ddClient.docker.cli.exec("--context", [
+          `${props.dockerContextName}`,
+          "cp",
+          `${path}`,
+          `copy-to-remote-ctr:/tmp`,
+        ]);
+        if (cpOutput.stderr !== "") {
+          ddClient.desktopUI.toast.error(cpOutput.stderr);
+          return;
+        }
+
+        const filename = path.split("/").pop();
+        hostPath = `/tmp/${filename}`;
+      }
+
+      console.log("Importing file into volume...");
+      const args = [
+        `${props.dockerContextName}`,
+        "run",
         "--rm",
         `-v=${context.store.volumeName}:/vackup-volume `,
-        `-v=${path}:/vackup `, // path: e.g. "$HOME/Downloads/my-vol.tar.gz"
+        `-v=${hostPath}:/vackup`, // path: e.g. "$HOME/Downloads/my-vol.tar.gz"
         "busybox",
         "tar",
         "-xvzf",
         `/vackup`,
-      ]);
+      ];
+      console.log(args.join(" "));
+      const output = await ddClient.docker.cli.exec("--context", args);
       if (output.stderr !== "") {
         ddClient.desktopUI.toast.error(output.stderr);
         return;
@@ -72,6 +117,19 @@ export default function ImportDialog({ ...props }) {
         `Failed to import file ${fileName} into volume ${context.store.volumeName}: ${error.stderr} Exit code: ${error.code}`
       );
     } finally {
+      if (props.dockerContextName !== "default") {
+        console.log("Removing temp remote container...");
+        const args = [
+          props.dockerContextName,
+          "rm",
+          "-f",
+          "copy-to-remote-ctr",
+        ];
+        console.log(args.join(" "));
+        const output = await ddClient.docker.cli.exec("--context", args);
+        console.log(output);
+      }
+
       setActionInProgress(false);
       setPath("");
       props.onClose();

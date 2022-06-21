@@ -374,6 +374,7 @@ export function App() {
             <ImportDialog
               open={openImportDialog}
               onClose={handleImportDialogClose}
+              dockerContextName={dockerContextName}
             />
           )}
 
