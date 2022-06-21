@@ -210,11 +210,18 @@ export function App() {
             getContainersForVolume(volume.Name)
           );
 
-          Promise.all(promises)
+          Promise.allSettled(promises)
             .then((values) => {
               const map = {};
-              values.map(({ volumeName, containers }) => {
-                return (map[volumeName] = containers);
+
+              values.forEach((value) => {
+                if (value.status === "rejected") {
+                  return;
+                }
+
+                const { volumeName, containers } = value.value;
+
+                map[volumeName] = containers;
               });
 
               setVolumeContainersMap(map);
