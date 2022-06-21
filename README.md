@@ -10,7 +10,7 @@ This example is part of the YouTube Livestream [Introducing Docker Extensions](h
 Install Docker Extension with the [Extensions CLI](https://docs.docker.com/desktop/extensions-sdk/#prerequisites).
 
 ```bash
-  docker extension install felipecruz/vackup-docker-extension:0.0.2
+  docker extension install felipecruz/vackup-docker-extension:latest
 ```
 
 ## Run Locally
@@ -66,6 +66,10 @@ Each subsequent click on the extension tab will also open Chrome Dev Tools. To s
 ```bash
   docker extension dev reset felipecruz/vackup-docker-extension:latest
 ```
+
+## Known issues
+
+- Exporting large volumes fail at the moment with a toast error that says `ERR_CHILD_PROCESS_STDIO_MAXBUFFER`.
 
 ## Acknowledgements
 
