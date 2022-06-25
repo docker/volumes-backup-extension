@@ -23,12 +23,14 @@ import {
   ArrowCircleDown as ArrowCircleDownIcon,
   ExitToApp as ExitToAppIcon,
   CopyAll as CopyAllIcon,
+  Devices as DevicesIcon,
 } from "@mui/icons-material";
 import ExportDialog from "./components/ExportDialog";
 import ImportDialog from "./components/ImportDialog";
 import SaveDialog from "./components/SaveDialog";
 import LoadDialog from "./components/LoadDialog";
 import CloneDialog from "./components/CloneDialog";
+import TransferDialog from "./components/TransferDialog";
 import { MyContext } from ".";
 
 const client = createDockerDesktopClient();
@@ -57,6 +59,8 @@ export function App() {
   const [openSaveDialog, setOpenSaveDialog] = React.useState<boolean>(false);
   const [openLoadDialog, setOpenLoadDialog] = React.useState<boolean>(false);
   const [openCloneDialog, setOpenCloneDialog] = React.useState<boolean>(false);
+  const [openTransferDialog, setOpenTransferDialog] =
+    React.useState<boolean>(false);
 
   const ddClient = useDockerDesktopClient();
 
@@ -158,6 +162,16 @@ export function App() {
           onClick={handleLoad(params.row)}
         />,
         <GridActionsCellItem
+          key={"action_transfer_" + params.row.id}
+          icon={
+            <Tooltip title="Transfer to server">
+              <DevicesIcon>Transfer to server</DevicesIcon>
+            </Tooltip>
+          }
+          label="Transfer to server"
+          onClick={handleTransfer(params.row)}
+        />,
+        <GridActionsCellItem
           key={"action_empty_" + params.row.id}
           icon={
             <Tooltip title="Empty volume">
@@ -197,6 +211,11 @@ export function App() {
 
   const handleLoad = (row) => async () => {
     setOpenLoadDialog(true);
+    context.actions.setVolumeName(row.volumeName);
+  };
+
+  const handleTransfer = (row) => async () => {
+    setOpenTransferDialog(true);
     context.actions.setVolumeName(row.volumeName);
   };
 
@@ -355,6 +374,10 @@ export function App() {
     setReloadTable(!reloadTable);
   };
 
+  const handleTransferDialogClose = () => {
+    setOpenTransferDialog(false);
+  };
+
   return (
     <>
       <Typography variant="h3">Vackup Extension</Typography>
@@ -427,6 +450,13 @@ export function App() {
             <CloneDialog
               open={openCloneDialog}
               onClose={handleCloneDialogClose}
+            />
+          )}
+
+          {openTransferDialog && (
+            <TransferDialog
+              open={openTransferDialog}
+              onClose={handleTransferDialogClose}
             />
           )}
         </Grid>
