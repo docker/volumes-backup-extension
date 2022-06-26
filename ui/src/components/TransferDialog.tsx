@@ -1,5 +1,6 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect } from "react";
 import {
+  Autocomplete,
   Button,
   TextField,
   Typography,
@@ -32,13 +33,65 @@ export default function TransferDialog({ ...props }) {
   const [actionInProgress, setActionInProgress] =
     React.useState<boolean>(false);
 
+  const [autocompleteOpen, setAutocompleteOpen] = React.useState(false);
+  const [options, setOptions] = React.useState<readonly string[]>([]);
+  const autocompleteLoading = autocompleteOpen && options.length === 0;
+
+  useEffect(() => {
+    let active = true;
+
+    if (!autocompleteLoading) {
+      return undefined;
+    }
+
+    (async () => {
+      const volumes = await listVolumesForDockerHost();
+      console.log(volumes);
+
+      if (active) {
+        setOptions([...volumes]);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [autocompleteLoading]);
+
+  useEffect(() => {
+    if (!autocompleteOpen) {
+      setOptions([]);
+    }
+  }, [autocompleteOpen]);
+
+  const listVolumesForDockerHost = async () => {
+    console.log("Listing volumes for Docker host");
+    try {
+      // docker -H ssh://pi@192.168.1.50 volume ls --format="{{ .Name }}"
+      const listVolumesOutput = await ddClient.docker.cli.exec("-H", [
+        `ssh://pi@${destHost}`,
+        "volume",
+        "ls",
+        `--format="{{ .Name }}"`,
+      ]);
+
+      if (listVolumesOutput.stderr !== "") {
+        ddClient.desktopUI.toast.error(listVolumesOutput.stderr);
+        return;
+      }
+      return listVolumesOutput.lines();
+    } catch (error) {
+      ddClient.desktopUI.toast.error(
+        `Unable to list volumes for docker host ${destHost}: ${error.stderr} Exit code: ${error.code}`
+      );
+      return [];
+    }
+  };
+
   const transferVolume = async () => {
     setActionInProgress(true);
 
     try {
-      // TODO: type a new volume name  or list existing destination volumes using https://mui.com/material-ui/react-autocomplete/:
-      // DOCKER_HOST=ssh://pi@192.168.1.50 docker volume ls --format="{{ .Name }}"
-
       console.log(
         `Transferring data from source volume ${context.store.volumeName} to destination volume ${volumeName} in host ${destHost}...`
       );
@@ -101,22 +154,6 @@ export default function TransferDialog({ ...props }) {
               required
               autoFocus
               margin="dense"
-              id="volume-name"
-              label="Volume name"
-              fullWidth
-              variant="standard"
-              defaultValue={`rpi-vol-2`}
-              spellCheck={false}
-              onChange={(e) => {
-                setVolumeName(e.target.value);
-              }}
-            />
-          </Grid>
-          <Grid item>
-            <TextField
-              required
-              autoFocus
-              margin="dense"
               id="dest-host"
               label="Destination host"
               fullWidth
@@ -128,11 +165,53 @@ export default function TransferDialog({ ...props }) {
               }}
             />
           </Grid>
+          <Grid item>
+            <Autocomplete
+              id="autocomplete-destination-volume"
+              open={autocompleteOpen}
+              onOpen={() => {
+                setAutocompleteOpen(true);
+              }}
+              onClose={() => {
+                setAutocompleteOpen(false);
+              }}
+              isOptionEqualToValue={(option, value) => option === value}
+              getOptionLabel={(option) => option}
+              options={options}
+              loading={autocompleteLoading}
+              disabled={destHost === ""}
+              inputValue={volumeName}
+              onInputChange={(event, newInputValue) => {
+                setVolumeName(newInputValue);
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Destination volume"
+                  InputProps={{
+                    ...params.InputProps,
+                    endAdornment: (
+                      <React.Fragment>
+                        {autocompleteLoading ? (
+                          <CircularProgress color="inherit" size={20} />
+                        ) : null}
+                        {params.InputProps.endAdornment}
+                      </React.Fragment>
+                    ),
+                  }}
+                />
+              )}
+            />
+          </Grid>
           {volumeName !== "" && (
             <Grid item>
-              <Typography variant="body1" color="text.secondary">
+              <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
                 The volume will be transferred to an existing volume named{" "}
-                {volumeName} in {destHost}.
+                {volumeName} in host {destHost}.
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                ⚠️ This will replace all the existing data inside the existing
+                volume.
               </Typography>
             </Grid>
           )}
