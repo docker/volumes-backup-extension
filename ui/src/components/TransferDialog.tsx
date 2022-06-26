@@ -24,7 +24,7 @@ function useDockerDesktopClient() {
 }
 
 export default function TransferDialog({ ...props }) {
-  console.log("CloneDialog component rendered.");
+  console.log("TransferDialog component rendered.");
   const ddClient = useDockerDesktopClient();
   const context = useContext(MyContext);
 
@@ -67,9 +67,9 @@ export default function TransferDialog({ ...props }) {
   const listVolumesForDockerHost = async () => {
     console.log("Listing volumes for Docker host");
     try {
-      // docker -H ssh://pi@192.168.1.50 volume ls --format="{{ .Name }}"
+      // docker -H ssh://192.168.1.50 volume ls --format="{{ .Name }}"
       const listVolumesOutput = await ddClient.docker.cli.exec("-H", [
-        `ssh://pi@${destHost}`,
+        `ssh://${destHost}`,
         "volume",
         "ls",
         `--format="{{ .Name }}"`,
@@ -144,26 +144,40 @@ export default function TransferDialog({ ...props }) {
           <CircularProgress color="info" />
         </Backdrop>
         <DialogContentText>
-          Transfers a volume. SSH must be enabled and configured between the
-          source and destination Docker hosts.
+          SSH must be enabled and configured between the source and destination
+          Docker hosts.
         </DialogContentText>
 
-        <Grid container direction="column" spacing={2}>
-          <Grid item>
-            <TextField
-              required
-              autoFocus
-              margin="dense"
-              id="dest-host"
-              label="Destination host"
-              fullWidth
-              variant="standard"
-              defaultValue={"192.168.1.50"}
-              spellCheck={false}
-              onChange={(e) => {
-                setDestHost(e.target.value);
-              }}
-            />
+        <Grid container direction="column" spacing={2} mt={2}>
+          <Grid
+            container
+            direction="row"
+            alignItems="flex-end"
+            textAlign="center"
+            justifyContent="center"
+            spacing={1}
+          >
+            <Grid item>
+              <Button variant="outlined" disabled>
+                ssh://
+              </Button>
+            </Grid>
+            <Grid item>
+              <TextField
+                required
+                autoFocus
+                margin="dense"
+                id="dest-host"
+                label="Destination host"
+                fullWidth
+                variant="standard"
+                defaultValue={"192.168.1.50"}
+                spellCheck={false}
+                onChange={(e) => {
+                  setDestHost(e.target.value);
+                }}
+              />
+            </Grid>
           </Grid>
           <Grid item>
             <Autocomplete
