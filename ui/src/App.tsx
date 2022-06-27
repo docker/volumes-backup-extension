@@ -22,11 +22,15 @@ import {
   Layers as LayersIcon,
   ArrowCircleDown as ArrowCircleDownIcon,
   ExitToApp as ExitToAppIcon,
+  CopyAll as CopyAllIcon,
+  Devices as DevicesIcon,
 } from "@mui/icons-material";
 import ExportDialog from "./components/ExportDialog";
 import ImportDialog from "./components/ImportDialog";
 import SaveDialog from "./components/SaveDialog";
 import LoadDialog from "./components/LoadDialog";
+import CloneDialog from "./components/CloneDialog";
+import TransferDialog from "./components/TransferDialog";
 import { MyContext } from ".";
 
 const client = createDockerDesktopClient();
@@ -54,6 +58,9 @@ export function App() {
     React.useState<boolean>(false);
   const [openSaveDialog, setOpenSaveDialog] = React.useState<boolean>(false);
   const [openLoadDialog, setOpenLoadDialog] = React.useState<boolean>(false);
+  const [openCloneDialog, setOpenCloneDialog] = React.useState<boolean>(false);
+  const [openTransferDialog, setOpenTransferDialog] =
+    React.useState<boolean>(false);
 
   const ddClient = useDockerDesktopClient();
 
@@ -88,8 +95,9 @@ export function App() {
       field: "actions",
       type: "actions",
       headerName: "Actions",
-      minWidth: 200,
+      minWidth: 220,
       sortable: false,
+      flex: 1,
       getActions: (params) => [
         <GridActionsCellItem
           key={"action_view_volume_" + params.row.id}
@@ -100,6 +108,18 @@ export function App() {
           }
           label="View volume"
           onClick={handleNavigate(params.row)}
+          disabled={actionInProgress}
+          showInMenu
+        />,
+        <GridActionsCellItem
+          key={"action_clone_volume_" + params.row.id}
+          icon={
+            <Tooltip title="Clone volume">
+              <CopyAllIcon>Clone volume</CopyAllIcon>
+            </Tooltip>
+          }
+          label="Clone volume"
+          onClick={handleClone(params.row)}
           disabled={actionInProgress}
         />,
         <GridActionsCellItem
@@ -131,6 +151,7 @@ export function App() {
           }
           label="Save to image"
           onClick={handleSave(params.row)}
+          showInMenu
         />,
         <GridActionsCellItem
           key={"action_load_" + params.row.id}
@@ -141,6 +162,18 @@ export function App() {
           }
           label="Load from image"
           onClick={handleLoad(params.row)}
+          showInMenu
+        />,
+        <GridActionsCellItem
+          key={"action_transfer_" + params.row.id}
+          icon={
+            <Tooltip title="Transfer to server">
+              <DevicesIcon>Transfer to server</DevicesIcon>
+            </Tooltip>
+          }
+          label="Transfer to server"
+          onClick={handleTransfer(params.row)}
+          showInMenu
         />,
         <GridActionsCellItem
           key={"action_empty_" + params.row.id}
@@ -151,6 +184,7 @@ export function App() {
           }
           label="Empty volume"
           onClick={handleEmpty(params.row)}
+          showInMenu
         />,
       ],
     },
@@ -158,6 +192,11 @@ export function App() {
 
   const handleNavigate = (row) => async () => {
     ddClient.desktopUI.navigate.viewVolume(row.volumeName);
+  };
+
+  const handleClone = (row) => () => {
+    setOpenCloneDialog(true);
+    context.actions.setVolumeName(row.volumeName);
   };
 
   const handleExport = (row) => () => {
@@ -177,6 +216,11 @@ export function App() {
 
   const handleLoad = (row) => async () => {
     setOpenLoadDialog(true);
+    context.actions.setVolumeName(row.volumeName);
+  };
+
+  const handleTransfer = (row) => async () => {
+    setOpenTransferDialog(true);
     context.actions.setVolumeName(row.volumeName);
   };
 
@@ -330,6 +374,14 @@ export function App() {
     setReloadTable(!reloadTable);
   };
 
+  const handleCloneDialogClose = () => {
+    setOpenCloneDialog(false);
+  };
+
+  const handleTransferDialogClose = () => {
+    setOpenTransferDialog(false);
+  };
+
   return (
     <>
       <Typography variant="h3">Vackup Extension</Typography>
@@ -396,6 +448,20 @@ export function App() {
 
           {openLoadDialog && (
             <LoadDialog open={openLoadDialog} onClose={handleLoadDialogClose} />
+          )}
+
+          {openCloneDialog && (
+            <CloneDialog
+              open={openCloneDialog}
+              onClose={handleCloneDialogClose}
+            />
+          )}
+
+          {openTransferDialog && (
+            <TransferDialog
+              open={openTransferDialog}
+              onClose={handleTransferDialogClose}
+            />
           )}
         </Grid>
       </Stack>
