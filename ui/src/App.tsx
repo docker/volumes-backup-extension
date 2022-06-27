@@ -181,11 +181,11 @@ export function App() {
         <GridActionsCellItem
           key={"action_transfer_" + params.row.id}
           icon={
-            <Tooltip title="Transfer to server">
-              <DevicesIcon>Transfer to server</DevicesIcon>
+            <Tooltip title="Transfer to host">
+              <DevicesIcon>Transfer to host</DevicesIcon>
             </Tooltip>
           }
-          label="Transfer to server"
+          label="Transfer to host"
           onClick={handleTransfer(params.row)}
           showInMenu
         />,
