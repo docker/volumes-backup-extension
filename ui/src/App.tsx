@@ -24,6 +24,7 @@ import {
   ExitToApp as ExitToAppIcon,
   CopyAll as CopyAllIcon,
   Devices as DevicesIcon,
+  PlayArrow as PlayArrowIcon,
 } from "@mui/icons-material";
 import ExportDialog from "./components/ExportDialog";
 import ImportDialog from "./components/ImportDialog";
@@ -31,6 +32,7 @@ import SaveDialog from "./components/SaveDialog";
 import LoadDialog from "./components/LoadDialog";
 import CloneDialog from "./components/CloneDialog";
 import TransferDialog from "./components/TransferDialog";
+import RunContainerDialog from "./components/RunContainerDialog";
 import { MyContext } from ".";
 
 const client = createDockerDesktopClient();
@@ -61,7 +63,8 @@ export function App() {
   const [openCloneDialog, setOpenCloneDialog] = React.useState<boolean>(false);
   const [openTransferDialog, setOpenTransferDialog] =
     React.useState<boolean>(false);
-
+  const [openRunContainerDialog, setOpenRunContainerDialog] =
+    React.useState<boolean>(false);
   const ddClient = useDockerDesktopClient();
 
   const columns = [
@@ -110,6 +113,17 @@ export function App() {
           onClick={handleNavigate(params.row)}
           disabled={actionInProgress}
           showInMenu
+        />,
+        <GridActionsCellItem
+          key={"action_run_container_from_volume_" + params.row.id}
+          icon={
+            <Tooltip title="Run container from volume">
+              <PlayArrowIcon>Run container from volume</PlayArrowIcon>
+            </Tooltip>
+          }
+          label="Run container from volume"
+          onClick={handleRunContainer(params.row)}
+          disabled={actionInProgress}
         />,
         <GridActionsCellItem
           key={"action_clone_volume_" + params.row.id}
@@ -167,11 +181,11 @@ export function App() {
         <GridActionsCellItem
           key={"action_transfer_" + params.row.id}
           icon={
-            <Tooltip title="Transfer to server">
-              <DevicesIcon>Transfer to server</DevicesIcon>
+            <Tooltip title="Transfer to host">
+              <DevicesIcon>Transfer to host</DevicesIcon>
             </Tooltip>
           }
-          label="Transfer to server"
+          label="Transfer to host"
           onClick={handleTransfer(params.row)}
           showInMenu
         />,
@@ -192,6 +206,11 @@ export function App() {
 
   const handleNavigate = (row) => async () => {
     ddClient.desktopUI.navigate.viewVolume(row.volumeName);
+  };
+
+  const handleRunContainer = (row) => () => {
+    setOpenRunContainerDialog(true);
+    context.actions.setVolumeName(row.volumeName);
   };
 
   const handleClone = (row) => () => {
@@ -356,6 +375,10 @@ export function App() {
     }
   };
 
+  const handleRunContainerDialogClose = () => {
+    setOpenRunContainerDialog(false);
+  };
+
   const handleExportDialogClose = () => {
     setOpenExportDialog(false);
   };
@@ -427,6 +450,13 @@ export function App() {
               }}
             />
           </Grid>
+
+          {openRunContainerDialog && (
+            <RunContainerDialog
+              open={openRunContainerDialog}
+              onClose={handleRunContainerDialogClose}
+            />
+          )}
 
           {openExportDialog && (
             <ExportDialog
