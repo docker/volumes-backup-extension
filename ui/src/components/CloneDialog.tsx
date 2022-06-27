@@ -23,7 +23,6 @@ function useDockerDesktopClient() {
 }
 
 export default function CloneDialog({ ...props }) {
-  console.log("CloneDialog component rendered.");
   const ddClient = useDockerDesktopClient();
   const context = useContext(MyContext);
 
@@ -38,7 +37,6 @@ export default function CloneDialog({ ...props }) {
 
     try {
       // TODO: check if destination volume already exists
-      console.log(`Creating destination volume ${volumeName}...`);
       const createVolumeOutput = await ddClient.docker.cli.exec("volume", [
         "create",
         volumeName,
@@ -47,11 +45,7 @@ export default function CloneDialog({ ...props }) {
         ddClient.desktopUI.toast.error(createVolumeOutput.stderr);
         return;
       }
-      console.log(createVolumeOutput);
 
-      console.log(
-        `Copying data from source volume ${context.store.volumeName} to destination volume ${volumeName}...`
-      );
       const cloneOutput = await ddClient.docker.cli.exec("run", [
         "--rm",
         `-v=${context.store.volumeName}:/from`,
@@ -65,8 +59,6 @@ export default function CloneDialog({ ...props }) {
         ddClient.desktopUI.toast.error(cloneOutput.stderr);
         return;
       }
-
-      console.log(cloneOutput);
 
       ddClient.desktopUI.toast.success(
         `Volume ${context.store.volumeName} cloned to destination volume ${volumeName}`

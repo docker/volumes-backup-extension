@@ -109,6 +109,7 @@ export function App() {
           label="View volume"
           onClick={handleNavigate(params.row)}
           disabled={actionInProgress}
+          showInMenu
         />,
         <GridActionsCellItem
           key={"action_clone_volume_" + params.row.id}
@@ -150,6 +151,7 @@ export function App() {
           }
           label="Save to image"
           onClick={handleSave(params.row)}
+          showInMenu
         />,
         <GridActionsCellItem
           key={"action_load_" + params.row.id}
@@ -160,6 +162,7 @@ export function App() {
           }
           label="Load from image"
           onClick={handleLoad(params.row)}
+          showInMenu
         />,
         <GridActionsCellItem
           key={"action_transfer_" + params.row.id}
@@ -170,6 +173,7 @@ export function App() {
           }
           label="Transfer to server"
           onClick={handleTransfer(params.row)}
+          showInMenu
         />,
         <GridActionsCellItem
           key={"action_empty_" + params.row.id}
@@ -180,6 +184,7 @@ export function App() {
           }
           label="Empty volume"
           onClick={handleEmpty(params.row)}
+          showInMenu
         />,
       ],
     },
@@ -371,7 +376,6 @@ export function App() {
 
   const handleCloneDialogClose = () => {
     setOpenCloneDialog(false);
-    setReloadTable(!reloadTable);
   };
 
   const handleTransferDialogClose = () => {
