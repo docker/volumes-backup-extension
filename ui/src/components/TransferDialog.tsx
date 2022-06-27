@@ -24,7 +24,6 @@ function useDockerDesktopClient() {
 }
 
 export default function TransferDialog({ ...props }) {
-  console.log("TransferDialog component rendered.");
   const ddClient = useDockerDesktopClient();
   const context = useContext(MyContext);
 
@@ -46,7 +45,6 @@ export default function TransferDialog({ ...props }) {
 
     (async () => {
       const volumes = await listVolumesForDockerHost();
-      console.log(volumes);
 
       if (active) {
         setOptions([...volumes]);
@@ -65,7 +63,6 @@ export default function TransferDialog({ ...props }) {
   }, [autocompleteOpen]);
 
   const listVolumesForDockerHost = async () => {
-    console.log("Listing volumes for Docker host");
     try {
       // docker -H ssh://192.168.1.50 volume ls --format="{{ .Name }}"
       const listVolumesOutput = await ddClient.docker.cli.exec("-H", [
@@ -114,8 +111,6 @@ export default function TransferDialog({ ...props }) {
         ddClient.desktopUI.toast.error(transferredOutput.stderr);
         return;
       }
-
-      console.log(transferredOutput);
 
       ddClient.desktopUI.toast.success(
         `Volume ${context.store.volumeName} transferred to destination volume ${volumeName} in host ${destHost}`
