@@ -78,6 +78,7 @@ jobs:
             type=raw,value=latest,enable=${{ endsWith(github.ref, github.event.repository.default_branch) }}
             type=ref,event=pr
             type=ref,event=branch
+            type=ref,event=tag
             type=semver,pattern={{version}}
 
       - name: Docker Build and Push to Docker Hub
