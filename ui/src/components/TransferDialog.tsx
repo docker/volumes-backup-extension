@@ -16,6 +16,7 @@ import DialogTitle from "@mui/material/DialogTitle";
 import { createDockerDesktopClient } from "@docker/extension-api-client";
 
 import { MyContext } from "../index";
+import { isError } from "../common/isError";
 
 const client = createDockerDesktopClient();
 
@@ -27,8 +28,8 @@ export default function TransferDialog({ ...props }) {
   const ddClient = useDockerDesktopClient();
   const context = useContext(MyContext);
 
-  const [volumeName, setVolumeName] = React.useState<string>(`rpi-vol-2`);
-  const [destHost, setDestHost] = React.useState<string>("192.168.1.50");
+  const [volumeName, setVolumeName] = React.useState<string>("");
+  const [destHost, setDestHost] = React.useState<string>("");
   const [actionInProgress, setActionInProgress] =
     React.useState<boolean>(false);
 
@@ -107,7 +108,7 @@ export default function TransferDialog({ ...props }) {
         "-c",
         `"cd /from ; tar -czf - . \" | ssh ${destHost} \"docker run --rm -i -v \"${volumeName}\":/to alpine ash -c 'cd /to ; tar -xpvzf - '"`,
       ]);
-      if (transferredOutput.stderr !== "") {
+      if (isError(transferredOutput.stderr)) {
         ddClient.desktopUI.toast.error(transferredOutput.stderr);
         return;
       }
@@ -166,7 +167,7 @@ export default function TransferDialog({ ...props }) {
                 label="Destination host"
                 fullWidth
                 variant="standard"
-                defaultValue={"192.168.1.50"}
+                placeholder={"192.168.1.50"}
                 spellCheck={false}
                 onChange={(e) => {
                   setDestHost(e.target.value);
