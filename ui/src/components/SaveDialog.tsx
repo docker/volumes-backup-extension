@@ -15,6 +15,7 @@ import DialogTitle from "@mui/material/DialogTitle";
 import { createDockerDesktopClient } from "@docker/extension-api-client";
 
 import { MyContext } from "../index";
+import { isError } from "../common/isError";
 
 const client = createDockerDesktopClient();
 
@@ -46,7 +47,7 @@ export default function SaveDialog({ ...props }) {
         "-c",
         '"cp -Rp /mount-volume/. /volume-data/;"',
       ]);
-      if (cpOutput.stderr !== "") {
+      if (isError(cpOutput.stderr)) {
         ddClient.desktopUI.toast.error(cpOutput.stderr);
         return;
       }

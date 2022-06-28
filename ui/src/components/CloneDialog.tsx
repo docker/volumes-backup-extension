@@ -15,6 +15,7 @@ import DialogTitle from "@mui/material/DialogTitle";
 import { createDockerDesktopClient } from "@docker/extension-api-client";
 
 import { MyContext } from "../index";
+import { isError } from "../common/isError";
 
 const client = createDockerDesktopClient();
 
@@ -55,7 +56,7 @@ export default function CloneDialog({ ...props }) {
         "-c",
         '"cd /from ; cp -av . /to"',
       ]);
-      if (cloneOutput.stderr !== "") {
+      if (isError(cloneOutput.stderr)) {
         ddClient.desktopUI.toast.error(cloneOutput.stderr);
         return;
       }

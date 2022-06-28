@@ -14,6 +14,7 @@ import DialogTitle from "@mui/material/DialogTitle";
 import { createDockerDesktopClient } from "@docker/extension-api-client";
 
 import { MyContext } from "../index";
+import { isError } from "../common/isError";
 
 const client = createDockerDesktopClient();
 
@@ -60,7 +61,7 @@ export default function ImportDialog({ ...props }) {
         "-xvzf",
         `/vackup`,
       ]);
-      if (output.stderr !== "") {
+      if (isError(output.stderr)) {
         ddClient.desktopUI.toast.error(output.stderr);
         return;
       }

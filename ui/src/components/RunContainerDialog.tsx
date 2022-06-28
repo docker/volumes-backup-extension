@@ -14,6 +14,7 @@ import DialogTitle from "@mui/material/DialogTitle";
 import { createDockerDesktopClient } from "@docker/extension-api-client";
 
 import { MyContext } from "../index";
+import { isError } from "../common/isError";
 
 const client = createDockerDesktopClient();
 
@@ -70,7 +71,7 @@ export default function RunContainerDialog({ ...props }) {
 
       const runOutput = await ddClient.docker.cli.exec("run", args);
       console.log(runOutput);
-      if (runOutput.stderr !== "") {
+      if (isError(runOutput.stderr)) {
         ddClient.desktopUI.toast.error(runOutput.stderr);
         return;
       }
