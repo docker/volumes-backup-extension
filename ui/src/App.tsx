@@ -32,6 +32,7 @@ export function App() {
     const context = useContext(MyContext);
     const [rows, setRows] = React.useState([]);
     const [volumeContainersMap, setVolumeContainersMap] = React.useState<Record<string, string[]>>({});
+    const [volumeSizeMap, setVolumeSizeMap] = React.useState<Record<string, string>>({});
     const [volumes, setVolumes] = React.useState([]);
     const [reloadTable, setReloadTable] = React.useState<boolean>(false);
     const [loadingVolumes, setLoadingVolumes] = React.useState<boolean>(true);
@@ -244,42 +245,14 @@ export function App() {
     };
 
     const calculateVolumeSize = async (volumeName: string) => {
-        const tmpDir = "/recalc-vol-size"
         try {
-            // e.g. docker run --rm -v postgres-vol:/pgdata alpine /bin/sh -c  "du -d 0 -h /pgdata | cut -f 1"
-            // get only dir size, without the name, e.g:
-            // 41.5M
-            // instead of
-            // 41.5M	/pgdata
-            const args = [
-                "--rm",
-                `-v=${volumeName}:${tmpDir}`,
-                "alpine",
-                "/bin/sh",
-                "-c",
-                `"du -d 0 -h ${tmpDir}"`
-            ];
-            const result = await ddClient.docker.cli.exec("run", args);
+            const size = await computeVolumeSize(volumeName)
 
-            if (result.stderr !== "") {
-                ddClient.desktopUI.toast.error(result.stderr);
-            } else {
-                const s = result.lines()[0].split("\t"); // e.g. 41.5M	/recalc-vol-size
-                let size = s[0]
+            let rowsCopy = rows.slice() // copy the array
+            const index = rowsCopy.findIndex(element => element.volumeName === volumeName)
+            rowsCopy[index].volumeSize = size
 
-                if (size === "4.0K") {
-                    // If a directory size is 4K, it is in fact "empty".
-                    // The metadata of the folder is stored in blocks and 4K is the minimum filesystem's block size.
-                    // Therefore, we set it to "0B" to indicate that the directory is empty.
-                    size = "0B"
-                }
-
-                let rowsCopy = rows.slice() // copy the array
-                const index = rowsCopy.findIndex(element => element.volumeName === volumeName)
-                rowsCopy[index].volumeSize = size
-
-                setRows(rowsCopy)
-            }
+            setRows(rowsCopy)
         } catch (error) {
             setLoadingVolumes(false);
             ddClient.desktopUI.toast.error(
@@ -288,28 +261,62 @@ export function App() {
         }
     };
 
+    const computeVolumeSize = async (volumeName: string): Promise<string> => {
+        let size = "-"
+        const tmpDir = "/recalc-vol-size"
+
+        // e.g. docker run --rm -v postgres-vol:/pgdata alpine /bin/sh -c  "du -d 0 -h /pgdata | cut -f 1"
+        // get only dir size, without the name, e.g:
+        // 41.5M
+        // instead of
+        // 41.5M	/pgdata
+        const args = [
+            "--rm",
+            `-v=${volumeName}:${tmpDir}`,
+            "alpine",
+            "/bin/sh",
+            "-c",
+            `"du -d 0 -h ${tmpDir}"`
+        ];
+        const result = await ddClient.docker.cli.exec("run", args);
+
+        if (result.stderr !== "") {
+            ddClient.desktopUI.toast.error(result.stderr);
+        } else {
+            const s = result.lines()[0].split("\t"); // e.g. 41.5M	/recalc-vol-size
+            size = s[0]
+
+            if (size === "4.0K") {
+                // If a directory size is 4K, it is in fact "empty".
+                // The metadata of the folder is stored in blocks and 4K is the minimum filesystem's block size.
+                // Therefore, we set it to "0B" to indicate that the directory is empty.
+                size = "0B"
+            }
+        }
+        return size
+    }
+
     useEffect(() => {
         const listVolumes = async () => {
             try {
-                const result = await ddClient.docker.cli.exec("system", [
-                    "df",
-                    "-v",
+                const result = await ddClient.docker.cli.exec("volume", [
+                    "ls",
                     "--format",
-                    '"{{ json .Volumes }}"',
+                    '"{{ json . }}"',
                 ]);
 
                 if (result.stderr !== "") {
                     ddClient.desktopUI.toast.error(result.stderr);
                 } else {
-                    const volumes = result.parseJsonObject();
-
+                    const volumes = result.parseJsonLines();
                     const promises = volumes.map((volume) =>
                         getContainersForVolume(volume.Name)
                     );
 
                     Promise.allSettled(promises)
                         .then((values) => {
-                            const map = {};
+                            const vcMap = {};
+                            const vSMap = {};
 
                             values.forEach((value) => {
                                 if (value.status === "rejected") {
@@ -317,11 +324,13 @@ export function App() {
                                     return;
                                 }
 
-                                const {volumeName, containers} = value.value;
-                                map[volumeName] = containers;
+                                const {volumeName, containers, volumeSize} = value.value;
+                                vcMap[volumeName] = containers;
+                                vSMap[volumeName] = volumeSize;
                             });
 
-                            setVolumeContainersMap(map);
+                            setVolumeContainersMap(vcMap);
+                            setVolumeSizeMap(vSMap);
                         })
 
                         .finally(() => {
@@ -353,12 +362,12 @@ export function App() {
                     volumeName: volume.Name,
                     volumeLinks: volume.Links,
                     volumeContainers: volumeContainersMap[volume.Name],
-                    volumeSize: volume.Size,
+                    volumeSize: volumeSizeMap[volume.Name],
                 };
             });
 
         setRows(rows);
-    }, [volumeContainersMap]);
+    }, [volumeContainersMap, volumeSizeMap]);
 
     const emptyVolume = async (volumeName: string) => {
         setActionInProgress(true);
@@ -390,7 +399,7 @@ export function App() {
 
     const getContainersForVolume = async (
         volumeName: string
-    ): Promise<{ volumeName: string; containers: string[] }> => {
+    ): Promise<{ volumeName: string; containers: string[]; volumeSize: string; }> => {
         try {
             const output = await ddClient.docker.cli.exec("ps", [
                 "-a",
@@ -402,7 +411,9 @@ export function App() {
                 ddClient.desktopUI.toast.error(output.stderr);
             }
 
-            return {volumeName, containers: output.stdout.trim().split(" ")};
+            const volumeSize = await computeVolumeSize(volumeName)
+
+            return {volumeName, containers: output.stdout.trim().split(" "), volumeSize};
         } catch (error) {
             const errorMsg = `Failed to get containers for volume ${volumeName}: ${error.stderr} Error code: ${error.code}`;
             return Promise.reject(errorMsg);
@@ -433,6 +444,7 @@ export function App() {
 
     const handleCloneDialogClose = () => {
         setOpenCloneDialog(false);
+        setReloadTable(!reloadTable);
     };
 
     const handleTransferDialogClose = () => {
