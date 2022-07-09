@@ -335,8 +335,30 @@ export function App() {
         return size
     }
 
+    // This useEffect will pull the alpine image as it is needed to compute each volume size.
+    useEffect(() => {
+        const pullAlpineImage = async() => {
+            const startTime = performance.now()
+
+            const result = await ddClient.docker.cli.exec("pull", [
+                "alpine",
+            ]);
+
+            if (result.stderr !== "") {
+                ddClient.desktopUI.toast.error(result.stderr);
+                return
+            }
+
+            const endTime = performance.now()
+            console.log(`[pullAlpineImage] took ${endTime - startTime} ms.`)
+        }
+
+        pullAlpineImage()
+    }, [])
+
     useEffect(() => {
         const listVolumes = async () => {
+            const startTime = performance.now()
             setLoadingVolumes(true);
             try {
                 const result = await ddClient.docker.cli.exec("volume", [
@@ -375,6 +397,8 @@ export function App() {
 
                         .finally(() => {
                             setLoadingVolumes(false);
+                            const endTime = performance.now()
+                            console.log(`[listVolumes] took ${endTime - startTime} ms.`)
                         });
 
                     setVolumes(volumes);
@@ -393,6 +417,8 @@ export function App() {
     }, [reloadTable]);
 
     useEffect(() => {
+        const startTime = performance.now()
+
         const rows = volumes
             .sort((a, b) => a.Name.localeCompare(b.Name))
             .map((volume, index) => {
@@ -407,6 +433,9 @@ export function App() {
             });
 
         setRows(rows);
+
+        const endTime = performance.now()
+        console.log(`[setRows] took ${endTime - startTime} ms.`)
     }, [volumeContainersMap, volumeSizeMap]);
 
     const emptyVolume = async (volumeName: string) => {
