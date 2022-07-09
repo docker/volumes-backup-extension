@@ -23,6 +23,7 @@ import TransferDialog from "./components/TransferDialog";
 import RunContainerDialog from "./components/RunContainerDialog";
 import DeleteForeverDialog from "./components/DeleteForeverDialog";
 import {MyContext} from ".";
+import {isError} from "./common/isError";
 
 const client = createDockerDesktopClient();
 
@@ -319,7 +320,7 @@ export function App() {
         ];
         const result = await ddClient.docker.cli.exec("run", args);
 
-        if (result.stderr !== "") {
+        if (isError(result.stderr)) {
             ddClient.desktopUI.toast.error(result.stderr);
         } else {
             const s = result.lines()[0].split("\t"); // e.g. 41.5M	/recalc-vol-size
@@ -344,7 +345,7 @@ export function App() {
                 "alpine",
             ]);
 
-            if (result.stderr !== "") {
+            if (isError(result.stderr)) {
                 ddClient.desktopUI.toast.error(result.stderr);
                 return
             }
@@ -450,7 +451,7 @@ export function App() {
                 "-c",
                 '"rm -rf /vackup-volume/..?* /vackup-volume/.[!.]* /vackup-volume/*"', // hidden and not-hidden files and folders: .[!.]* matches all dot files except . and files whose name begins with .., and ..?* matches all dot-dot files except ..
             ]);
-            if (output.stderr !== "") {
+            if (isError(output.stderr)) {
                 ddClient.desktopUI.toast.error(output.stderr);
                 return;
             }
