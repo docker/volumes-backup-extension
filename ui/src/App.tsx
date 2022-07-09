@@ -36,6 +36,7 @@ export function App() {
     const [volumes, setVolumes] = React.useState([]);
     const [reloadTable, setReloadTable] = React.useState<boolean>(false);
     const [loadingVolumes, setLoadingVolumes] = React.useState<boolean>(true);
+    const [volumesSizeLoadingMap, setVolumesSizeLoadingMap] = React.useState<Record<string, boolean>>({});
 
     const [actionInProgress, setActionInProgress] =
         React.useState<boolean>(false);
@@ -79,7 +80,18 @@ export function App() {
                 return <></>;
             },
         },
-        {field: "volumeSize", headerName: "Size"},
+        {
+            field: "volumeSize",
+            headerName: "Size",
+            renderCell: (params) => {
+                if (volumesSizeLoadingMap[params.row.volumeName]) {
+                    return (<Box sx={{width: '100%'}}>
+                        <LinearProgress/>
+                    </Box>)
+                }
+                return <Typography>{params.row.volumeSize}</Typography>
+            },
+        },
         {
             field: "actions",
             type: "actions",
@@ -245,6 +257,10 @@ export function App() {
     };
 
     const calculateVolumeSize = async (volumeName: string) => {
+        let volumesSizeLoadingMapCopy = volumesSizeLoadingMap
+        volumesSizeLoadingMapCopy[volumeName] = true
+        setVolumesSizeLoadingMap(volumesSizeLoadingMapCopy)
+
         try {
             const size = await computeVolumeSize(volumeName)
 
@@ -254,10 +270,13 @@ export function App() {
 
             setRows(rowsCopy)
         } catch (error) {
-            setLoadingVolumes(false);
             ddClient.desktopUI.toast.error(
                 `Failed to recalculate volume size: ${error.stderr}`
             );
+        }finally {
+            let volumesSizeLoadingMapCopy = volumesSizeLoadingMap
+            volumesSizeLoadingMapCopy[volumeName] = false
+            setVolumesSizeLoadingMap(volumesSizeLoadingMapCopy)
         }
     };
 
@@ -298,6 +317,7 @@ export function App() {
 
     useEffect(() => {
         const listVolumes = async () => {
+            setLoadingVolumes(true);
             try {
                 const result = await ddClient.docker.cli.exec("volume", [
                     "ls",
