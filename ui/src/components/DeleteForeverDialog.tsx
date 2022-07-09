@@ -1,9 +1,6 @@
 import React, { useContext } from "react";
 import {
   Button,
-  TextField,
-  Typography,
-  Grid,
   Backdrop,
   CircularProgress,
 } from "@mui/material";
@@ -15,7 +12,6 @@ import DialogTitle from "@mui/material/DialogTitle";
 import { createDockerDesktopClient } from "@docker/extension-api-client";
 
 import { MyContext } from "../index";
-import { isError } from "../common/isError";
 
 const client = createDockerDesktopClient();
 
@@ -32,6 +28,7 @@ export default function DeleteForeverDialog({ ...props }) {
 
   const deleteVolume = async () => {
     setActionInProgress(true);
+    let actionSuccessfullyCompleted = false
 
     try {
       // TODO: check if volume already exists
@@ -47,13 +44,15 @@ export default function DeleteForeverDialog({ ...props }) {
       ddClient.desktopUI.toast.success(
         `Volume ${context.store.volumeName} deleted`
       );
+
+      actionSuccessfullyCompleted = true
     } catch (error) {
       ddClient.desktopUI.toast.error(
         `Failed to delete volume ${context.store.volumeName}: ${error.stderr} Exit code: ${error.code}`
       );
     } finally {
       setActionInProgress(false);
-      props.onClose();
+      props.onClose(actionSuccessfullyCompleted)
     }
   };
 
@@ -73,7 +72,7 @@ export default function DeleteForeverDialog({ ...props }) {
         <DialogContentText>The volume will be deleted permanently. This action cannot be undone. Are you sure?</DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button onClick={props.onClose}>Cancel</Button>
+        <Button onClick={() => props.onClose(false)}>Cancel</Button>
         <Button onClick={deleteVolume}>
           Delete forever
         </Button>

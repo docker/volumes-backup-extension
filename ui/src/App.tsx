@@ -6,13 +6,13 @@ import {
     ArrowCircleDown as ArrowCircleDownIcon,
     CopyAll as CopyAllIcon,
     Delete as DeleteIcon,
+    DeleteForever as DeleteForeverIcon,
     Devices as DevicesIcon,
     Download as DownloadIcon,
     ExitToApp as ExitToAppIcon,
     Layers as LayersIcon,
     PlayArrow as PlayArrowIcon,
     Upload as UploadIcon,
-    DeleteForever as DeleteForeverIcon,
 } from "@mui/icons-material";
 import ExportDialog from "./components/ExportDialog";
 import ImportDialog from "./components/ImportDialog";
@@ -293,7 +293,7 @@ export function App() {
             ddClient.desktopUI.toast.error(
                 `Failed to recalculate volume size: ${error.stderr}`
             );
-        }finally {
+        } finally {
             let volumesSizeLoadingMapCopy = volumesSizeLoadingMap
             volumesSizeLoadingMapCopy[volumeName] = false
             setVolumesSizeLoadingMap(volumesSizeLoadingMapCopy)
@@ -468,32 +468,40 @@ export function App() {
         setOpenExportDialog(false);
     };
 
-    const handleImportDialogClose = () => {
+    const handleImportDialogClose = (actionSuccessfullyCompleted: boolean) => {
         setOpenImportDialog(false);
-        calculateVolumeSize(context.store.volumeName);
+        if (actionSuccessfullyCompleted) {
+            calculateVolumeSize(context.store.volumeName);
+        }
     };
 
     const handleSaveDialogClose = () => {
         setOpenSaveDialog(false);
     };
 
-    const handleLoadDialogClose = () => {
+    const handleLoadDialogClose = (actionSuccessfullyCompleted: boolean) => {
         setOpenLoadDialog(false);
-        calculateVolumeSize(context.store.volumeName);
+        if (actionSuccessfullyCompleted) {
+            calculateVolumeSize(context.store.volumeName);
+        }
     };
 
-    const handleCloneDialogClose = () => {
+    const handleCloneDialogClose = (actionSuccessfullyCompleted: boolean) => {
         setOpenCloneDialog(false);
-        setReloadTable(!reloadTable);
+        if (actionSuccessfullyCompleted) {
+            setReloadTable(!reloadTable);
+        }
     };
 
     const handleTransferDialogClose = () => {
         setOpenTransferDialog(false);
     };
 
-    const handleDeleteForeverDialogClose = () => {
+    const handleDeleteForeverDialogClose = (actionSuccessfullyCompleted: boolean) => {
         setOpenDeleteForeverDialog(false);
-        setReloadTable(!reloadTable);
+        if (actionSuccessfullyCompleted) {
+            setReloadTable(!reloadTable);
+        }
     };
 
     return (
@@ -588,7 +596,9 @@ export function App() {
                     {openDeleteForeverDialog && (
                         <DeleteForeverDialog
                             open={openDeleteForeverDialog}
-                            onClose={handleDeleteForeverDialogClose}
+                            onClose={(e) => {
+                                handleDeleteForeverDialogClose(e)
+                            }}
                         />
                     )}
                 </Grid>
