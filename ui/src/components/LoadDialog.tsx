@@ -34,6 +34,7 @@ export default function LoadDialog({ ...props }) {
 
   const loadImage = async () => {
     setActionInProgress(true);
+    let actionSuccessfullyCompleted = false
 
     try {
       const output = await ddClient.docker.cli.exec("run", [
@@ -52,6 +53,8 @@ export default function LoadDialog({ ...props }) {
       ddClient.desktopUI.toast.success(
         `Copied /volume-data from image ${imageName} into volume ${context.store.volumeName}`
       );
+
+      actionSuccessfullyCompleted = true
     } catch (error) {
       ddClient.desktopUI.toast.error(
         `Failed to copy /volume-data from image ${imageName} to into volume ${context.store.volumeName}: ${error.stderr} Exit code: ${error.code}`
@@ -59,7 +62,7 @@ export default function LoadDialog({ ...props }) {
     } finally {
       setActionInProgress(false);
       setImageName("");
-      props.onClose();
+      props.onClose(actionSuccessfullyCompleted)
     }
   };
 
@@ -120,7 +123,7 @@ export default function LoadDialog({ ...props }) {
         <Button
           onClick={() => {
             setImageName("");
-            props.onClose();
+            props.onClose(false);
           }}
         >
           Cancel

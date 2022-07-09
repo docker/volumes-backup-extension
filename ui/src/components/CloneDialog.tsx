@@ -35,6 +35,7 @@ export default function CloneDialog({ ...props }) {
 
   const cloneVolume = async () => {
     setActionInProgress(true);
+    let actionSuccessfullyCompleted = false
 
     try {
       // TODO: check if destination volume already exists
@@ -64,13 +65,15 @@ export default function CloneDialog({ ...props }) {
       ddClient.desktopUI.toast.success(
         `Volume ${context.store.volumeName} cloned to destination volume ${volumeName}`
       );
+
+      actionSuccessfullyCompleted = true
     } catch (error) {
       ddClient.desktopUI.toast.error(
         `Failed to clone volume ${context.store.volumeName} to destinaton volume ${volumeName}: ${error.stderr} Exit code: ${error.code}`
       );
     } finally {
       setActionInProgress(false);
-      props.onClose();
+      props.onClose(actionSuccessfullyCompleted)
     }
   };
 
@@ -117,7 +120,7 @@ export default function CloneDialog({ ...props }) {
         </Grid>
       </DialogContent>
       <DialogActions>
-        <Button onClick={props.onClose}>Cancel</Button>
+        <Button onClick={() => props.onClose(false)}>Cancel</Button>
         <Button onClick={cloneVolume} disabled={volumeName === ""}>
           Clone
         </Button>
