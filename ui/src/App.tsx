@@ -12,6 +12,7 @@ import {
     Layers as LayersIcon,
     PlayArrow as PlayArrowIcon,
     Upload as UploadIcon,
+    DeleteForever as DeleteForeverIcon,
 } from "@mui/icons-material";
 import ExportDialog from "./components/ExportDialog";
 import ImportDialog from "./components/ImportDialog";
@@ -20,6 +21,7 @@ import LoadDialog from "./components/LoadDialog";
 import CloneDialog from "./components/CloneDialog";
 import TransferDialog from "./components/TransferDialog";
 import RunContainerDialog from "./components/RunContainerDialog";
+import DeleteForeverDialog from "./components/DeleteForeverDialog";
 import {MyContext} from ".";
 
 const client = createDockerDesktopClient();
@@ -51,6 +53,8 @@ export function App() {
     const [openTransferDialog, setOpenTransferDialog] =
         React.useState<boolean>(false);
     const [openRunContainerDialog, setOpenRunContainerDialog] =
+        React.useState<boolean>(false);
+    const [openDeleteForeverDialog, setOpenDeleteForeverDialog] =
         React.useState<boolean>(false);
     const ddClient = useDockerDesktopClient();
 
@@ -202,6 +206,17 @@ export function App() {
                     showInMenu
                     disabled={params.row.volumeSize === "0B"}
                 />,
+                <GridActionsCellItem
+                    key={"action_delete_" + params.row.id}
+                    icon={
+                        <Tooltip title="Delete volume">
+                            <DeleteForeverIcon>Delete volume</DeleteForeverIcon>
+                        </Tooltip>
+                    }
+                    label="Delete volume"
+                    onClick={handleDelete(params.row)}
+                    showInMenu
+                />,
             ],
         },
     ];
@@ -248,6 +263,11 @@ export function App() {
     const handleEmpty = (row) => async () => {
         await emptyVolume(row.volumeName);
         await calculateVolumeSize(row.volumeName);
+    };
+
+    const handleDelete = (row) => async () => {
+        setOpenDeleteForeverDialog(true)
+        context.actions.setVolumeName(row.volumeName);
     };
 
     const handleCellClick = (params: GridCellParams) => {
@@ -471,6 +491,11 @@ export function App() {
         setOpenTransferDialog(false);
     };
 
+    const handleDeleteForeverDialogClose = () => {
+        setOpenDeleteForeverDialog(false);
+        setReloadTable(!reloadTable);
+    };
+
     return (
         <>
             <Typography variant="h3">Vackup Extension</Typography>
@@ -557,6 +582,13 @@ export function App() {
                         <TransferDialog
                             open={openTransferDialog}
                             onClose={handleTransferDialogClose}
+                        />
+                    )}
+
+                    {openDeleteForeverDialog && (
+                        <DeleteForeverDialog
+                            open={openDeleteForeverDialog}
+                            onClose={handleDeleteForeverDialogClose}
                         />
                     )}
                 </Grid>
