@@ -1,5 +1,5 @@
 import React, {useContext, useEffect} from "react";
-import {DataGrid, GridActionsCellItem, GridCellParams,} from "@mui/x-data-grid";
+import {DataGrid, GridActionsCellItem} from "@mui/x-data-grid";
 import {createDockerDesktopClient} from "@docker/extension-api-client";
 import {Backdrop, Box, CircularProgress, Grid, LinearProgress, Stack, Tooltip, Typography,} from "@mui/material";
 import {
@@ -22,6 +22,7 @@ import CloneDialog from "./components/CloneDialog";
 import TransferDialog from "./components/TransferDialog";
 import RunContainerDialog from "./components/RunContainerDialog";
 import DeleteForeverDialog from "./components/DeleteForeverDialog";
+import CopyButton from "./components/CopyButton";
 import {MyContext} from ".";
 import {isError} from "./common/isError";
 
@@ -65,7 +66,22 @@ export function App() {
         {
             field: "volumeName",
             headerName: "Volume name",
+            minWidth: 320,
             flex: 1,
+            renderCell: (params) => {
+                return (<Grid container
+                              flex={1}
+                              direction="row"
+                              style={{alignItems: "center", justifyContent: "space-between"}}
+                              >
+                    <Grid item xs={10}>
+                        <Typography noWrap>{params.row.volumeName}</Typography>
+                    </Grid>
+                    <Grid item xs={2} mb={2}>
+                        <CopyButton content={params.row.volumeName}/>
+                    </Grid>
+                </Grid>)
+            }
         },
         {field: "volumeLinks", hide: true},
         {
@@ -271,12 +287,6 @@ export function App() {
         context.actions.setVolumeName(row.volumeName);
     };
 
-    const handleCellClick = (params: GridCellParams) => {
-        if (params.colDef.field === "volumeName") {
-            ddClient.desktopUI.navigate.viewVolume(params.row.volumeName);
-        }
-    };
-
     const calculateVolumeSize = async (volumeName: string) => {
         let volumesSizeLoadingMapCopy = volumesSizeLoadingMap
         volumesSizeLoadingMapCopy[volumeName] = true
@@ -338,7 +348,7 @@ export function App() {
 
     // This useEffect will pull the alpine image as it is needed to compute each volume size.
     useEffect(() => {
-        const pullAlpineImage = async() => {
+        const pullAlpineImage = async () => {
             const startTime = performance.now()
 
             const result = await ddClient.docker.cli.exec("pull", [
@@ -565,7 +575,6 @@ export function App() {
                             disableSelectionOnClick={true}
                             autoHeight
                             getRowHeight={() => "auto"}
-                            onCellClick={handleCellClick}
                             sx={{
                                 "&.MuiDataGrid-root--densityCompact .MuiDataGrid-cell": {
                                     py: 1,
