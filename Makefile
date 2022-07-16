@@ -15,6 +15,13 @@ install-extension: build-extension ## Install the extension
 update-extension: build-extension ## Update the extension
 	docker extension update $(IMAGE):$(TAG) -f
 
+dev-up:
+	docker extension dev ui-source $(IMAGE):$(TAG) http://localhost:3000
+	docker extension dev debug $(IMAGE):$(TAG)
+
+dev-reset:
+	docker extension dev reset $(IMAGE):$(TAG)
+
 prepare-buildx: ## Create buildx builder for multi-arch build, if not exists
 	docker buildx inspect $(BUILDER) || docker buildx create --name=$(BUILDER) --driver=docker-container --driver-opt=network=host
 
