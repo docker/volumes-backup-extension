@@ -303,7 +303,6 @@ export function App() {
                             index++;
                         }
 
-                        console.log(rows)
                         setRows(rows);
                         setLoadingVolumes(false);
                         const endTime = performance.now()
