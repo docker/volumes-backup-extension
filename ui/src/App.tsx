@@ -40,9 +40,6 @@ type VolumeData = {
 export function App() {
     const context = useContext(MyContext);
     const [rows, setRows] = React.useState([]);
-    const [volumeContainersMap, setVolumeContainersMap] = React.useState<Record<string, string[]>>({});
-    const [volumeSizeMap, setVolumeSizeMap] = React.useState<Record<string, string>>({});
-    const [volumes, setVolumes] = React.useState([]);
     const [reloadTable, setReloadTable] = React.useState<boolean>(false);
     const [loadingVolumes, setLoadingVolumes] = React.useState<boolean>(true);
     const [volumesSizeLoadingMap, setVolumesSizeLoadingMap] = React.useState<Record<string, boolean>>({});
@@ -324,28 +321,6 @@ export function App() {
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [reloadTable]);
-
-    // useEffect(() => {
-    //     const startTime = performance.now()
-    //
-    //     const rows = volumes
-    //         .sort((a, b) => a.Name.localeCompare(b.Name))
-    //         .map((volume, index) => {
-    //             return {
-    //                 id: index,
-    //                 volumeDriver: volume.Driver,
-    //                 volumeName: volume.Name,
-    //                 volumeLinks: volume.Links,
-    //                 volumeContainers: volumeContainersMap[volume.Name],
-    //                 volumeSize: volumeSizeMap[volume.Name],
-    //             };
-    //         });
-    //
-    //     setRows(rows);
-    //
-    //     const endTime = performance.now()
-    //     console.log(`[setRows] took ${endTime - startTime} ms.`)
-    // }, [volumeContainersMap, volumeSizeMap]);
 
     const emptyVolume = async (volumeName: string) => {
         setActionInProgress(true);

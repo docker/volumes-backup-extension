@@ -228,8 +228,8 @@ func calcVolSize(ctx context.Context, volumeName string) string {
 
 	sizeOutput := buf.String() // e.g. 41.5M	/recalc-vol-size
 	size := strings.Split(strings.Trim(sizeOutput, "\n"), "\t")[0]
-	// TODO: Fix unknown characters at the beginning of sizeOutput
 
+	// remove unicode characters that are not printable from the size output
 	size = strings.Map(func(r rune) rune {
 		if unicode.IsPrint(r) {
 			return r
@@ -245,11 +245,6 @@ func calcVolSize(ctx context.Context, volumeName string) string {
 	}
 
 	logrus.Infof("volume %q size: %s", volumeName, size)
-
-	//_, err = stdcopy.StdCopy(os.Stdout, os.Stderr, out)
-	//if err != nil {
-	//	logrus.Error(err)
-	//}
 
 	err = cli.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{})
 	if err != nil {
