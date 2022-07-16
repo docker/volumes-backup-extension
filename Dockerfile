@@ -22,7 +22,7 @@ RUN --mount=type=cache,target=/usr/src/app/.npm \
 COPY ui /ui
 RUN npm run build
 
-FROM alpine:3.16
+FROM busybox:1.35.0
 LABEL org.opencontainers.image.title="vackup-docker-extension" \
     org.opencontainers.image.description="Easily backup and restore docker volumes." \
     org.opencontainers.image.vendor="Felipe" \
