@@ -1,10 +1,19 @@
 {
   "icon": "docker.svg",
+  "vm": {
+    "composefile": "docker-compose.yaml",
+    "exposes": {
+      "socket": "extension-vackup.sock"
+    }
+  },
   "ui": {
     "dashboard-tab": {
       "title": "Vackup",
       "src": "index.html",
-      "root": "ui"
+      "root": "ui",
+      "backend": {
+        "socket": "extension-vackup.sock"
+      }
     }
   }
 }

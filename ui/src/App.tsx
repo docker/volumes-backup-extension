@@ -31,6 +31,12 @@ function useDockerDesktopClient() {
     return client;
 }
 
+type VolumeData = {
+    Driver: string;
+    Size: string;
+    Containers: string[];
+}
+
 export function App() {
     const context = useContext(MyContext);
     const [rows, setRows] = React.useState([]);
@@ -67,7 +73,6 @@ export function App() {
             headerName: "Volume name",
             flex: 1,
         },
-        {field: "volumeLinks", hide: true},
         {
             field: "volumeContainers",
             headerName: "Containers",
@@ -277,133 +282,36 @@ export function App() {
         }
     };
 
-    const calculateVolumeSize = async (volumeName: string) => {
-        let volumesSizeLoadingMapCopy = volumesSizeLoadingMap
-        volumesSizeLoadingMapCopy[volumeName] = true
-        setVolumesSizeLoadingMap(volumesSizeLoadingMapCopy)
-
-        try {
-            const size = await computeVolumeSize(volumeName)
-
-            let rowsCopy = rows.slice() // copy the array
-            const index = rowsCopy.findIndex(element => element.volumeName === volumeName)
-            rowsCopy[index].volumeSize = size
-
-            setRows(rowsCopy)
-        } catch (error) {
-            ddClient.desktopUI.toast.error(
-                `Failed to recalculate volume size: ${error.stderr}`
-            );
-        } finally {
-            let volumesSizeLoadingMapCopy = volumesSizeLoadingMap
-            volumesSizeLoadingMapCopy[volumeName] = false
-            setVolumesSizeLoadingMap(volumesSizeLoadingMapCopy)
-        }
-    };
-
-    const computeVolumeSize = async (volumeName: string): Promise<string> => {
-        let size = "-"
-        const tmpDir = "/recalc-vol-size"
-
-        // e.g. docker run --rm -v postgres-vol:/pgdata alpine /bin/sh -c  "du -d 0 -h /pgdata | cut -f 1"
-        // get only dir size, without the name, e.g:
-        // 41.5M
-        // instead of
-        // 41.5M	/pgdata
-        const args = [
-            "--rm",
-            `-v=${volumeName}:${tmpDir}`,
-            "alpine",
-            "/bin/sh",
-            "-c",
-            `"du -d 0 -h ${tmpDir}"`
-        ];
-        const result = await ddClient.docker.cli.exec("run", args);
-
-        if (isError(result.stderr)) {
-            ddClient.desktopUI.toast.error(result.stderr);
-        } else {
-            const s = result.lines()[0].split("\t"); // e.g. 41.5M	/recalc-vol-size
-            size = s[0]
-
-            if (size === "4.0K") {
-                // If a directory size is 4K, it is in fact "empty".
-                // The metadata of the folder is stored in blocks and 4K is the minimum filesystem's block size.
-                // Therefore, we set it to "0B" to indicate that the directory is empty.
-                size = "0B"
-            }
-        }
-        return size
-    }
-
-    // This useEffect will pull the alpine image as it is needed to compute each volume size.
-    useEffect(() => {
-        const pullAlpineImage = async() => {
-            const startTime = performance.now()
-
-            const result = await ddClient.docker.cli.exec("pull", [
-                "alpine",
-            ]);
-
-            if (isError(result.stderr)) {
-                ddClient.desktopUI.toast.error(result.stderr);
-                return
-            }
-
-            const endTime = performance.now()
-            console.log(`[pullAlpineImage] took ${endTime - startTime} ms.`)
-        }
-
-        pullAlpineImage()
-    }, [])
-
     useEffect(() => {
         const listVolumes = async () => {
             const startTime = performance.now()
             setLoadingVolumes(true);
+
             try {
-                const result = await ddClient.docker.cli.exec("volume", [
-                    "ls",
-                    "--format",
-                    '"{{ json . }}"',
-                ]);
+                ddClient.extension.vm.service.get("/volumes")
+                    .then((results: Record<string, VolumeData>) => {
 
-                if (result.stderr !== "") {
-                    ddClient.desktopUI.toast.error(result.stderr);
-                } else {
-                    const volumes = result.parseJsonLines();
-                    const promises = volumes.map((volume) =>
-                        getContainersForVolume(volume.Name)
-                    );
+                        let rows = []
+                        let index = 0;
 
-                    Promise.allSettled(promises)
-                        .then((values) => {
-                            const vcMap = {};
-                            const vSMap = {};
+                        for (const key in results) {
+                            const value = results[key];
+                            rows.push({
+                                id: index,
+                                volumeDriver: value.Driver,
+                                volumeName: key,
+                                volumeContainers: value.Containers,
+                                volumeSize: value.Size
+                            })
+                            index++;
+                        }
 
-                            values.forEach((value) => {
-                                if (value.status === "rejected") {
-                                    ddClient.desktopUI.toast.error(value.reason);
-                                    return;
-                                }
-
-                                const {volumeName, containers, volumeSize} = value.value;
-                                vcMap[volumeName] = containers;
-                                vSMap[volumeName] = volumeSize;
-                            });
-
-                            setVolumeContainersMap(vcMap);
-                            setVolumeSizeMap(vSMap);
-                        })
-
-                        .finally(() => {
-                            setLoadingVolumes(false);
-                            const endTime = performance.now()
-                            console.log(`[listVolumes] took ${endTime - startTime} ms.`)
-                        });
-
-                    setVolumes(volumes);
-                }
+                        console.log(rows)
+                        setRows(rows);
+                        setLoadingVolumes(false);
+                        const endTime = performance.now()
+                        console.log(`[listVolumes] took ${endTime - startTime} ms.`);
+                    })
             } catch (error) {
                 setLoadingVolumes(false);
                 ddClient.desktopUI.toast.error(
@@ -417,27 +325,27 @@ export function App() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [reloadTable]);
 
-    useEffect(() => {
-        const startTime = performance.now()
-
-        const rows = volumes
-            .sort((a, b) => a.Name.localeCompare(b.Name))
-            .map((volume, index) => {
-                return {
-                    id: index,
-                    volumeDriver: volume.Driver,
-                    volumeName: volume.Name,
-                    volumeLinks: volume.Links,
-                    volumeContainers: volumeContainersMap[volume.Name],
-                    volumeSize: volumeSizeMap[volume.Name],
-                };
-            });
-
-        setRows(rows);
-
-        const endTime = performance.now()
-        console.log(`[setRows] took ${endTime - startTime} ms.`)
-    }, [volumeContainersMap, volumeSizeMap]);
+    // useEffect(() => {
+    //     const startTime = performance.now()
+    //
+    //     const rows = volumes
+    //         .sort((a, b) => a.Name.localeCompare(b.Name))
+    //         .map((volume, index) => {
+    //             return {
+    //                 id: index,
+    //                 volumeDriver: volume.Driver,
+    //                 volumeName: volume.Name,
+    //                 volumeLinks: volume.Links,
+    //                 volumeContainers: volumeContainersMap[volume.Name],
+    //                 volumeSize: volumeSizeMap[volume.Name],
+    //             };
+    //         });
+    //
+    //     setRows(rows);
+    //
+    //     const endTime = performance.now()
+    //     console.log(`[setRows] took ${endTime - startTime} ms.`)
+    // }, [volumeContainersMap, volumeSizeMap]);
 
     const emptyVolume = async (volumeName: string) => {
         setActionInProgress(true);
@@ -464,29 +372,6 @@ export function App() {
             );
         } finally {
             setActionInProgress(false);
-        }
-    };
-
-    const getContainersForVolume = async (
-        volumeName: string
-    ): Promise<{ volumeName: string; containers: string[]; volumeSize: string; }> => {
-        try {
-            const output = await ddClient.docker.cli.exec("ps", [
-                "-a",
-                `--filter="volume=${volumeName}"`,
-                `--format="{{ .Names}}"`,
-            ]);
-
-            if (output.stderr !== "") {
-                ddClient.desktopUI.toast.error(output.stderr);
-            }
-
-            const volumeSize = await computeVolumeSize(volumeName)
-
-            return {volumeName, containers: output.stdout.trim().split(" "), volumeSize};
-        } catch (error) {
-            const errorMsg = `Failed to get containers for volume ${volumeName}: ${error.stderr} Error code: ${error.code}`;
-            return Promise.reject(errorMsg);
         }
     };
 
@@ -531,6 +416,31 @@ export function App() {
         setOpenDeleteForeverDialog(false);
         if (actionSuccessfullyCompleted) {
             setReloadTable(!reloadTable);
+        }
+    };
+
+    const calculateVolumeSize = async (volumeName: string) => {
+        let volumesSizeLoadingMapCopy = volumesSizeLoadingMap
+        volumesSizeLoadingMapCopy[volumeName] = true
+        setVolumesSizeLoadingMap(volumesSizeLoadingMapCopy)
+
+        try {
+            ddClient.extension.vm.service.get(`/volumes/${volumeName}/size`)
+                .then((size: string) => {
+                    let rowsCopy = rows.slice() // copy the array
+                    const index = rowsCopy.findIndex(element => element.volumeName === volumeName)
+                    rowsCopy[index].volumeSize = size
+
+                    setRows(rowsCopy)
+
+                    let volumesSizeLoadingMapCopy = volumesSizeLoadingMap
+                    volumesSizeLoadingMapCopy[volumeName] = false
+                    setVolumesSizeLoadingMap(volumesSizeLoadingMapCopy)
+                })
+        } catch (error) {
+            ddClient.desktopUI.toast.error(
+                `Failed to recalculate volume size: ${error.stderr}`
+            );
         }
     };
 

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@docker/docker-mui-theme": "^0.0.6",
+    "@docker/docker-mui-theme": "^0.0.7",
     "@docker/extension-api-client": "^0.2.3",
     "@emotion/react": "^11.9.0",
     "@emotion/styled": "^11.8.1",
