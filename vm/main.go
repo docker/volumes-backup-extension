@@ -15,10 +15,10 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
-	"unicode"
 )
 
 var cli *client.Client
@@ -42,6 +42,15 @@ func init() {
 	}
 
 	reader, err = cli.ImagePull(ctx, "docker.io/library/busybox", types.ImagePullOptions{})
+	if err != nil {
+		logrus.Error(err)
+	}
+	_, err = io.Copy(os.Stdout, reader)
+	if err != nil {
+		logrus.Error(err)
+	}
+
+	reader, err = cli.ImagePull(ctx, "docker.io/justincormack/nsenter1", types.ImagePullOptions{})
 	if err != nil {
 		logrus.Error(err)
 	}
@@ -105,8 +114,26 @@ func volumes(ctx echo.Context) error {
 	}
 
 	var wg sync.WaitGroup
+	// Calculating the volume size by spinning a container that execs "du " **per volume** is too time-consuming.
+	// To reduce the time it takes, we get the volumes size by running only one container that execs "du"
+	// into the /var/lib/docker/volumes inside the VM.
+	volumesSize := calcVolSize(ctx.Request().Context(), "*")
+	res.Lock()
+	for k, v := range volumesSize {
+		entry, ok := res.data[k]
+		if !ok {
+			res.data[k] = VolumeData{
+				Size: v,
+			}
+			continue
+		}
+		entry.Size = v
+		res.data[k] = entry
+	}
+	res.Unlock()
+
 	for _, vol := range v.Volumes {
-		wg.Add(3)
+		wg.Add(2)
 		go func(volumeName string) {
 			defer wg.Done()
 			driver := calcVolDriver(context.Background(), volumeName) // TODO: use request context
@@ -120,22 +147,6 @@ func volumes(ctx echo.Context) error {
 				return
 			}
 			entry.Driver = driver
-			res.data[volumeName] = entry
-		}(vol.Name)
-
-		go func(volumeName string) {
-			defer wg.Done()
-			size := calcVolSize(context.Background(), volumeName) // TODO: use request context
-			res.Lock()
-			defer res.Unlock()
-			entry, ok := res.data[volumeName]
-			if !ok {
-				res.data[volumeName] = VolumeData{
-					Size: size,
-				}
-				return
-			}
-			entry.Size = size
 			res.data[volumeName] = entry
 		}(vol.Name)
 
@@ -181,7 +192,7 @@ func calcContainers(ctx context.Context, volumeName string) []string {
 
 	containerNames := make([]string, 0, len(containers))
 	for _, c := range containers {
-		containerNames = append(containerNames, c.Names[0])
+		containerNames = append(containerNames, strings.TrimPrefix(c.Names[0], "/"))
 	}
 
 	logrus.Info(containerNames)
@@ -189,14 +200,14 @@ func calcContainers(ctx context.Context, volumeName string) []string {
 	return containerNames
 }
 
-func calcVolSize(ctx context.Context, volumeName string) string {
-	const tmpDir = "/recalc-vol-size"
-
+func calcVolSize(ctx context.Context, volumeName string) map[string]string {
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
-		Image: "docker.io/library/alpine",
-		Cmd:   []string{"du", "-d", "0", "-h", tmpDir},
+		Tty:   true,
+		Cmd:   []string{"/bin/sh", "-c", "du -d 0 -h /var/lib/docker/volumes/" + volumeName},
+		Image: "docker.io/justincormack/nsenter1",
 	}, &container.HostConfig{
-		Binds: []string{volumeName + ":" + tmpDir},
+		PidMode:    "host",
+		Privileged: true,
 	}, nil, nil, "")
 	if err != nil {
 		logrus.Error(err)
@@ -226,40 +237,47 @@ func calcVolSize(ctx context.Context, volumeName string) string {
 		logrus.Error(err)
 	}
 
-	sizeOutput := buf.String() // e.g. 41.5M	/recalc-vol-size
-	size := strings.Split(strings.Trim(sizeOutput, "\n"), "\t")[0]
+	output := buf.String()
 
-	// remove unicode characters that are not printable from the size output
-	size = strings.Map(func(r rune) rune {
-		if unicode.IsPrint(r) {
-			return r
+	lines := strings.Split(strings.TrimSuffix(output, "\n"), "\n")
+	m := make(map[string]string)
+	for _, line := range lines {
+		s := strings.Split(line, "\t") // e.g. 41.5M	/var/lib/docker/volumes/my-volume
+		//logrus.Infof("line: %q, length: %d", s, len(s))
+
+		size := s[0]
+		path := strings.TrimSuffix(s[1], "\r")
+
+		if path == "/var/lib/docker/volumes/backingFsBlockDev" || path == "/var/lib/docker/volumes/metadata.db" {
+			// ignore "backingFsBlockDev" and "metadata.db" system volumes
+			continue
 		}
-		return -1
-	}, size)
 
-	if size == "4.0K" {
-		// If a directory size is 4K, it is in fact "empty".
-		// The metadata of the folder is stored in blocks and 4K is the minimum filesystem's block size.
-		// Therefore, we set it to "0B" to indicate that the directory is empty.
-		size = "0B"
+		if size == "8.0K" {
+			// Apparently, inside the VM if a directory size is 8.0K, it is in fact "empty".
+			// Therefore, we set it to "0B" to indicate that the directory is empty.
+			size = "0B"
+		}
+
+		m[filepath.Base(path)] = size
 	}
 
-	logrus.Infof("volume %q size: %s", volumeName, size)
+	//logrus.Info(m)
 
 	err = cli.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{})
 	if err != nil {
 		logrus.Error(err)
 	}
 
-	return size
+	return m
 }
 
 func volumeSize(ctx echo.Context) error {
 	start := time.Now()
 
 	volumeName := ctx.Param("volume")
-	size := calcVolSize(context.Background(), volumeName) // TODO: use request context
+	m := calcVolSize(context.Background(), volumeName) // TODO: use request context
 
 	logrus.Infof("/volumeSize took %s", time.Since(start))
-	return ctx.JSON(http.StatusOK, size)
+	return ctx.JSON(http.StatusOK, m[volumeName])
 }
