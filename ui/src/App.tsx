@@ -64,7 +64,7 @@ export function App() {
 
     const columns = [
         {field: "id", headerName: "ID", width: 70, hide: true},
-        {field: "volumeDriver", headerName: "Driver"},
+        {field: "volumeDriver", headerName: "Driver", hide: true},
         {
             field: "volumeName",
             headerName: "Volume name",
