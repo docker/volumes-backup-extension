@@ -56,7 +56,7 @@ export default function ImportDialog({...props}) {
             .catch((error) => {
                 actionSuccessfullyCompleted = false
                 ddClient.desktopUI.toast.error(
-                    `Failed to import file ${path} into volume ${context.store.volumeName}: ${error.stderr} Exit code: ${error.code}`
+                    `Failed to import file ${path} into volume ${context.store.volumeName}: ${error.message}. HTTP status code: ${error.statusCode}`
                 );
             })
             .finally(() => {

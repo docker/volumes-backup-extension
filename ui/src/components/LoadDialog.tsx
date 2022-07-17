@@ -41,7 +41,7 @@ export default function LoadDialog({...props}) {
                 console.log(error)
                 actionSuccessfullyCompleted = false
                 ddClient.desktopUI.toast.error(
-                    `Failed to copy /volume-data from image ${imageName} to into volume ${context.store.volumeName}: ${error.message} HTTP status code: ${error.statusCode}`
+                    `Failed to copy /volume-data from image ${imageName} to into volume ${context.store.volumeName}: ${error.message}. HTTP status code: ${error.statusCode}`
                 );
             })
             .finally(() => {

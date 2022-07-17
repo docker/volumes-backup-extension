@@ -53,7 +53,7 @@ export default function ExportDialog({...props}) {
             })
             .catch((error) => {
                 ddClient.desktopUI.toast.error(
-                    `Failed to backup volume ${context.store.volumeName} to ${path}: ${error.code}`
+                    `Failed to backup volume ${context.store.volumeName} to ${path}: ${error.message}. HTTP status code: ${error.statusCode}`
                 );
             })
             .finally(() => {

@@ -37,7 +37,7 @@ export default function SaveDialog({...props}) {
             })
             .catch((error) => {
                 ddClient.desktopUI.toast.error(
-                    `Failed to copy volume ${context.store.volumeName} into image ${imageName}: ${error.stderr} Exit code: ${error.code}`
+                    `Failed to copy volume ${context.store.volumeName} into image ${imageName}: ${error.message}. HTTP status code: ${error.statusCode}`
                 );
             })
             .finally(() => {
