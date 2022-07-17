@@ -8,7 +8,6 @@ import DialogTitle from "@mui/material/DialogTitle";
 import {createDockerDesktopClient} from "@docker/extension-api-client";
 
 import {MyContext} from "../index";
-import {isError} from "../common/isError";
 
 const client = createDockerDesktopClient();
 
@@ -29,64 +28,22 @@ export default function SaveDialog({...props}) {
     const saveVolume = async () => {
         setActionInProgress(true);
 
-        const containerName = "save-volume";
-
-        try {
-            const cpOutput = await ddClient.docker.cli.exec("run", [
-                `--name=${containerName}`,
-                `-v=${context.store.volumeName}:/mount-volume `,
-                "busybox",
-                "/bin/sh",
-                "-c",
-                '"cp -Rp /mount-volume/. /volume-data/;"',
-            ]);
-            if (isError(cpOutput.stderr)) {
-                ddClient.desktopUI.toast.error(cpOutput.stderr);
-                return;
-            }
-
-            const psOutput = await ddClient.docker.cli.exec("ps", [
-                "-aq",
-                `--filter="name=${containerName}"`,
-            ]);
-            if (psOutput.stderr !== "") {
-                ddClient.desktopUI.toast.error(psOutput.stderr);
-                return;
-            }
-
-            const containerId = psOutput.lines()[0];
-
-            const commitOutput = await ddClient.docker.cli.exec("commit", [
-                containerId,
-                imageName,
-            ]);
-
-            if (commitOutput.stderr !== "") {
-                ddClient.desktopUI.toast.error(commitOutput.stderr);
-                return;
-            }
-
-            const containerRmOutput = await ddClient.docker.cli.exec("container", [
-                "rm",
-                containerId,
-            ]);
-
-            if (containerRmOutput.stderr !== "") {
-                ddClient.desktopUI.toast.error(containerRmOutput.stderr);
-                return;
-            }
-
-            ddClient.desktopUI.toast.success(
-                `Volume ${context.store.volumeName} copied into image ${imageName}, under /volume-data`
-            );
-        } catch (error) {
-            ddClient.desktopUI.toast.error(
-                `Failed to copy volume ${context.store.volumeName} into image ${imageName}: ${error.stderr} Exit code: ${error.code}`
-            );
-        } finally {
-            setActionInProgress(false);
-            props.onClose();
-        }
+        ddClient.extension.vm.service
+            .get(`/volumes/${context.store.volumeName}/save?image=${imageName}`)
+            .then((_: any) => {
+                ddClient.desktopUI.toast.success(
+                    `Volume ${context.store.volumeName} copied into image ${imageName}, under /volume-data`
+                );
+            })
+            .catch((error) => {
+                ddClient.desktopUI.toast.error(
+                    `Failed to copy volume ${context.store.volumeName} into image ${imageName}: ${error.stderr} Exit code: ${error.code}`
+                );
+            })
+            .finally(() => {
+                setActionInProgress(false);
+                props.onClose();
+            })
     };
 
     return (

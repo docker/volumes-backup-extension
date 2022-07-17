@@ -86,6 +86,7 @@ func main() {
 	router.GET("/volumes/:volume/size", volumeSize)
 	router.GET("/volumes/:volume/export", export)
 	router.GET("/volumes/:volume/import", importHandler)
+	router.GET("/volumes/:volume/save", saveHandler)
 
 	log.Fatal(router.Start(startURL))
 }
@@ -567,5 +568,149 @@ func importHandler(ctx echo.Context) error {
 	}
 
 	logrus.Infof(fmt.Sprintf("/volumes/%s/import took %s", volumeName, time.Since(start)))
+	return ctx.String(http.StatusOK, "")
+}
+
+func saveHandler(ctx echo.Context) error {
+	start := time.Now()
+
+	volumeName := ctx.Param("volume")
+	image := ctx.QueryParam("image")
+
+	if volumeName == "" {
+		return ctx.String(http.StatusBadRequest, "volume is required")
+	}
+	if image == "" {
+		return ctx.String(http.StatusBadRequest, "image is required")
+	}
+
+	logrus.Infof("volumeName: %s", volumeName)
+	logrus.Infof("image: %s", image)
+
+	// Get container(s) for volume
+	containerNames := calcContainers(ctx.Request().Context(), volumeName)
+
+	// Stop container(s)
+	g, gCtx := errgroup.WithContext(ctx.Request().Context())
+
+	var stoppedContainersByExtension []string
+	var timeout = 10 * time.Second
+	for _, containerName := range containerNames {
+		containerName := containerName
+		g.Go(func() error {
+			// if the container linked to this volume is running then it must be stopped to ensure data integrity
+			containers, err := cli.ContainerList(ctx.Request().Context(), types.ContainerListOptions{
+				Filters: filters.NewArgs(filters.Arg("name", containerName)),
+			})
+			if err != nil {
+				return err
+			}
+
+			if len(containers) != 1 {
+				logrus.Infof("container %s is not running, no need to stop it", containerName)
+				return nil
+			}
+
+			logrus.Infof("stopping container %s...", containerName)
+			err = cli.ContainerStop(gCtx, containerName, &timeout)
+			if err != nil {
+				return err
+			}
+
+			logrus.Infof("container %s stopped", containerName)
+			stoppedContainersByExtension = append(stoppedContainersByExtension, containerName)
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		logrus.Error(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	// Save
+	resp, err := cli.ContainerCreate(ctx.Request().Context(), &container.Config{
+		Image:        "docker.io/library/busybox",
+		AttachStdout: true,
+		AttachStderr: true,
+		Cmd:          []string{"/bin/sh", "-c", "cp -Rp /mount-volume/. /volume-data/;"},
+	}, &container.HostConfig{
+		Binds: []string{
+			volumeName + ":" + "/mount-volume",
+		},
+	}, nil, nil, "save-volume")
+	if err != nil {
+		logrus.Error(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	if err := cli.ContainerStart(ctx.Request().Context(), resp.ID, types.ContainerStartOptions{}); err != nil {
+		logrus.Error(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	statusCh, errCh := cli.ContainerWait(ctx.Request().Context(), resp.ID, container.WaitConditionNotRunning)
+	select {
+	case err := <-errCh:
+		if err != nil {
+			logrus.Error(err)
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+	case <-statusCh:
+	}
+
+	out, err := cli.ContainerLogs(ctx.Request().Context(), resp.ID, types.ContainerLogsOptions{ShowStdout: true})
+	if err != nil {
+		logrus.Error(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	buf := new(bytes.Buffer)
+	_, err = buf.ReadFrom(out)
+	if err != nil {
+		logrus.Error(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	output := buf.String()
+
+	logrus.Info(output)
+
+	_, err = cli.ContainerCommit(ctx.Request().Context(), resp.ID, types.ContainerCommitOptions{
+		Reference: image,
+	})
+	if err != nil {
+		logrus.Error(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	err = cli.ContainerRemove(ctx.Request().Context(), resp.ID, types.ContainerRemoveOptions{})
+	if err != nil {
+		logrus.Error(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	// Start container(s)
+	g, gCtx = errgroup.WithContext(ctx.Request().Context())
+	for _, containerName := range stoppedContainersByExtension {
+		containerName := containerName
+		g.Go(func() error {
+			logrus.Infof("starting container %s...", containerName)
+			err := cli.ContainerStart(gCtx, containerName, types.ContainerStartOptions{})
+			if err != nil {
+				return err
+			}
+
+			logrus.Infof("container %s started", containerName)
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		logrus.Error(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	logrus.Infof(fmt.Sprintf("/volumes/%s/save took %s", volumeName, time.Since(start)))
 	return ctx.String(http.StatusOK, "")
 }
