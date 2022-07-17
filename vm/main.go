@@ -296,6 +296,7 @@ func export(ctx echo.Context) error {
 
 	volumeName := ctx.Param("volume")
 	path := ctx.QueryParam("path")
+	fileName := ctx.QueryParam("fileName")
 
 	if volumeName == "" {
 		return ctx.String(http.StatusBadRequest, "volume is required")
@@ -303,13 +304,12 @@ func export(ctx echo.Context) error {
 	if path == "" {
 		return ctx.String(http.StatusBadRequest, "path is required")
 	}
-
-	filePathDir := filepath.Dir(path)
-	fileName := filepath.Base(path)
+	if fileName == "" {
+		return ctx.String(http.StatusBadRequest, "path is required")
+	}
 
 	logrus.Infof("volumeName: %s", volumeName)
 	logrus.Infof("path: %s", path)
-	logrus.Infof("filePathDir: %s", filePathDir)
 	logrus.Infof("fileName: %s", fileName)
 
 	// Get container(s) for volume
@@ -362,7 +362,7 @@ func export(ctx echo.Context) error {
 	}, &container.HostConfig{
 		Binds: []string{
 			volumeName + ":" + "/vackup-volume",
-			filePathDir + ":" + "/vackup",
+			path + ":" + "/vackup",
 		},
 	}, nil, nil, "")
 	if err != nil {

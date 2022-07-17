@@ -45,7 +45,7 @@ export default function ExportDialog({...props}) {
         setActionInProgress(true);
 
         ddClient.extension.vm.service
-            .get(`/volumes/${context.store.volumeName}/export?path=${path}/${fileName}`)
+            .get(`/volumes/${context.store.volumeName}/export?path=${path}&fileName=${fileName}`)
             .then((_: any) => {
                 ddClient.desktopUI.toast.success(
                     `Volume ${context.store.volumeName} exported to ${path}`
