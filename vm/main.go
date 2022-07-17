@@ -249,7 +249,10 @@ func calcVolSize(ctx context.Context, volumeName string) map[string]string {
 	m := make(map[string]string)
 	for _, line := range lines {
 		s := strings.Split(line, "\t") // e.g. 41.5M	/var/lib/docker/volumes/my-volume
-		//logrus.Infof("line: %q, length: %d", s, len(s))
+		if len(s) != 2 {
+			logrus.Warnf("skipping line: %s", line)
+			continue
+		}
 
 		size := s[0]
 		path := strings.TrimSuffix(s[1], "\r")
