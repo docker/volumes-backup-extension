@@ -382,6 +382,7 @@ export function App() {
 
     const handleExportDialogClose = () => {
         setOpenExportDialog(false);
+        setReloadTable(!reloadTable);
     };
 
     const handleImportDialogClose = (actionSuccessfullyCompleted: boolean) => {
