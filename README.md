@@ -67,10 +67,6 @@ Each subsequent click on the extension tab will also open Chrome Dev Tools. To s
   docker extension dev reset felipecruz/vackup-docker-extension:latest
 ```
 
-## Known issues
-
-- Exporting large volumes fail at the moment with a toast error that says `ERR_CHILD_PROCESS_STDIO_MAXBUFFER`.
-
 ## Acknowledgements
 
 - [Vackup: Backup and Restore Docker Volumes](https://github.com/BretFisher/docker-vackup)

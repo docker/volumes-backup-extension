@@ -312,17 +312,32 @@ func export(ctx echo.Context) error {
 	// Stop container(s)
 	g, gCtx := errgroup.WithContext(ctx.Request().Context())
 
+	var stoppedContainersByExtension []string
 	var timeout = 10 * time.Second
 	for _, containerName := range containerNames {
 		containerName := containerName
 		g.Go(func() error {
+			// if the container linked to this volume is running then it must be stopped to ensure data integrity
+			containers, err := cli.ContainerList(ctx.Request().Context(), types.ContainerListOptions{
+				Filters: filters.NewArgs(filters.Arg("name", containerName)),
+			})
+			if err != nil {
+				return err
+			}
+
+			if len(containers) != 1 {
+				logrus.Infof("container %s is not running, no need to stop it", containerName)
+				return nil
+			}
+
 			logrus.Infof("stopping container %s...", containerName)
-			err := cli.ContainerStop(gCtx, containerName, &timeout)
+			err = cli.ContainerStop(gCtx, containerName, &timeout)
 			if err != nil {
 				return err
 			}
 
 			logrus.Infof("container %s stopped", containerName)
+			stoppedContainersByExtension = append(stoppedContainersByExtension, containerName)
 			return nil
 		})
 	}
@@ -389,7 +404,7 @@ func export(ctx echo.Context) error {
 
 	// Start container(s)
 	g, gCtx = errgroup.WithContext(ctx.Request().Context())
-	for _, containerName := range containerNames {
+	for _, containerName := range stoppedContainersByExtension {
 		containerName := containerName
 		g.Go(func() error {
 			logrus.Infof("starting container %s...", containerName)
