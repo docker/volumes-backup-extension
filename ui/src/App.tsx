@@ -35,7 +35,7 @@ type VolumeData = {
     Driver: string;
     Size: string;
     Containers: string[];
-}
+};
 
 export function App() {
     const context = useContext(MyContext);
@@ -92,11 +92,13 @@ export function App() {
             headerName: "Size",
             renderCell: (params) => {
                 if (volumesSizeLoadingMap[params.row.volumeName]) {
-                    return (<Box sx={{width: '100%'}}>
-                        <LinearProgress/>
-                    </Box>)
+                    return (
+                        <Box sx={{width: "100%"}}>
+                            <LinearProgress/>
+                        </Box>
+                    );
                 }
-                return <Typography>{params.row.volumeSize}</Typography>
+                return <Typography>{params.row.volumeSize}</Typography>;
             },
         },
         {
@@ -269,7 +271,7 @@ export function App() {
     };
 
     const handleDelete = (row) => async () => {
-        setOpenDeleteForeverDialog(true)
+        setOpenDeleteForeverDialog(true);
         context.actions.setVolumeName(row.volumeName);
     };
 
@@ -281,14 +283,14 @@ export function App() {
 
     useEffect(() => {
         const listVolumes = async () => {
-            const startTime = performance.now()
+            const startTime = performance.now();
             setLoadingVolumes(true);
 
             try {
-                ddClient.extension.vm.service.get("/volumes")
+                ddClient.extension.vm.service
+                    .get("/volumes")
                     .then((results: Record<string, VolumeData>) => {
-
-                        let rows = []
+                        let rows = [];
                         let index = 0;
 
                         for (const key in results) {
@@ -298,16 +300,16 @@ export function App() {
                                 volumeDriver: value.Driver,
                                 volumeName: key,
                                 volumeContainers: value.Containers,
-                                volumeSize: value.Size
-                            })
+                                volumeSize: value.Size,
+                            });
                             index++;
                         }
 
                         setRows(rows);
                         setLoadingVolumes(false);
-                        const endTime = performance.now()
+                        const endTime = performance.now();
                         console.log(`[listVolumes] took ${endTime - startTime} ms.`);
-                    })
+                    });
             } catch (error) {
                 setLoadingVolumes(false);
                 ddClient.desktopUI.toast.error(
@@ -320,6 +322,31 @@ export function App() {
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [reloadTable]);
+
+    useEffect(() => {
+        const volumeEvents = async () => {
+            console.log("listening to volume events...");
+            await ddClient.docker.cli.exec(
+                "events",
+                ["--format", `"{{ json . }}"`, "--filter", "type=volume"],
+                {
+                    stream: {
+                        onOutput(data) {
+                            setReloadTable((prevState) => {
+                                return !prevState;
+                            });
+                        },
+                        onClose(exitCode) {
+                            console.log("onClose with exit code " + exitCode);
+                        },
+                        splitOutputLines: true,
+                    },
+                }
+            );
+        };
+
+        volumeEvents();
+    }, []);
 
     const emptyVolume = async (volumeName: string) => {
         setActionInProgress(true);
@@ -386,7 +413,9 @@ export function App() {
         setOpenTransferDialog(false);
     };
 
-    const handleDeleteForeverDialogClose = (actionSuccessfullyCompleted: boolean) => {
+    const handleDeleteForeverDialogClose = (
+        actionSuccessfullyCompleted: boolean
+    ) => {
         setOpenDeleteForeverDialog(false);
         if (actionSuccessfullyCompleted) {
             setReloadTable(!reloadTable);
@@ -394,23 +423,26 @@ export function App() {
     };
 
     const calculateVolumeSize = async (volumeName: string) => {
-        let volumesSizeLoadingMapCopy = volumesSizeLoadingMap
-        volumesSizeLoadingMapCopy[volumeName] = true
-        setVolumesSizeLoadingMap(volumesSizeLoadingMapCopy)
+        let volumesSizeLoadingMapCopy = volumesSizeLoadingMap;
+        volumesSizeLoadingMapCopy[volumeName] = true;
+        setVolumesSizeLoadingMap(volumesSizeLoadingMapCopy);
 
         try {
-            ddClient.extension.vm.service.get(`/volumes/${volumeName}/size`)
+            ddClient.extension.vm.service
+                .get(`/volumes/${volumeName}/size`)
                 .then((size: string) => {
-                    let rowsCopy = rows.slice() // copy the array
-                    const index = rowsCopy.findIndex(element => element.volumeName === volumeName)
-                    rowsCopy[index].volumeSize = size
+                    let rowsCopy = rows.slice(); // copy the array
+                    const index = rowsCopy.findIndex(
+                        (element) => element.volumeName === volumeName
+                    );
+                    rowsCopy[index].volumeSize = size;
 
-                    setRows(rowsCopy)
+                    setRows(rowsCopy);
 
-                    let volumesSizeLoadingMapCopy = volumesSizeLoadingMap
-                    volumesSizeLoadingMapCopy[volumeName] = false
-                    setVolumesSizeLoadingMap(volumesSizeLoadingMapCopy)
-                })
+                    let volumesSizeLoadingMapCopy = volumesSizeLoadingMap;
+                    volumesSizeLoadingMapCopy[volumeName] = false;
+                    setVolumesSizeLoadingMap(volumesSizeLoadingMapCopy);
+                });
         } catch (error) {
             ddClient.desktopUI.toast.error(
                 `Failed to recalculate volume size: ${error.stderr}`
@@ -511,7 +543,7 @@ export function App() {
                         <DeleteForeverDialog
                             open={openDeleteForeverDialog}
                             onClose={(e) => {
-                                handleDeleteForeverDialogClose(e)
+                                handleDeleteForeverDialogClose(e);
                             }}
                         />
                     )}
