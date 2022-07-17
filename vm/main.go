@@ -26,6 +26,9 @@ import (
 var cli *client.Client
 
 func init() {
+	// Add this line for logging filename and line number
+	logrus.SetReportCaller(true)
+
 	ctx := context.Background()
 
 	var err error
@@ -352,6 +355,15 @@ func export(ctx echo.Context) error {
 		logrus.Error(err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
+
+	// in case it is a Windows path, replace double backslashes with a single forward slash
+	path = strings.Replace(path, "\\\\", "/", -1)
+
+	// add a leading slash before the drive letter and remove the extra colon after the drive letter
+	path = "/" + strings.Replace(path, ":", "", 1)
+
+	// TODO: quote path in case it includes spaces
+	log.Printf("path cleaned up in case it is a Windows path: %s", path)
 
 	// Export
 	resp, err := cli.ContainerCreate(ctx.Request().Context(), &container.Config{
