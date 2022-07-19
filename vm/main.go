@@ -85,7 +85,7 @@ func main() {
 
 	router.GET("/hello", hello)
 	router.GET("/volumes", h.volumes)
-	router.GET("/volumes/:volume/size", volumeSize)
+	router.GET("/volumes/:volume/size", h.volumeSize)
 	router.GET("/volumes/:volume/export", export)
 	router.GET("/volumes/:volume/import", importHandler)
 	router.GET("/volumes/:volume/save", saveHandler)
@@ -287,11 +287,11 @@ func calcVolSize(ctx context.Context, volumeName string) map[string]string {
 	return m
 }
 
-func volumeSize(ctx echo.Context) error {
+func (h *handler) volumeSize(ctx echo.Context) error {
 	start := time.Now()
 
 	volumeName := ctx.Param("volume")
-	m := calcVolSize(context.Background(), volumeName) // TODO: use request context
+	m := calcVolSize(ctx.Request().Context(), volumeName)
 
 	logrus.Infof("/volumeSize took %s", time.Since(start))
 	return ctx.JSON(http.StatusOK, m[volumeName])
