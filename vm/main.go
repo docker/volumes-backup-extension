@@ -23,21 +23,20 @@ import (
 	"time"
 )
 
-var cli *client.Client
+var h handler
 
 func init() {
-	// Add this line for logging filename and line number
-	logrus.SetReportCaller(true)
-
 	ctx := context.Background()
 
 	var err error
-	cli, err = client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	reader, err := cli.ImagePull(ctx, "docker.io/library/alpine", types.ImagePullOptions{})
+	h = handler{cli: cli}
+
+	reader, err := h.cli.ImagePull(ctx, "docker.io/library/alpine", types.ImagePullOptions{})
 	if err != nil {
 		logrus.Error(err)
 	}
@@ -46,7 +45,7 @@ func init() {
 		logrus.Error(err)
 	}
 
-	reader, err = cli.ImagePull(ctx, "docker.io/library/busybox", types.ImagePullOptions{})
+	reader, err = h.cli.ImagePull(ctx, "docker.io/library/busybox", types.ImagePullOptions{})
 	if err != nil {
 		logrus.Error(err)
 	}
@@ -55,7 +54,7 @@ func init() {
 		logrus.Error(err)
 	}
 
-	reader, err = cli.ImagePull(ctx, "docker.io/justincormack/nsenter1", types.ImagePullOptions{})
+	reader, err = h.cli.ImagePull(ctx, "docker.io/justincormack/nsenter1", types.ImagePullOptions{})
 	if err != nil {
 		logrus.Error(err)
 	}
@@ -85,7 +84,7 @@ func main() {
 	router.Listener = ln
 
 	router.GET("/hello", hello)
-	router.GET("/volumes", volumes)
+	router.GET("/volumes", h.volumes)
 	router.GET("/volumes/:volume/size", volumeSize)
 	router.GET("/volumes/:volume/export", export)
 	router.GET("/volumes/:volume/import", importHandler)
@@ -110,10 +109,14 @@ type VolumeData struct {
 	Containers []string
 }
 
-func volumes(ctx echo.Context) error {
+type handler struct {
+	cli *client.Client
+}
+
+func (h *handler) volumes(ctx echo.Context) error {
 	start := time.Now()
 
-	v, err := cli.VolumeList(ctx.Request().Context(), filters.NewArgs())
+	v, err := h.cli.VolumeList(ctx.Request().Context(), filters.NewArgs())
 	if err != nil {
 		logrus.Error(err)
 	}
@@ -182,7 +185,7 @@ func volumes(ctx echo.Context) error {
 }
 
 func calcVolDriver(ctx context.Context, volumeName string) string {
-	resp, err := cli.VolumeInspect(ctx, volumeName)
+	resp, err := h.cli.VolumeInspect(ctx, volumeName)
 	if err != nil {
 		logrus.Error(err)
 	}
@@ -191,7 +194,7 @@ func calcVolDriver(ctx context.Context, volumeName string) string {
 }
 
 func calcContainers(ctx context.Context, volumeName string) []string {
-	containers, err := cli.ContainerList(ctx, types.ContainerListOptions{
+	containers, err := h.cli.ContainerList(ctx, types.ContainerListOptions{
 		All:     true,
 		Filters: filters.NewArgs(filters.Arg("volume", volumeName)),
 	})
@@ -210,7 +213,7 @@ func calcContainers(ctx context.Context, volumeName string) []string {
 }
 
 func calcVolSize(ctx context.Context, volumeName string) map[string]string {
-	resp, err := cli.ContainerCreate(ctx, &container.Config{
+	resp, err := h.cli.ContainerCreate(ctx, &container.Config{
 		Tty:   true,
 		Cmd:   []string{"/bin/sh", "-c", "du -d 0 -h /var/lib/docker/volumes/" + volumeName},
 		Image: "docker.io/justincormack/nsenter1",
@@ -222,11 +225,11 @@ func calcVolSize(ctx context.Context, volumeName string) map[string]string {
 		logrus.Error(err)
 	}
 
-	if err := cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
+	if err := h.cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
 		logrus.Error(err)
 	}
 
-	statusCh, errCh := cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
+	statusCh, errCh := h.cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
 	select {
 	case err := <-errCh:
 		if err != nil {
@@ -235,7 +238,7 @@ func calcVolSize(ctx context.Context, volumeName string) map[string]string {
 	case <-statusCh:
 	}
 
-	out, err := cli.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{ShowStdout: true})
+	out, err := h.cli.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{ShowStdout: true})
 	if err != nil {
 		logrus.Error(err)
 	}
@@ -276,7 +279,7 @@ func calcVolSize(ctx context.Context, volumeName string) map[string]string {
 
 	//logrus.Info(m)
 
-	err = cli.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{})
+	err = h.cli.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{})
 	if err != nil {
 		logrus.Error(err)
 	}
@@ -327,7 +330,7 @@ func export(ctx echo.Context) error {
 		containerName := containerName
 		g.Go(func() error {
 			// if the container linked to this volume is running then it must be stopped to ensure data integrity
-			containers, err := cli.ContainerList(ctx.Request().Context(), types.ContainerListOptions{
+			containers, err := h.cli.ContainerList(ctx.Request().Context(), types.ContainerListOptions{
 				Filters: filters.NewArgs(filters.Arg("name", containerName)),
 			})
 			if err != nil {
@@ -340,7 +343,7 @@ func export(ctx echo.Context) error {
 			}
 
 			logrus.Infof("stopping container %s...", containerName)
-			err = cli.ContainerStop(gCtx, containerName, &timeout)
+			err = h.cli.ContainerStop(gCtx, containerName, &timeout)
 			if err != nil {
 				return err
 			}
@@ -366,7 +369,7 @@ func export(ctx echo.Context) error {
 	log.Printf("path cleaned up in case it is a Windows path: %s", path)
 
 	// Export
-	resp, err := cli.ContainerCreate(ctx.Request().Context(), &container.Config{
+	resp, err := h.cli.ContainerCreate(ctx.Request().Context(), &container.Config{
 		Image:        "docker.io/library/busybox",
 		AttachStdout: true,
 		AttachStderr: true,
@@ -382,12 +385,12 @@ func export(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	if err := cli.ContainerStart(ctx.Request().Context(), resp.ID, types.ContainerStartOptions{}); err != nil {
+	if err := h.cli.ContainerStart(ctx.Request().Context(), resp.ID, types.ContainerStartOptions{}); err != nil {
 		logrus.Error(err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	statusCh, errCh := cli.ContainerWait(ctx.Request().Context(), resp.ID, container.WaitConditionNotRunning)
+	statusCh, errCh := h.cli.ContainerWait(ctx.Request().Context(), resp.ID, container.WaitConditionNotRunning)
 	select {
 	case err := <-errCh:
 		if err != nil {
@@ -397,7 +400,7 @@ func export(ctx echo.Context) error {
 	case <-statusCh:
 	}
 
-	out, err := cli.ContainerLogs(ctx.Request().Context(), resp.ID, types.ContainerLogsOptions{ShowStdout: true})
+	out, err := h.cli.ContainerLogs(ctx.Request().Context(), resp.ID, types.ContainerLogsOptions{ShowStdout: true})
 	if err != nil {
 		logrus.Error(err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -414,7 +417,7 @@ func export(ctx echo.Context) error {
 
 	logrus.Info(output)
 
-	err = cli.ContainerRemove(ctx.Request().Context(), resp.ID, types.ContainerRemoveOptions{})
+	err = h.cli.ContainerRemove(ctx.Request().Context(), resp.ID, types.ContainerRemoveOptions{})
 	if err != nil {
 		logrus.Error(err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -426,7 +429,7 @@ func export(ctx echo.Context) error {
 		containerName := containerName
 		g.Go(func() error {
 			logrus.Infof("starting container %s...", containerName)
-			err := cli.ContainerStart(gCtx, containerName, types.ContainerStartOptions{})
+			err := h.cli.ContainerStart(gCtx, containerName, types.ContainerStartOptions{})
 			if err != nil {
 				return err
 			}
@@ -478,7 +481,7 @@ func importHandler(ctx echo.Context) error {
 		containerName := containerName
 		g.Go(func() error {
 			// if the container linked to this volume is running then it must be stopped to ensure data integrity
-			containers, err := cli.ContainerList(ctx.Request().Context(), types.ContainerListOptions{
+			containers, err := h.cli.ContainerList(ctx.Request().Context(), types.ContainerListOptions{
 				Filters: filters.NewArgs(filters.Arg("name", containerName)),
 			})
 			if err != nil {
@@ -491,7 +494,7 @@ func importHandler(ctx echo.Context) error {
 			}
 
 			logrus.Infof("stopping container %s...", containerName)
-			err = cli.ContainerStop(gCtx, containerName, &timeout)
+			err = h.cli.ContainerStop(gCtx, containerName, &timeout)
 			if err != nil {
 				return err
 			}
@@ -508,7 +511,7 @@ func importHandler(ctx echo.Context) error {
 	}
 
 	// Import
-	resp, err := cli.ContainerCreate(ctx.Request().Context(), &container.Config{
+	resp, err := h.cli.ContainerCreate(ctx.Request().Context(), &container.Config{
 		Image:        "docker.io/library/busybox",
 		AttachStdout: true,
 		AttachStderr: true,
@@ -524,12 +527,12 @@ func importHandler(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	if err := cli.ContainerStart(ctx.Request().Context(), resp.ID, types.ContainerStartOptions{}); err != nil {
+	if err := h.cli.ContainerStart(ctx.Request().Context(), resp.ID, types.ContainerStartOptions{}); err != nil {
 		logrus.Error(err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	statusCh, errCh := cli.ContainerWait(ctx.Request().Context(), resp.ID, container.WaitConditionNotRunning)
+	statusCh, errCh := h.cli.ContainerWait(ctx.Request().Context(), resp.ID, container.WaitConditionNotRunning)
 	select {
 	case err := <-errCh:
 		if err != nil {
@@ -539,7 +542,7 @@ func importHandler(ctx echo.Context) error {
 	case <-statusCh:
 	}
 
-	out, err := cli.ContainerLogs(ctx.Request().Context(), resp.ID, types.ContainerLogsOptions{ShowStdout: true})
+	out, err := h.cli.ContainerLogs(ctx.Request().Context(), resp.ID, types.ContainerLogsOptions{ShowStdout: true})
 	if err != nil {
 		logrus.Error(err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -556,7 +559,7 @@ func importHandler(ctx echo.Context) error {
 
 	logrus.Info(output)
 
-	err = cli.ContainerRemove(ctx.Request().Context(), resp.ID, types.ContainerRemoveOptions{})
+	err = h.cli.ContainerRemove(ctx.Request().Context(), resp.ID, types.ContainerRemoveOptions{})
 	if err != nil {
 		logrus.Error(err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -568,7 +571,7 @@ func importHandler(ctx echo.Context) error {
 		containerName := containerName
 		g.Go(func() error {
 			logrus.Infof("starting container %s...", containerName)
-			err := cli.ContainerStart(gCtx, containerName, types.ContainerStartOptions{})
+			err := h.cli.ContainerStart(gCtx, containerName, types.ContainerStartOptions{})
 			if err != nil {
 				return err
 			}
@@ -615,7 +618,7 @@ func saveHandler(ctx echo.Context) error {
 		containerName := containerName
 		g.Go(func() error {
 			// if the container linked to this volume is running then it must be stopped to ensure data integrity
-			containers, err := cli.ContainerList(ctx.Request().Context(), types.ContainerListOptions{
+			containers, err := h.cli.ContainerList(ctx.Request().Context(), types.ContainerListOptions{
 				Filters: filters.NewArgs(filters.Arg("name", containerName)),
 			})
 			if err != nil {
@@ -628,7 +631,7 @@ func saveHandler(ctx echo.Context) error {
 			}
 
 			logrus.Infof("stopping container %s...", containerName)
-			err = cli.ContainerStop(gCtx, containerName, &timeout)
+			err = h.cli.ContainerStop(gCtx, containerName, &timeout)
 			if err != nil {
 				return err
 			}
@@ -645,7 +648,7 @@ func saveHandler(ctx echo.Context) error {
 	}
 
 	// Save
-	resp, err := cli.ContainerCreate(ctx.Request().Context(), &container.Config{
+	resp, err := h.cli.ContainerCreate(ctx.Request().Context(), &container.Config{
 		Image:        "docker.io/library/busybox",
 		AttachStdout: true,
 		AttachStderr: true,
@@ -660,12 +663,12 @@ func saveHandler(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	if err := cli.ContainerStart(ctx.Request().Context(), resp.ID, types.ContainerStartOptions{}); err != nil {
+	if err := h.cli.ContainerStart(ctx.Request().Context(), resp.ID, types.ContainerStartOptions{}); err != nil {
 		logrus.Error(err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	statusCh, errCh := cli.ContainerWait(ctx.Request().Context(), resp.ID, container.WaitConditionNotRunning)
+	statusCh, errCh := h.cli.ContainerWait(ctx.Request().Context(), resp.ID, container.WaitConditionNotRunning)
 	select {
 	case err := <-errCh:
 		if err != nil {
@@ -675,7 +678,7 @@ func saveHandler(ctx echo.Context) error {
 	case <-statusCh:
 	}
 
-	out, err := cli.ContainerLogs(ctx.Request().Context(), resp.ID, types.ContainerLogsOptions{ShowStdout: true})
+	out, err := h.cli.ContainerLogs(ctx.Request().Context(), resp.ID, types.ContainerLogsOptions{ShowStdout: true})
 	if err != nil {
 		logrus.Error(err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -692,7 +695,7 @@ func saveHandler(ctx echo.Context) error {
 
 	logrus.Info(output)
 
-	_, err = cli.ContainerCommit(ctx.Request().Context(), resp.ID, types.ContainerCommitOptions{
+	_, err = h.cli.ContainerCommit(ctx.Request().Context(), resp.ID, types.ContainerCommitOptions{
 		Reference: image,
 	})
 	if err != nil {
@@ -700,7 +703,7 @@ func saveHandler(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	err = cli.ContainerRemove(ctx.Request().Context(), resp.ID, types.ContainerRemoveOptions{})
+	err = h.cli.ContainerRemove(ctx.Request().Context(), resp.ID, types.ContainerRemoveOptions{})
 	if err != nil {
 		logrus.Error(err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -712,7 +715,7 @@ func saveHandler(ctx echo.Context) error {
 		containerName := containerName
 		g.Go(func() error {
 			logrus.Infof("starting container %s...", containerName)
-			err := cli.ContainerStart(gCtx, containerName, types.ContainerStartOptions{})
+			err := h.cli.ContainerStart(gCtx, containerName, types.ContainerStartOptions{})
 			if err != nil {
 				return err
 			}
@@ -759,7 +762,7 @@ func loadHandler(ctx echo.Context) error {
 		containerName := containerName
 		g.Go(func() error {
 			// if the container linked to this volume is running then it must be stopped to ensure data integrity
-			containers, err := cli.ContainerList(ctx.Request().Context(), types.ContainerListOptions{
+			containers, err := h.cli.ContainerList(ctx.Request().Context(), types.ContainerListOptions{
 				Filters: filters.NewArgs(filters.Arg("name", containerName)),
 			})
 			if err != nil {
@@ -772,7 +775,7 @@ func loadHandler(ctx echo.Context) error {
 			}
 
 			logrus.Infof("stopping container %s...", containerName)
-			err = cli.ContainerStop(gCtx, containerName, &timeout)
+			err = h.cli.ContainerStop(gCtx, containerName, &timeout)
 			if err != nil {
 				return err
 			}
@@ -789,7 +792,7 @@ func loadHandler(ctx echo.Context) error {
 	}
 
 	// Load
-	resp, err := cli.ContainerCreate(ctx.Request().Context(), &container.Config{
+	resp, err := h.cli.ContainerCreate(ctx.Request().Context(), &container.Config{
 		Image:        image,
 		AttachStdout: true,
 		AttachStderr: true,
@@ -804,12 +807,12 @@ func loadHandler(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	if err := cli.ContainerStart(ctx.Request().Context(), resp.ID, types.ContainerStartOptions{}); err != nil {
+	if err := h.cli.ContainerStart(ctx.Request().Context(), resp.ID, types.ContainerStartOptions{}); err != nil {
 		logrus.Error(err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	statusCh, errCh := cli.ContainerWait(ctx.Request().Context(), resp.ID, container.WaitConditionNotRunning)
+	statusCh, errCh := h.cli.ContainerWait(ctx.Request().Context(), resp.ID, container.WaitConditionNotRunning)
 	select {
 	case err := <-errCh:
 		if err != nil {
@@ -819,7 +822,7 @@ func loadHandler(ctx echo.Context) error {
 	case <-statusCh:
 	}
 
-	out, err := cli.ContainerLogs(ctx.Request().Context(), resp.ID, types.ContainerLogsOptions{ShowStdout: true})
+	out, err := h.cli.ContainerLogs(ctx.Request().Context(), resp.ID, types.ContainerLogsOptions{ShowStdout: true})
 	if err != nil {
 		logrus.Error(err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -836,7 +839,7 @@ func loadHandler(ctx echo.Context) error {
 
 	logrus.Info(output)
 
-	err = cli.ContainerRemove(ctx.Request().Context(), resp.ID, types.ContainerRemoveOptions{})
+	err = h.cli.ContainerRemove(ctx.Request().Context(), resp.ID, types.ContainerRemoveOptions{})
 	if err != nil {
 		logrus.Error(err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -848,7 +851,7 @@ func loadHandler(ctx echo.Context) error {
 		containerName := containerName
 		g.Go(func() error {
 			logrus.Infof("starting container %s...", containerName)
-			err := cli.ContainerStart(gCtx, containerName, types.ContainerStartOptions{})
+			err := h.cli.ContainerStart(gCtx, containerName, types.ContainerStartOptions{})
 			if err != nil {
 				return err
 			}
