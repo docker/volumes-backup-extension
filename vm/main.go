@@ -86,7 +86,7 @@ func main() {
 	router.GET("/hello", hello)
 	router.GET("/volumes", h.volumes)
 	router.GET("/volumes/:volume/size", h.volumeSize)
-	router.GET("/volumes/:volume/export", export)
+	router.GET("/volumes/:volume/export", h.exportHandler)
 	router.GET("/volumes/:volume/import", importHandler)
 	router.GET("/volumes/:volume/save", saveHandler)
 	router.GET("/volumes/:volume/load", loadHandler)
@@ -297,7 +297,7 @@ func (h *handler) volumeSize(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, m[volumeName])
 }
 
-func export(ctx echo.Context) error {
+func (h *handler) exportHandler(ctx echo.Context) error {
 	start := time.Now()
 
 	volumeName := ctx.Param("volume")
@@ -369,11 +369,22 @@ func export(ctx echo.Context) error {
 	log.Printf("path cleaned up in case it is a Windows path: %s", path)
 
 	// Export
+
+	// fmt.Sprintf("tar -zcvf /vackup/%s /vackup-volume", fileName)
+	cmd := []string{
+		"tar",
+		"-zcvf",
+		filepath.Join("/vackup", filepath.Base(fileName)),
+		"/vackup-volume",
+	}
+	cmdJoined := strings.Join(cmd, " ")
+	logrus.Infof("cmdJoined: %s", cmdJoined)
+
 	resp, err := h.cli.ContainerCreate(ctx.Request().Context(), &container.Config{
 		Image:        "docker.io/library/busybox",
 		AttachStdout: true,
 		AttachStderr: true,
-		Cmd:          []string{"/bin/sh", "-c", fmt.Sprintf("tar -zcvf /vackup/%s /vackup-volume", fileName)},
+		Cmd:          []string{"/bin/sh", "-c", cmdJoined},
 	}, &container.HostConfig{
 		Binds: []string{
 			volumeName + ":" + "/vackup-volume",
@@ -416,6 +427,9 @@ func export(ctx echo.Context) error {
 	output := buf.String()
 
 	logrus.Info(output)
+
+	// TODO: check if container exited with error code
+	// if so, return internal server error!
 
 	err = h.cli.ContainerRemove(ctx.Request().Context(), resp.ID, types.ContainerRemoveOptions{})
 	if err != nil {
