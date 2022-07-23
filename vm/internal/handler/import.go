@@ -2,13 +2,12 @@ package handler
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/felipecruz91/vackup-docker-extension/internal/backend"
+	"github.com/felipecruz91/vackup-docker-extension/internal/log"
 	"github.com/labstack/echo"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 	"net/http"
 	"path/filepath"
@@ -16,8 +15,6 @@ import (
 )
 
 func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
-	start := time.Now()
-
 	volumeName := ctx.Param("volume")
 	path := ctx.QueryParam("path")
 
@@ -31,10 +28,10 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 	filePathDir := filepath.Dir(path)
 	fileName := filepath.Base(path)
 
-	logrus.Infof("volumeName: %s", volumeName)
-	logrus.Infof("path: %s", path)
-	logrus.Infof("filePathDir: %s", filePathDir)
-	logrus.Infof("fileName: %s", fileName)
+	log.Infof("volumeName: %s", volumeName)
+	log.Infof("path: %s", path)
+	log.Infof("filePathDir: %s", filePathDir)
+	log.Infof("fileName: %s", fileName)
 
 	// Get container(s) for volume
 	containerNames := backend.GetContainersForVolume(ctx.Request().Context(), h.DockerClient, volumeName)
@@ -56,24 +53,24 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 			}
 
 			if len(containers) != 1 {
-				logrus.Infof("container %s is not running, no need to stop it", containerName)
+				log.Infof("container %s is not running, no need to stop it", containerName)
 				return nil
 			}
 
-			logrus.Infof("stopping container %s...", containerName)
+			log.Infof("stopping container %s...", containerName)
 			err = h.DockerClient.ContainerStop(gCtx, containerName, &timeout)
 			if err != nil {
 				return err
 			}
 
-			logrus.Infof("container %s stopped", containerName)
+			log.Infof("container %s stopped", containerName)
 			stoppedContainersByExtension = append(stoppedContainersByExtension, containerName)
 			return nil
 		})
 	}
 
 	if err := g.Wait(); err != nil {
-		logrus.Error(err)
+		log.Error(err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -90,12 +87,12 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 		},
 	}, nil, nil, "")
 	if err != nil {
-		logrus.Error(err)
+		log.Error(err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	if err := h.DockerClient.ContainerStart(ctx.Request().Context(), resp.ID, types.ContainerStartOptions{}); err != nil {
-		logrus.Error(err)
+		log.Error(err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
@@ -103,7 +100,7 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 	select {
 	case err := <-errCh:
 		if err != nil {
-			logrus.Error(err)
+			log.Error(err)
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 	case <-statusCh:
@@ -111,24 +108,24 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 
 	out, err := h.DockerClient.ContainerLogs(ctx.Request().Context(), resp.ID, types.ContainerLogsOptions{ShowStdout: true})
 	if err != nil {
-		logrus.Error(err)
+		log.Error(err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	buf := new(bytes.Buffer)
 	_, err = buf.ReadFrom(out)
 	if err != nil {
-		logrus.Error(err)
+		log.Error(err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	output := buf.String()
 
-	logrus.Info(output)
+	log.Info(output)
 
 	err = h.DockerClient.ContainerRemove(ctx.Request().Context(), resp.ID, types.ContainerRemoveOptions{})
 	if err != nil {
-		logrus.Error(err)
+		log.Error(err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -137,22 +134,21 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 	for _, containerName := range stoppedContainersByExtension {
 		containerName := containerName
 		g.Go(func() error {
-			logrus.Infof("starting container %s...", containerName)
+			log.Infof("starting container %s...", containerName)
 			err := h.DockerClient.ContainerStart(gCtx, containerName, types.ContainerStartOptions{})
 			if err != nil {
 				return err
 			}
 
-			logrus.Infof("container %s started", containerName)
+			log.Infof("container %s started", containerName)
 			return nil
 		})
 	}
 
 	if err := g.Wait(); err != nil {
-		logrus.Error(err)
+		log.Error(err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	logrus.Infof(fmt.Sprintf("/volumes/%s/import took %s", volumeName, time.Since(start)))
 	return ctx.String(http.StatusOK, "")
 }

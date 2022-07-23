@@ -23,7 +23,5 @@ func GetContainersForVolume(ctx context.Context, cli *client.Client, volumeName 
 		containerNames = append(containerNames, strings.TrimPrefix(c.Names[0], "/"))
 	}
 
-	logrus.Info(containerNames)
-
 	return containerNames
 }

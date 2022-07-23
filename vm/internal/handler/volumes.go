@@ -4,11 +4,10 @@ import (
 	"context"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/felipecruz91/vackup-docker-extension/internal/backend"
+	"github.com/felipecruz91/vackup-docker-extension/internal/log"
 	"github.com/labstack/echo"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"sync"
-	"time"
 )
 
 type VolumesResponse struct {
@@ -23,11 +22,9 @@ type VolumeData struct {
 }
 
 func (h *Handler) Volumes(ctx echo.Context) error {
-	start := time.Now()
-
 	v, err := h.DockerClient.VolumeList(ctx.Request().Context(), filters.NewArgs())
 	if err != nil {
-		logrus.Error(err)
+		log.Error(err)
 	}
 
 	var res = VolumesResponse{
@@ -89,6 +86,5 @@ func (h *Handler) Volumes(ctx echo.Context) error {
 	}
 
 	wg.Wait()
-	logrus.Infof("/volumes took %s", time.Since(start))
 	return ctx.JSON(http.StatusOK, res.data)
 }

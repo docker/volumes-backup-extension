@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
-	"github.com/sirupsen/logrus"
+	"github.com/felipecruz91/vackup-docker-extension/internal/log"
 	"golang.org/x/sync/errgroup"
 	"io"
 	"os"
@@ -36,7 +36,7 @@ func pullImagesIfNotPresent(ctx context.Context, cli *client.Client) {
 		g.Go(func() error {
 			_, _, err := cli.ImageInspectWithRaw(ctx, image)
 			if err != nil {
-				logrus.Info("Pulling Image:", image)
+				log.Info("Pulling Image:", image)
 				reader, err := cli.ImagePull(ctx, image, types.ImagePullOptions{})
 				if err != nil {
 					return err
@@ -50,6 +50,6 @@ func pullImagesIfNotPresent(ctx context.Context, cli *client.Client) {
 
 	// wait for all the pull operations to complete
 	if err := g.Wait(); err == nil {
-		logrus.Info("Successfully pulled all the images")
+		log.Info("Successfully pulled all the images")
 	}
 }

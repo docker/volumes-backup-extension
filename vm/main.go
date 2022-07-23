@@ -5,9 +5,10 @@ import (
 	"flag"
 	"github.com/docker/docker/client"
 	"github.com/felipecruz91/vackup-docker-extension/internal/handler"
+	"github.com/felipecruz91/vackup-docker-extension/internal/log"
 	"github.com/labstack/echo"
+	"github.com/labstack/echo/middleware"
 	"github.com/sirupsen/logrus"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -15,7 +16,9 @@ import (
 	"time"
 )
 
-var h *handler.Handler
+var (
+	h *handler.Handler
+)
 
 func main() {
 	var socketPath string
@@ -24,9 +27,21 @@ func main() {
 
 	_ = os.RemoveAll(socketPath)
 
-	logrus.New().Infof("Starting listening on %s\n", socketPath)
+	// Output to stdout instead of the default stderr
+	log.SetOutput(os.Stdout)
+
+	log.Infof("Starting listening on %s\n", socketPath)
 	router := echo.New()
 	router.HideBanner = true
+	router.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Skipper: middleware.DefaultSkipper,
+		Format: `{"time":"${time_rfc3339_nano}","id":"${id}",` +
+			`"host":"${host}","method":"${method}","uri":"${uri}","user_agent":"${user_agent}",` +
+			`"status":${status},"error":"${error}","latency":${latency},"latency_human":"${latency_human}"` +
+			`,"bytes_in":${bytes_in},"bytes_out":${bytes_out}}` + "\n",
+		CustomTimeFormat: "2006-01-02 15:04:05.00000",
+		Output:           os.Stdout,
+	}))
 
 	ln, err := net.Listen("unix", socketPath)
 	if err != nil {
@@ -51,7 +66,7 @@ func main() {
 	// Start server
 	go func() {
 		if err := router.Start(""); err != nil && err != http.ErrServerClosed {
-			logrus.Fatal("shutting down the server")
+			log.Fatal("shutting down the server")
 		}
 	}()
 
