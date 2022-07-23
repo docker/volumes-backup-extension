@@ -125,7 +125,7 @@ func Test_exportHandler(t *testing.T) {
 		exportedTarGz := filepath.Join(os.TempDir(), volume+".tar.gz")
 		t.Logf("removing %s", exportedTarGz)
 		if err := os.Remove(exportedTarGz); err != nil {
-			t.Fatal(err)
+			t.Log(err)
 		}
 	}()
 
