@@ -17,6 +17,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -75,8 +76,6 @@ func main() {
 	router := echo.New()
 	router.HideBanner = true
 
-	startURL := ""
-
 	ln, err := net.Listen("unix", socketPath)
 	if err != nil {
 		log.Fatal(err)
@@ -91,7 +90,23 @@ func main() {
 	router.GET("/volumes/:volume/save", saveHandler)
 	router.GET("/volumes/:volume/load", loadHandler)
 
-	log.Fatal(router.Start(startURL))
+	// Start server
+	go func() {
+		if err := router.Start(""); err != nil && err != http.ErrServerClosed {
+			logrus.Fatal("shutting down the server")
+		}
+	}()
+
+	// Wait for interrupt signal to gracefully shut down the server with a timeout of 10 seconds.
+	// Use a buffered channel to avoid missing signals as recommended for signal.Notify
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt)
+	<-quit
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := router.Shutdown(ctx); err != nil {
+		logrus.Fatal(err)
+	}
 }
 
 func hello(ctx echo.Context) error {
