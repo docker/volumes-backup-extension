@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"runtime"
 	"testing"
 )
 
@@ -43,7 +44,9 @@ func TestVolumeSize(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	reader, err := cli.ImagePull(c.Request().Context(), "docker.io/library/nginx:1.21", types.ImagePullOptions{})
+	reader, err := cli.ImagePull(c.Request().Context(), "docker.io/library/nginx:1.21", types.ImagePullOptions{
+		Platform: "linux/" + runtime.GOARCH,
+	})
 	_, err = io.Copy(os.Stdout, reader)
 	require.NoError(t, err)
 

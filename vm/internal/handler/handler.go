@@ -8,6 +8,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"io"
 	"os"
+	"runtime"
 )
 
 type Handler struct {
@@ -37,7 +38,9 @@ func pullImagesIfNotPresent(ctx context.Context, cli *client.Client) {
 			_, _, err := cli.ImageInspectWithRaw(ctx, image)
 			if err != nil {
 				log.Info("Pulling Image:", image)
-				reader, err := cli.ImagePull(ctx, image, types.ImagePullOptions{})
+				reader, err := cli.ImagePull(ctx, image, types.ImagePullOptions{
+					Platform: "linux/" + runtime.GOARCH,
+				})
 				if err != nil {
 					return err
 				}
