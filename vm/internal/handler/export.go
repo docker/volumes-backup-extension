@@ -4,15 +4,12 @@ import (
 	"bytes"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
 	"github.com/felipecruz91/vackup-docker-extension/internal/backend"
 	"github.com/felipecruz91/vackup-docker-extension/internal/log"
 	"github.com/labstack/echo"
-	"golang.org/x/sync/errgroup"
 	"net/http"
 	"path/filepath"
 	"strings"
-	"time"
 )
 
 func (h *Handler) ExportVolume(ctx echo.Context) error {
@@ -34,43 +31,9 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 	log.Infof("path: %s", path)
 	log.Infof("fileName: %s", fileName)
 
-	// Get container(s) for volume
-	containerNames := backend.GetContainersForVolume(ctx.Request().Context(), h.DockerClient, volumeName)
-
 	// Stop container(s)
-	g, gCtx := errgroup.WithContext(ctx.Request().Context())
-
-	var stoppedContainersByExtension []string
-	var timeout = 10 * time.Second
-	for _, containerName := range containerNames {
-		containerName := containerName
-		g.Go(func() error {
-			// if the container linked to this volume is running then it must be stopped to ensure data integrity
-			containers, err := h.DockerClient.ContainerList(ctx.Request().Context(), types.ContainerListOptions{
-				Filters: filters.NewArgs(filters.Arg("name", containerName)),
-			})
-			if err != nil {
-				return err
-			}
-
-			if len(containers) != 1 {
-				log.Infof("container %s is not running, no need to stop it", containerName)
-				return nil
-			}
-
-			log.Infof("stopping container %s...", containerName)
-			err = h.DockerClient.ContainerStop(gCtx, containerName, &timeout)
-			if err != nil {
-				return err
-			}
-
-			log.Infof("container %s stopped", containerName)
-			stoppedContainersByExtension = append(stoppedContainersByExtension, containerName)
-			return nil
-		})
-	}
-
-	if err := g.Wait(); err != nil {
+	stoppedContainers, err := backend.StopContainersAttachedToVolume(ctx.Request().Context(), h.DockerClient, volumeName)
+	if err != nil {
 		log.Error(err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -79,7 +42,9 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 	path = strings.Replace(path, "\\\\", "/", -1)
 
 	// add a leading slash before the drive letter and remove the extra colon after the drive letter
-	path = "/" + strings.Replace(path, ":", "", 1)
+	if strings.Contains(path, ":") {
+		path = "/" + strings.Replace(path, ":", "", 1)
+	}
 
 	// TODO: quote path in case it includes spaces
 	log.Infof("path cleaned up in case it is a Windows path: %s", path)
@@ -154,22 +119,8 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 	}
 
 	// Start container(s)
-	g, gCtx = errgroup.WithContext(ctx.Request().Context())
-	for _, containerName := range stoppedContainersByExtension {
-		containerName := containerName
-		g.Go(func() error {
-			log.Infof("starting container %s...", containerName)
-			err := h.DockerClient.ContainerStart(gCtx, containerName, types.ContainerStartOptions{})
-			if err != nil {
-				return err
-			}
-
-			log.Infof("container %s started", containerName)
-			return nil
-		})
-	}
-
-	if err := g.Wait(); err != nil {
+	err = backend.StartContainersAttachedToVolume(ctx.Request().Context(), h.DockerClient, stoppedContainers)
+	if err != nil {
 		log.Error(err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
