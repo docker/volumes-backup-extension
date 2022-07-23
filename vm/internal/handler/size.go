@@ -9,7 +9,7 @@ import (
 func (h *Handler) VolumeSize(ctx echo.Context) error {
 	volumeName := ctx.Param("volume")
 
-	m := backend.GetVolumeSize(ctx.Request().Context(), h.DockerClient, volumeName)
+	m := backend.GetVolumesSize(ctx.Request().Context(), h.DockerClient, volumeName)
 
 	return ctx.JSON(http.StatusOK, m[volumeName])
 }

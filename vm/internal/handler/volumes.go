@@ -35,7 +35,7 @@ func (h *Handler) Volumes(ctx echo.Context) error {
 	// Calculating the volume size by spinning a container that execs "du " **per volume** is too time-consuming.
 	// To reduce the time it takes, we get the volumes size by running only one container that execs "du"
 	// into the /var/lib/docker/volumes inside the VM.
-	volumesSize := backend.GetVolumeSize(ctx.Request().Context(), h.DockerClient, "*")
+	volumesSize := backend.GetVolumesSize(ctx.Request().Context(), h.DockerClient, "*")
 	res.Lock()
 	for k, v := range volumesSize {
 		entry, ok := res.data[k]

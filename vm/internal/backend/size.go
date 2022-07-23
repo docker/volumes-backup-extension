@@ -6,12 +6,12 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
-	"github.com/sirupsen/logrus"
+	"github.com/felipecruz91/vackup-docker-extension/internal/log"
 	"path/filepath"
 	"strings"
 )
 
-func GetVolumeSize(ctx context.Context, cli *client.Client, volumeName string) map[string]string {
+func GetVolumesSize(ctx context.Context, cli *client.Client, volumeName string) map[string]string {
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
 		Tty:   true,
 		Cmd:   []string{"/bin/sh", "-c", "du -d 0 -h /var/lib/docker/volumes/" + volumeName},
@@ -21,11 +21,11 @@ func GetVolumeSize(ctx context.Context, cli *client.Client, volumeName string) m
 		Privileged: true,
 	}, nil, nil, "")
 	if err != nil {
-		logrus.Error(err)
+		log.Error(err)
 	}
 
 	if err := cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
-		logrus.Error(err)
+		log.Error(err)
 	}
 
 	statusCh, errCh := cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
@@ -39,13 +39,13 @@ func GetVolumeSize(ctx context.Context, cli *client.Client, volumeName string) m
 
 	out, err := cli.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{ShowStdout: true})
 	if err != nil {
-		logrus.Error(err)
+		log.Error(err)
 	}
 
 	buf := new(bytes.Buffer)
 	_, err = buf.ReadFrom(out)
 	if err != nil {
-		logrus.Error(err)
+		log.Error(err)
 	}
 
 	output := buf.String()
@@ -55,7 +55,7 @@ func GetVolumeSize(ctx context.Context, cli *client.Client, volumeName string) m
 	for _, line := range lines {
 		s := strings.Split(line, "\t") // e.g. 41.5M	/var/lib/docker/volumes/my-volume
 		if len(s) != 2 {
-			logrus.Warnf("skipping line: %s", line)
+			log.Warnf("skipping line: %s", line)
 			continue
 		}
 
@@ -76,11 +76,9 @@ func GetVolumeSize(ctx context.Context, cli *client.Client, volumeName string) m
 		m[filepath.Base(path)] = size
 	}
 
-	//logrus.Info(m)
-
 	err = cli.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{})
 	if err != nil {
-		logrus.Error(err)
+		log.Error(err)
 	}
 
 	return m
