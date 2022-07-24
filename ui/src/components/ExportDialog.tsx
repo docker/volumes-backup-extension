@@ -48,6 +48,9 @@ export default function ExportDialog({...props}) {
         console.log("path:", path);
         console.log("fileName:", fileName);
 
+        // const encodedPath = encodeURIComponent(path)
+        // console.log("encodedPath:", encodedPath);
+
         ddClient.extension.vm.service
             .get(`/volumes/${context.store.volumeName}/export?path=${path}&fileName=${fileName}`)
             .then((_: any) => {
