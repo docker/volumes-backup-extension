@@ -33,7 +33,9 @@ func TestVolumes(t *testing.T) {
 		Driver: "local",
 		Name:   volume,
 	})
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// List volumes
 	err = h.Volumes(c)

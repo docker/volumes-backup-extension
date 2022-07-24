@@ -46,7 +46,9 @@ func TestImportTarGzFile(t *testing.T) {
 		Driver: "local",
 		Name:   volume,
 	})
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// Import volume
 	err = h.ImportTarGzFile(c)
@@ -54,6 +56,5 @@ func TestImportTarGzFile(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, rec.Code)
 	sizes := backend.GetVolumesSize(c.Request().Context(), cli, volume)
-	t.Log(sizes[volume])
 	require.Regexp(t, ".*K", sizes[volume])
 }

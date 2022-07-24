@@ -57,13 +57,21 @@ func TestExportVolume(t *testing.T) {
 		Driver: "local",
 		Name:   volume,
 	})
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	reader, err := cli.ImagePull(c.Request().Context(), "docker.io/library/nginx:1.21", types.ImagePullOptions{
 		Platform: "linux/" + runtime.GOARCH,
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	_, err = io.Copy(os.Stdout, reader)
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// Populate volume
 	resp, err := cli.ContainerCreate(c.Request().Context(), &container.Config{
@@ -73,7 +81,9 @@ func TestExportVolume(t *testing.T) {
 			volume + ":" + "/usr/share/nginx/html:ro",
 		},
 	}, nil, nil, "")
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	containerID = resp.ID
 
