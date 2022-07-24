@@ -32,9 +32,6 @@ jobs:
           go mod download
           go build -trimpath -ldflags="-s -w" -o bin/service
 
-      - name: Docker info
-        run: docker info
-
       - name: Test
         working-directory: vm
         run: go test -v ./... --count=1

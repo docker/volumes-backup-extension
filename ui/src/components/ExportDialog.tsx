@@ -44,6 +44,10 @@ export default function ExportDialog({...props}) {
     const exportVolume = async () => {
         setActionInProgress(true);
 
+        console.log("volume name:", context.store.volumeName);
+        console.log("path:", path);
+        console.log("fileName:", fileName);
+
         ddClient.extension.vm.service
             .get(`/volumes/${context.store.volumeName}/export?path=${path}&fileName=${fileName}`)
             .then((_: any) => {

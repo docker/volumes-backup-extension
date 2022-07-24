@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -25,6 +26,7 @@ func TestExportVolume(t *testing.T) {
 	var containerID string
 	volume := "2f91f352f0ba381893b9e15ea87db0e28a88aa6e28070c07892681d7a0d6ba6b"
 	cli := setupDockerClient(t)
+	tmpDir := os.TempDir()
 
 	defer func() {
 		_ = cli.ContainerRemove(context.Background(), containerID, types.ContainerRemoveOptions{
@@ -32,7 +34,7 @@ func TestExportVolume(t *testing.T) {
 		})
 		_ = cli.VolumeRemove(context.Background(), volume, true)
 
-		exportedTarGz := filepath.Join(os.TempDir(), volume+".tar.gz")
+		exportedTarGz := filepath.Join(tmpDir, volume+".tar.gz")
 		t.Logf("removing %s", exportedTarGz)
 		if err := os.Remove(exportedTarGz); err != nil {
 			t.Log(err)
@@ -42,7 +44,7 @@ func TestExportVolume(t *testing.T) {
 	// Setup
 	e := echo.New()
 	q := make(url.Values)
-	q.Set("path", os.TempDir())
+	q.Set("path", tmpDir)
 	q.Set("fileName", volume+".tar.gz")
 	req := httptest.NewRequest(http.MethodGet, "/?"+q.Encode(), nil)
 	rec := httptest.NewRecorder()
@@ -97,7 +99,7 @@ func TestExportVolume(t *testing.T) {
 	require.Equal(t, http.StatusOK, rec.Code)
 
 	// Check content of exportedFiles is correct
-	r, err := os.Open(filepath.Join(os.TempDir(), volume+".tar.gz"))
+	r, err := os.Open(filepath.Join(tmpDir, volume+".tar.gz"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -183,6 +185,12 @@ func readFile(t *testing.T, dir string, identifier string) []byte {
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
 		t.Fatalf("Error opening file %s: %s", path, err)
+	}
+
+	if runtime.GOOS == "windows" {
+		// replace CRLF (\r\n) with LF (\n)
+		output := strings.Replace(string(b), "\r\n", "\n", -1)
+		b = []byte(output)
 	}
 
 	return b

@@ -45,6 +45,9 @@ export default function ImportDialog({...props}) {
         setActionInProgress(true);
         let actionSuccessfullyCompleted = false
 
+        console.log("volume name:", context.store.volumeName);
+        console.log("path:", path);
+
         ddClient.extension.vm.service
             .get(`/volumes/${context.store.volumeName}/import?path=${path}`)
             .then((_: any) => {

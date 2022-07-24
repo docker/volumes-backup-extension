@@ -38,16 +38,18 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 	}
 
 	// Import
+	binds := []string{
+		volumeName + ":" + "/vackup-volume",
+		path + ":" + "/vackup",
+	}
+	log.Infof("binds: %+v", binds)
 	resp, err := h.DockerClient.ContainerCreate(ctx.Request().Context(), &container.Config{
 		Image:        "docker.io/library/busybox",
 		AttachStdout: true,
 		AttachStderr: true,
 		Cmd:          []string{"/bin/sh", "-c", "tar -xvzf /vackup"},
 	}, &container.HostConfig{
-		Binds: []string{
-			volumeName + ":" + "/vackup-volume",
-			path + ":" + "/vackup",
-		},
+		Binds: binds,
 	}, nil, nil, "")
 	if err != nil {
 		log.Error(err)

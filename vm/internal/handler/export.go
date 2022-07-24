@@ -38,28 +38,36 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	// in case it is a Windows path, replace double backslashes with a single forward slash
-	path = strings.Replace(path, "\\\\", "/", -1)
-
-	// add a leading slash before the drive letter and remove the extra colon after the drive letter
+	// in case it is a Windows path:
 	if strings.Contains(path, ":") {
+		// add a leading slash before the drive letter and remove the extra colon after the drive letter
 		path = "/" + strings.Replace(path, ":", "", 1)
+		log.Infof("added leading slash to path and removed colon char: %s", path)
+
+		// replace double backslashes with a single forward slash
+		path = strings.ReplaceAll(path, "\\", "/")
+		log.Infof("replaced double backslahes with a single forward slash: %s", path)
+
+		// TODO: quote path in case it includes spaces
+		//log.Infof("path cleaned up in case it is a Windows path: %s", path)
 	}
 
-	// TODO: quote path in case it includes spaces
-	log.Infof("path cleaned up in case it is a Windows path: %s", path)
-
 	// Export
-
 	// fmt.Sprintf("tar -zcvf /vackup/%s /vackup-volume", fileName)
 	cmd := []string{
 		"tar",
 		"-zcvf",
-		filepath.Join("/vackup", filepath.Base(fileName)),
+		"/vackup" + "/" + filepath.Base(fileName),
 		"/vackup-volume",
 	}
 	cmdJoined := strings.Join(cmd, " ")
 	log.Infof("cmdJoined: %s", cmdJoined)
+
+	binds := []string{
+		volumeName + ":" + "/vackup-volume",
+		path + ":" + "/vackup",
+	}
+	log.Infof("binds: %+v", binds)
 
 	resp, err := h.DockerClient.ContainerCreate(ctx.Request().Context(), &container.Config{
 		Image:        "docker.io/library/busybox",
@@ -67,10 +75,7 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 		AttachStderr: true,
 		Cmd:          []string{"/bin/sh", "-c", cmdJoined},
 	}, &container.HostConfig{
-		Binds: []string{
-			volumeName + ":" + "/vackup-volume",
-			path + ":" + "/vackup",
-		},
+		Binds: binds,
 	}, nil, nil, "")
 	if err != nil {
 		log.Error(err)
