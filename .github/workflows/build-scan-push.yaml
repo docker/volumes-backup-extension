@@ -15,12 +15,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, self-hosted]
     steps:
       - name: Checkout git repo
         uses: actions/checkout@v3
 
       - name: Set up Go
+        if: matrix.os != 'self-hosted'
         uses: actions/setup-go@v3
         with:
           go-version: 1.17
