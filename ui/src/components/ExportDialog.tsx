@@ -52,7 +52,12 @@ export default function ExportDialog({ ...props }) {
     setActionInProgress(true);
 
     try {
-      const output = await ddClient.docker.cli.exec("run", [
+
+      console.log("volume name:", context.store.volumeName);
+      console.log("path:", path);
+      console.log("fileName:", fileName);
+
+      const args = [
         "--rm",
         `-v=${context.store.volumeName}:/vackup-volume `,
         `-v=${path}:/vackup `,
@@ -61,7 +66,12 @@ export default function ExportDialog({ ...props }) {
         "-zcvf",
         `/vackup/${fileName}`,
         "/vackup-volume",
-      ]);
+      ]
+
+      console.log("args:")
+      console.log(args.join(" "));
+
+      const output = await ddClient.docker.cli.exec("run", args);
       if (output.stderr !== "") {
         //"tar: removing leading '/' from member names\n"
         if (!output.stderr.includes("tar: removing leading")) {

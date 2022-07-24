@@ -47,7 +47,10 @@ export default function ImportDialog({...props}) {
         let actionSuccessfullyCompleted = false
 
         try {
-            const output = await ddClient.docker.cli.exec("run", [
+            console.log("volume name:", context.store.volumeName);
+            console.log("path:", path);
+
+            const args = [
                 "--rm",
                 `-v=${context.store.volumeName}:/vackup-volume `,
                 `-v=${path}:/vackup `, // path: e.g. "$HOME/Downloads/my-vol.tar.gz"
@@ -55,7 +58,12 @@ export default function ImportDialog({...props}) {
                 "tar",
                 "-xvzf",
                 `/vackup`,
-            ]);
+            ]
+
+            console.log("args:")
+            console.log(args.join(" "));
+
+            const output = await ddClient.docker.cli.exec("run", args);
             if (isError(output.stderr)) {
                 ddClient.desktopUI.toast.error(output.stderr);
                 return;
