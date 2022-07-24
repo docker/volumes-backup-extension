@@ -6,7 +6,6 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/felipecruz91/vackup-docker-extension/internal/log"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 	"strings"
 	"time"
@@ -18,7 +17,7 @@ func GetContainersForVolume(ctx context.Context, cli *client.Client, volumeName 
 		Filters: filters.NewArgs(filters.Arg("volume", volumeName)),
 	})
 	if err != nil {
-		logrus.Error(err)
+		log.Error(err)
 	}
 
 	containerNames := make([]string, 0, len(containers))
