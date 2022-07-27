@@ -3,14 +3,15 @@ package handler
 import (
 	"bytes"
 	"fmt"
+	"net/http"
+	"path/filepath"
+	"strings"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/felipecruz91/vackup-docker-extension/internal/backend"
 	"github.com/felipecruz91/vackup-docker-extension/internal/log"
 	"github.com/labstack/echo"
-	"net/http"
-	"path/filepath"
-	"strings"
 )
 
 func (h *Handler) ExportVolume(ctx echo.Context) error {
@@ -32,21 +33,17 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 	log.Infof("path: %s", path)
 	log.Infof("fileName: %s", fileName)
 
-	// fix windows path
 	if strings.Contains(path, ":") {
+		// Fix Windows path
+		// e.g. from C:\Users\felipe\Downloads to /c/Users/felipe/Downloads
 		path = strings.Replace(path, "C:\\", "/c/", 1)
 		path = strings.Replace(path, "\\", "/", -1)
-		path = "/mnt/host" + path // TODO: Only if running WSL2
+		// At the moment, we assume Docker Desktop uses the WSL backend is enabled.
+		// The mount points with WSL are in "/run/desktop/mnt/host/"
+		// e.g. "/run/desktop/mnt/host/c/Users/felipe/Downloads"
+		path = "/run/desktop/mnt/host" + path
+		// TODO: Support Hyper-V
 	}
-
-	//log.Infof("%s, %s", runtime.GOOS, runtime.GOARCH) // because it's running inside a container, it returns linux, amd64
-
-	//cmd := exec.Command("wsl", "-l", "-v")
-	//out, err := cmd.CombinedOutput()
-	//if err != nil {
-	//	log.Fatalf("cmd.Run() failed with %s\n", err)
-	//}
-	//fmt.Printf("combined out:\n%s\n", string(out))
 
 	log.Infof("path replaced: %s", path)
 
@@ -57,22 +54,7 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	// in case it is a Windows path:
-	//if strings.Contains(path, ":") {
-	//	// add a leading slash before the drive letter and remove the extra colon after the drive letter
-	//	path = "/" + strings.Replace(path, ":", "", 1)
-	//	log.Infof("added leading slash to path and removed colon char: %s", path)
-	//
-	//	// replace double backslashes with a single forward slash
-	//	path = strings.ReplaceAll(path, "\\", "/")
-	//	log.Infof("replaced double backslahes with a single forward slash: %s", path)
-	//
-	//	// TODO: quote path in case it includes spaces
-	//	//log.Infof("path cleaned up in case it is a Windows path: %s", path)
-	//}
-
 	// Export
-	//fmt.Sprintf("tar -zcvf /vackup/%s /vackup-volume", fileName)
 	cmd := []string{
 		"tar",
 		"-zcvf",
@@ -143,10 +125,6 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 	if exitCode != 0 {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("container exited with status code %d, output: %s\n", exitCode, output))
 	}
-
-	// TODO: FIX THE FOLLOWING ISSUE ON WINDOWS:
-	//C:\Users\felipe>docker logs 02bbad243e50
-	//tar: can't open '/vackup/exported.tar.gz': Operation not permitted
 
 	err = h.DockerClient.ContainerRemove(ctx.Request().Context(), resp.ID, types.ContainerRemoveOptions{})
 	if err != nil {
