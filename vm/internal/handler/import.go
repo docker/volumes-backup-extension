@@ -2,13 +2,15 @@ package handler
 
 import (
 	"bytes"
+	"fmt"
+	"net/http"
+	"strings"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/felipecruz91/vackup-docker-extension/internal/backend"
 	"github.com/felipecruz91/vackup-docker-extension/internal/log"
 	"github.com/labstack/echo"
-	"net/http"
-	"path/filepath"
 )
 
 func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
@@ -22,13 +24,22 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 		return ctx.String(http.StatusBadRequest, "path is required")
 	}
 
-	filePathDir := filepath.Dir(path)
-	fileName := filepath.Base(path)
-
 	log.Infof("volumeName: %s", volumeName)
 	log.Infof("path: %s", path)
-	log.Infof("filePathDir: %s", filePathDir)
-	log.Infof("fileName: %s", fileName)
+
+	if strings.Contains(path, ":") {
+		// Fix Windows path
+		// e.g. from C:\Users\felipe\Downloads to /c/Users/felipe/Downloads
+		path = strings.Replace(path, "C:\\", "/c/", 1)
+		path = strings.Replace(path, "\\", "/", -1)
+		// At the moment, we assume Docker Desktop uses the WSL backend is enabled.
+		// The mount points with WSL are in "/run/desktop/mnt/host/"
+		// e.g. "/run/desktop/mnt/host/c/Users/felipe/Downloads"
+		path = "/run/desktop/mnt/host" + path
+		// TODO: Support Hyper-V
+	}
+
+	log.Infof("path replaced: %s", path)
 
 	// Stop container(s)
 	stoppedContainers, err := backend.StopContainersAttachedToVolume(ctx.Request().Context(), h.DockerClient, volumeName)
@@ -61,6 +72,7 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
+	var exitCode int64
 	statusCh, errCh := h.DockerClient.ContainerWait(ctx.Request().Context(), resp.ID, container.WaitConditionNotRunning)
 	select {
 	case err := <-errCh:
@@ -68,7 +80,9 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 			log.Error(err)
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
-	case <-statusCh:
+	case status := <-statusCh:
+		log.Infof("status: %#+v\n", status)
+		exitCode = status.StatusCode
 	}
 
 	out, err := h.DockerClient.ContainerLogs(ctx.Request().Context(), resp.ID, types.ContainerLogsOptions{ShowStdout: true})
@@ -87,6 +101,10 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 	output := buf.String()
 
 	log.Info(output)
+
+	if exitCode != 0 {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("container exited with status code %d, output: %s\n", exitCode, output))
+	}
 
 	err = h.DockerClient.ContainerRemove(ctx.Request().Context(), resp.ID, types.ContainerRemoveOptions{})
 	if err != nil {
