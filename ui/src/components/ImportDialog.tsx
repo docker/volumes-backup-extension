@@ -21,7 +21,6 @@ export default function ImportDialog({...props}) {
     const ddClient = useDockerDesktopClient();
 
     const context = useContext(MyContext);
-    const fileName = `${context.store.volumeName}.tar.gz`;
 
     const [path, setPath] = React.useState<string>("");
     const [actionInProgress, setActionInProgress] =
@@ -46,34 +45,28 @@ export default function ImportDialog({...props}) {
         setActionInProgress(true);
         let actionSuccessfullyCompleted = false
 
-        try {
-            const output = await ddClient.docker.cli.exec("run", [
-                "--rm",
-                `-v=${context.store.volumeName}:/vackup-volume `,
-                `-v=${path}:/vackup `, // path: e.g. "$HOME/Downloads/my-vol.tar.gz"
-                "busybox",
-                "tar",
-                "-xvzf",
-                `/vackup`,
-            ]);
-            if (isError(output.stderr)) {
-                ddClient.desktopUI.toast.error(output.stderr);
-                return;
-            }
-            ddClient.desktopUI.toast.success(
-                `File ${fileName} imported into volume ${context.store.volumeName}`
-            );
+        console.log("volume name:", context.store.volumeName);
+        console.log("path:", path);
 
-            actionSuccessfullyCompleted = true
-        } catch (error) {
-            ddClient.desktopUI.toast.error(
-                `Failed to import file ${fileName} into volume ${context.store.volumeName}: ${error.stderr} Exit code: ${error.code}`
-            );
-        } finally {
-            setActionInProgress(false);
-            setPath("");
-            props.onClose(actionSuccessfullyCompleted)
-        }
+        ddClient.extension.vm.service
+            .get(`/volumes/${context.store.volumeName}/import?path=${path}`)
+            .then((_: any) => {
+                actionSuccessfullyCompleted = true
+                ddClient.desktopUI.toast.success(
+                    `File ${path} imported into volume ${context.store.volumeName}`
+                );
+            })
+            .catch((error) => {
+                actionSuccessfullyCompleted = false
+                ddClient.desktopUI.toast.error(
+                    `Failed to import file ${path} into volume ${context.store.volumeName}: ${error.message}. HTTP status code: ${error.statusCode}`
+                );
+            })
+            .finally(() => {
+                setActionInProgress(false);
+                setPath("");
+                props.onClose(actionSuccessfullyCompleted)
+            })
     };
 
     return (
@@ -129,7 +122,7 @@ export default function ImportDialog({...props}) {
                 </Button>
                 <Button
                     onClick={importVolume}
-                    disabled={path === "" || fileName === ""}
+                    disabled={path === ""}
                 >
                     Import
                 </Button>

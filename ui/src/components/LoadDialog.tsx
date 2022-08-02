@@ -29,34 +29,26 @@ export default function LoadDialog({...props}) {
         setActionInProgress(true);
         let actionSuccessfullyCompleted = false
 
-        try {
-            const output = await ddClient.docker.cli.exec("run", [
-                `--rm`,
-                `-v=${context.store.volumeName}:/mount-volume `,
-                imageName,
-                "/bin/sh",
-                "-c",
-                '"cp -Rp /volume-data/. /mount-volume/;"',
-            ]);
-            if (output.stderr !== "") {
-                ddClient.desktopUI.toast.error(output.stderr);
-                return;
-            }
-
-            ddClient.desktopUI.toast.success(
-                `Copied /volume-data from image ${imageName} into volume ${context.store.volumeName}`
-            );
-
-            actionSuccessfullyCompleted = true
-        } catch (error) {
-            ddClient.desktopUI.toast.error(
-                `Failed to copy /volume-data from image ${imageName} to into volume ${context.store.volumeName}: ${error.stderr} Exit code: ${error.code}`
-            );
-        } finally {
-            setActionInProgress(false);
-            setImageName("");
-            props.onClose(actionSuccessfullyCompleted)
-        }
+        ddClient.extension.vm.service
+            .get(`/volumes/${context.store.volumeName}/load?image=${imageName}`)
+            .then((_: any) => {
+                actionSuccessfullyCompleted = true
+                ddClient.desktopUI.toast.success(
+                    `Copied /volume-data from image ${imageName} into volume ${context.store.volumeName}`
+                );
+            })
+            .catch((error) => {
+                console.log(error)
+                actionSuccessfullyCompleted = false
+                ddClient.desktopUI.toast.error(
+                    `Failed to copy /volume-data from image ${imageName} to into volume ${context.store.volumeName}: ${error.message}. HTTP status code: ${error.statusCode}`
+                );
+            })
+            .finally(() => {
+                setActionInProgress(false);
+                setImageName("");
+                props.onClose(actionSuccessfullyCompleted)
+            })
     };
 
     return (

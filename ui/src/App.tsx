@@ -9,7 +9,7 @@ import {
     DeleteForever as DeleteForeverIcon,
     Devices as DevicesIcon,
     Download as DownloadIcon,
-    ExitToApp as ExitToAppIcon,
+    Visibility as VisibilityIcon,
     Layers as LayersIcon,
     PlayArrow as PlayArrowIcon,
     Upload as UploadIcon,
@@ -64,7 +64,7 @@ export function App() {
 
     const columns = [
         {field: "id", headerName: "ID", width: 70, hide: true},
-        {field: "volumeDriver", headerName: "Driver"},
+        {field: "volumeDriver", headerName: "Driver", hide: true},
         {
             field: "volumeName",
             headerName: "Volume name",
@@ -113,7 +113,7 @@ export function App() {
                     key={"action_view_volume_" + params.row.id}
                     icon={
                         <Tooltip title="View volume">
-                            <ExitToAppIcon>View volume</ExitToAppIcon>
+                            <VisibilityIcon>View volume</VisibilityIcon>
                         </Tooltip>
                     }
                     label="View volume"
@@ -382,6 +382,7 @@ export function App() {
 
     const handleExportDialogClose = () => {
         setOpenExportDialog(false);
+        setReloadTable(!reloadTable);
     };
 
     const handleImportDialogClose = (actionSuccessfullyCompleted: boolean) => {
