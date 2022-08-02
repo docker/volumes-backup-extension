@@ -93,10 +93,7 @@ func TestExportVolume(t *testing.T) {
 	err = h.ExportVolume(c)
 	require.NoError(t, err)
 
-	output := rec.Body.String()
-	t.Log(output)
-
-	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, http.StatusCreated, rec.Code)
 
 	// Check content of exportedFiles is correct
 	r, err := os.Open(filepath.Join(tmpDir, volume+".tar.gz"))

@@ -1,14 +1,15 @@
 package handler
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/felipecruz91/vackup-docker-extension/internal/backend"
 	"github.com/felipecruz91/vackup-docker-extension/internal/log"
 	"github.com/labstack/echo"
 	"net/http"
+	"os"
 )
 
 func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
@@ -75,19 +76,14 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	buf := new(bytes.Buffer)
-	_, err = buf.ReadFrom(out)
+	_, err = stdcopy.StdCopy(os.Stdout, os.Stderr, out)
 	if err != nil {
 		log.Error(err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	output := buf.String()
-
-	log.Info(output)
-
 	if exitCode != 0 {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("container exited with status code %d, output: %s\n", exitCode, output))
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("container exited with status code %d\n", exitCode))
 	}
 
 	err = h.DockerClient.ContainerRemove(ctx.Request().Context(), resp.ID, types.ContainerRemoveOptions{})
