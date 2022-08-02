@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, self-hosted]
+        os: [ubuntu-latest]
     steps:
       - name: Checkout git repo
         uses: actions/checkout@v3
