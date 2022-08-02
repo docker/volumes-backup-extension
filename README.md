@@ -1,5 +1,8 @@
 # vackup-docker-extension
 
+[![Build, Scan and Push](https://github.com/felipecruz91/vackup-docker-extension/actions/workflows/build-scan-push.yaml/badge.svg)](https://github.com/felipecruz91/vackup-docker-extension/actions/workflows/build-scan-push.yaml)
+[![Lint Dockerfile](https://github.com/felipecruz91/vackup-docker-extension/actions/workflows/hadolint.yaml/badge.svg)](https://github.com/felipecruz91/vackup-docker-extension/actions/workflows/hadolint.yaml)
+
 This repository contains a Docker Extension that backups Docker volumes. This extension is purely a demonstration of how it'd be to convert the [Vackup](https://github.com/BretFisher/docker-vackup) project by Bret Fisher into a Docker Extension.
 This example is part of the YouTube Livestream [Introducing Docker Extensions](https://www.youtube.com/watch?v=BHKp7Sc3VVc) hosted by Bret Fisher.
 
