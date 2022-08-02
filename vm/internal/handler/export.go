@@ -33,20 +33,6 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 	log.Infof("path: %s", path)
 	log.Infof("fileName: %s", fileName)
 
-	if strings.Contains(path, ":") {
-		// Fix Windows path
-		// e.g. from C:\Users\felipe\Downloads to /c/Users/felipe/Downloads
-		path = strings.Replace(path, "C:\\", "/c/", 1)
-		path = strings.Replace(path, "\\", "/", -1)
-		// At the moment, we assume Docker Desktop uses the WSL backend is enabled.
-		// The mount points with WSL are in "/run/desktop/mnt/host/"
-		// e.g. "/run/desktop/mnt/host/c/Users/felipe/Downloads"
-		path = "/run/desktop/mnt/host" + path
-		// TODO: Support Hyper-V
-	}
-
-	log.Infof("path replaced: %s", path)
-
 	// Stop container(s)
 	stoppedContainers, err := backend.StopContainersAttachedToVolume(ctx.Request().Context(), h.DockerClient, volumeName)
 	if err != nil {
