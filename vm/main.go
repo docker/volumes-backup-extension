@@ -22,7 +22,7 @@ var (
 
 func main() {
 	var socketPath string
-	flag.StringVar(&socketPath, "socket", "/run/guest/extension-vackup.sock", "Unix domain socket to listen on")
+	flag.StringVar(&socketPath, "socket", "/run/guest/ext.sock", "Unix domain socket to listen on")
 	flag.Parse()
 
 	_ = os.RemoveAll(socketPath)
@@ -30,7 +30,6 @@ func main() {
 	// Output to stdout instead of the default stderr
 	log.SetOutput(os.Stdout)
 
-	log.Infof("Starting listening on %s\n", socketPath)
 	router := echo.New()
 	router.HideBanner = true
 	router.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
@@ -43,6 +42,7 @@ func main() {
 		Output:           os.Stdout,
 	}))
 
+	log.Infof("Starting listening on %s\n", socketPath)
 	ln, err := net.Listen("unix", socketPath)
 	if err != nil {
 		log.Fatal(err)
@@ -62,6 +62,7 @@ func main() {
 	router.GET("/volumes/:volume/import", h.ImportTarGzFile)
 	router.GET("/volumes/:volume/save", h.SaveVolume)
 	router.GET("/volumes/:volume/load", h.LoadImage)
+	router.POST("/volumes/:volume/push", h.PushVolume)
 
 	// Start server
 	go func() {

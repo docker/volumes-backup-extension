@@ -13,10 +13,12 @@ import {
     Layers as LayersIcon,
     PlayArrow as PlayArrowIcon,
     Upload as UploadIcon,
+    CloudUpload as CloudUploadIcon,
 } from "@mui/icons-material";
 import ExportDialog from "./components/ExportDialog";
 import ImportDialog from "./components/ImportDialog";
 import SaveDialog from "./components/SaveDialog";
+import PushDialog from "./components/PushDialog";
 import LoadDialog from "./components/LoadDialog";
 import CloneDialog from "./components/CloneDialog";
 import TransferDialog from "./components/TransferDialog";
@@ -52,6 +54,7 @@ export function App() {
     const [openImportDialog, setOpenImportDialog] =
         React.useState<boolean>(false);
     const [openSaveDialog, setOpenSaveDialog] = React.useState<boolean>(false);
+    const [openPushDialog, setOpenPushDialog] = React.useState<boolean>(false);
     const [openLoadDialog, setOpenLoadDialog] = React.useState<boolean>(false);
     const [openCloneDialog, setOpenCloneDialog] = React.useState<boolean>(false);
     const [openTransferDialog, setOpenTransferDialog] =
@@ -177,6 +180,18 @@ export function App() {
                     disabled={params.row.volumeSize === "0B"}
                 />,
                 <GridActionsCellItem
+                    key={"action_push_" + params.row.id}
+                    icon={
+                        <Tooltip title="Push to registry">
+                            <CloudUploadIcon>Push to registry</CloudUploadIcon>
+                        </Tooltip>
+                    }
+                    label="Push to registry"
+                    onClick={handlePush(params.row)}
+                    showInMenu
+                    disabled={params.row.volumeSize === "0B"}
+                />,
+                <GridActionsCellItem
                     key={"action_load_" + params.row.id}
                     icon={
                         <Tooltip title="Load from image">
@@ -252,6 +267,11 @@ export function App() {
 
     const handleSave = (row) => () => {
         setOpenSaveDialog(true);
+        context.actions.setVolumeName(row.volumeName);
+    };
+
+    const handlePush = (row) => () => {
+        setOpenPushDialog(true);
         context.actions.setVolumeName(row.volumeName);
     };
 
@@ -396,6 +416,10 @@ export function App() {
         setOpenSaveDialog(false);
     };
 
+    const handlePushDialogClose = () => {
+        setOpenPushDialog(false);
+    };
+
     const handleLoadDialogClose = (actionSuccessfullyCompleted: boolean) => {
         setOpenLoadDialog(false);
         if (actionSuccessfullyCompleted) {
@@ -520,6 +544,10 @@ export function App() {
 
                     {openSaveDialog && (
                         <SaveDialog open={openSaveDialog} onClose={handleSaveDialogClose}/>
+                    )}
+
+                    {openPushDialog && (
+                        <PushDialog open={openPushDialog} onClose={handlePushDialogClose}/>
                     )}
 
                     {openLoadDialog && (

@@ -22,6 +22,12 @@ RUN --mount=type=cache,target=/usr/src/app/.npm \
 COPY ui /ui
 RUN npm run build
 
+FROM golang:1.17-alpine AS volume-share-client-builder
+WORKDIR /output
+RUN apk add build-base
+COPY client .
+RUN make cross
+
 FROM busybox:1.35.0
 LABEL org.opencontainers.image.title="vackup-docker-extension" \
     org.opencontainers.image.description="Easily backup and restore docker volumes." \
@@ -39,7 +45,8 @@ COPY metadata.json .
 COPY docker.svg .
 COPY --from=builder /backend/bin/service /
 COPY --from=client-builder /ui/build ui
+COPY --from=volume-share-client-builder output/dist ./host
 
 RUN mkdir -p /vackup
 
-CMD /service -socket /run/guest-services/extension-vackup.sock
+CMD /service -socket /run/guest-services/ext.sock
