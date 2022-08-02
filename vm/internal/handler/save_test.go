@@ -1,0 +1,105 @@
+package handler
+
+import (
+	"context"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
+	volumetypes "github.com/docker/docker/api/types/volume"
+	"github.com/labstack/echo"
+	"github.com/stretchr/testify/require"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"os"
+	"runtime"
+	"testing"
+)
+
+func TestSaveVolume(t *testing.T) {
+	var containerID string
+	volume := "cde5adac7d16ae45c6d2bf8f2496d3da3b994227bfa4d3ea392a03c2ad33cce6"
+	imageID := "vackup-cde5adac7d16ae45c6d2bf8f2496d3da3b994227bfa4d3ea392a03c2ad33cce6:latest"
+	cli := setupDockerClient(t)
+
+	defer func() {
+		_ = cli.ContainerRemove(context.Background(), containerID, types.ContainerRemoveOptions{
+			Force: true,
+		})
+		_ = cli.VolumeRemove(context.Background(), volume, true)
+
+		t.Logf("removing image %s", imageID)
+		if _, err := cli.ImageRemove(context.Background(), imageID, types.ImageRemoveOptions{
+			Force: true,
+		}); err != nil {
+			t.Log(err)
+		}
+	}()
+
+	// Setup
+	e := echo.New()
+	q := make(url.Values)
+	q.Set("image", imageID)
+	req := httptest.NewRequest(http.MethodGet, "/?"+q.Encode(), nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetPath("/volumes/:volume/save")
+	c.SetParamNames("volume")
+	c.SetParamValues(volume)
+	h := New(c.Request().Context(), setupDockerClient(t))
+
+	// Create volume
+	_, err := cli.VolumeCreate(c.Request().Context(), volumetypes.VolumeCreateBody{
+		Driver: "local",
+		Name:   volume,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	reader, err := cli.ImagePull(c.Request().Context(), "docker.io/library/nginx:1.21", types.ImagePullOptions{
+		Platform: "linux/" + runtime.GOARCH,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = io.Copy(os.Stdout, reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Populate volume
+	resp, err := cli.ContainerCreate(c.Request().Context(), &container.Config{
+		Image: "docker.io/library/nginx:1.21",
+	}, &container.HostConfig{
+		Binds: []string{
+			volume + ":" + "/usr/share/nginx/html:ro",
+		},
+	}, nil, nil, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	containerID = resp.ID
+
+	// Save volume
+	err = h.SaveVolume(c)
+
+	require.NoError(t, err)
+	require.Equal(t, http.StatusCreated, rec.Code)
+
+	// Check the image exists
+	summary, err := cli.ImageList(context.Background(), types.ImageListOptions{
+		All:     false,
+		Filters: filters.NewArgs(filters.Arg("reference", imageID)),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	require.Len(t, summary, 1)
+	require.Equal(t, imageID, summary[0].RepoTags[0])
+	require.Equal(t, int64(1244972), summary[0].Size)
+}

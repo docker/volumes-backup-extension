@@ -1,9 +1,10 @@
 package handler
 
 import (
-	"bytes"
 	"fmt"
+	"github.com/docker/docker/pkg/stdcopy"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -76,8 +77,6 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	// TODO: check if container exited with error code in other handlers
-	// if so, return internal server error!
 	var exitCode int64
 	statusCh, errCh := h.DockerClient.ContainerWait(ctx.Request().Context(), resp.ID, container.WaitConditionNotRunning)
 	select {
@@ -97,19 +96,14 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	buf := new(bytes.Buffer)
-	_, err = buf.ReadFrom(out)
+	_, err = stdcopy.StdCopy(os.Stdout, os.Stderr, out)
 	if err != nil {
 		log.Error(err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	output := buf.String()
-
-	log.Info(output)
-
 	if exitCode != 0 {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("container exited with status code %d, output: %s\n", exitCode, output))
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("container exited with status code %d\n", exitCode))
 	}
 
 	err = h.DockerClient.ContainerRemove(ctx.Request().Context(), resp.ID, types.ContainerRemoveOptions{})
@@ -125,5 +119,5 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	return ctx.String(http.StatusOK, "")
+	return ctx.String(http.StatusCreated, "")
 }
