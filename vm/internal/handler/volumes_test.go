@@ -49,7 +49,8 @@ func TestVolumes(t *testing.T) {
 	require.Equal(t, http.StatusOK, rec.Code)
 	require.Contains(t, m, volume)
 	require.Equal(t, "local", m[volume].Driver)
-	require.Equal(t, "0B", m[volume].Size)
+	require.Equal(t, int64(0), m[volume].Size)
+	require.Equal(t, "0 B", m[volume].SizeHuman)
 	require.Len(t, m[volume].Containers, 0)
 }
 

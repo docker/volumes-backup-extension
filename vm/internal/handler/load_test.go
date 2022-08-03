@@ -69,6 +69,7 @@ func TestLoadImage(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, rec.Code)
 	sizes := backend.GetVolumesSize(c.Request().Context(), cli, volume)
-	t.Logf("Volume size after loading image into it: %s", sizes[volume])
-	require.Regexp(t, ".*K", sizes[volume])
+	t.Logf("Volume size after loading image into it: %+v", sizes[volume])
+	require.Equal(t, int64(16000), sizes[volume].Bytes)
+	require.Equal(t, "16.0 kB", sizes[volume].Human)
 }
