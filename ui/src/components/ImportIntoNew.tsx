@@ -1,5 +1,6 @@
 import React, { useContext, useState } from "react";
 import {
+  Alert,
   Backdrop,
   Button,
   CircularProgress,
@@ -19,13 +20,12 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import { createDockerDesktopClient } from "@docker/extension-api-client";
 
-import { VolumeIcon } from "./VolumeIcon";
 import { useCreateVolume } from "../hooks/useCreateVolume";
 import { useImportFromPath } from "../hooks/useImportFromPath";
 import { ImageAutocomplete } from "./ImageAutocomplete";
-import { VolumeInput } from "./VolumeInput";
 import { useImportFromImage } from "../hooks/useImportFromImage";
 import { MyContext } from "..";
+import { VolumeOrInput } from "./VolumeOrInput";
 
 const ddClient = createDockerDesktopClient();
 
@@ -35,7 +35,7 @@ interface Props {
   volumes: unknown[];
 }
 
-export default function ImportIntoNewDialog({ volumes, open, onClose }: Props) {
+export default function ImportDialog({ volumes, open, onClose }: Props) {
   const [fromRadioValue, setFromRadioValue] = useState<"file" | "image">(
     "file"
   );
@@ -46,7 +46,7 @@ export default function ImportIntoNewDialog({ volumes, open, onClose }: Props) {
 
   // when executed from a Volume context we don't need to create it.
   const context = useContext(MyContext);
-  const providedVolumeName = context.store.volumeName;
+  const selectedVolumeName = context.store.volume?.volumeName;
 
   const { createVolume, isInProgress: isCreating } = useCreateVolume();
   const { importVolume, isInProgress: isImportingFromPath } =
@@ -69,12 +69,8 @@ export default function ImportIntoNewDialog({ volumes, open, onClose }: Props) {
       });
   };
 
-  /**
-   * Only creates the volume when
-   * @returns
-   */
   const handleCreateVolume = async () => {
-    if (providedVolumeName) return;
+    if (selectedVolumeName) return;
     await createVolume(volumeName);
   };
 
@@ -82,13 +78,13 @@ export default function ImportIntoNewDialog({ volumes, open, onClose }: Props) {
     await handleCreateVolume();
     if (fromRadioValue === "file") {
       await importVolume({
-        volumeName: providedVolumeName || volumeName,
+        volumeName: selectedVolumeName || volumeName,
         path,
       });
       onClose(true);
     } else {
       await loadImage({
-        volumeName: providedVolumeName || volumeName,
+        volumeName: selectedVolumeName || volumeName,
         imageName: image,
       });
       onClose(true);
@@ -173,6 +169,14 @@ export default function ImportIntoNewDialog({ volumes, open, onClose }: Props) {
           <CircularProgress color="info" />
         </Backdrop>
         <Stack>
+          {selectedVolumeName && (
+            <Alert
+              sx={(theme) => ({ marginBottom: theme.spacing(2) })}
+              severity="warning"
+            >
+              Any existing data inside the volume will be replaced.
+            </Alert>
+          )}
           <FormControl>
             <FormLabel id="from-label">
               <Typography variant="h3" mb={1}>
@@ -197,24 +201,13 @@ export default function ImportIntoNewDialog({ volumes, open, onClose }: Props) {
                 To:
               </Typography>
             </FormLabel>
-            <Grid container gap={2}>
-              <Grid item pt={1}>
-                <VolumeIcon />
-              </Grid>
-              <Grid item flex={1}>
-                {providedVolumeName ? (
-                  <Typography pt={1} variant="body1">{providedVolumeName}</Typography>
-                ) : (
-                  <VolumeInput
-                    value={volumeName}
-                    hasError={volumeHasError}
-                    setHasError={setVolumeHasError}
-                    onChange={setVolumeName}
-                    volumes={volumes}
-                  />
-                )}
-              </Grid>
-            </Grid>
+            <VolumeOrInput
+              value={volumeName}
+              hasError={volumeHasError}
+              setHasError={setVolumeHasError}
+              onChange={setVolumeName}
+              volumes={volumes}
+            />
           </FormControl>
         </Stack>
       </DialogContent>

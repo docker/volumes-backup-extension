@@ -4,13 +4,14 @@ import CssBaseline from "@mui/material/CssBaseline";
 import { DockerMuiThemeProvider } from "@docker/docker-mui-theme";
 
 import { App } from "./App";
+import type { IVolumeRow } from "./hooks/useGetVolumes";
 
 interface IAppContext {
   store: {
-    volumeName: string;
+    volume: IVolumeRow | null;
   };
   actions: {
-    setVolumeName(v: string): void;
+    setVolume(v: IVolumeRow | null): void;
   };
 }
 
@@ -18,12 +19,12 @@ export const MyContext = React.createContext<IAppContext>(null);
 
 const AppProvider = (props) => {
   const [store, setStore] = useState({
-    volumeName: "",
+    volume: null,
   });
 
   const actions = {
-    setVolumeName: (value: string) =>
-      setStore((oldStore) => ({ ...oldStore, volumeName: value })),
+    setVolume: (value: IVolumeRow | null) =>
+      setStore((oldStore) => ({ ...oldStore, volume: value })),
   };
 
   return (

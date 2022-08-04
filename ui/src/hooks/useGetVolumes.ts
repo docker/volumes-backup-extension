@@ -10,7 +10,7 @@ type VolumeData = {
   Containers: string[];
 };
 
-interface IRow {
+export interface IVolumeRow {
   id: number;
   volumeDriver: string;
   volumeName: string;
@@ -20,7 +20,7 @@ interface IRow {
 
 export const useGetVolumes = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [data, setData] = useState<IRow[]>();
+  const [data, setData] = useState<IVolumeRow[]>();
 
   useEffect(() => {
     listVolumes();
@@ -34,7 +34,7 @@ export const useGetVolumes = () => {
       ddClient.extension.vm.service
         .get("/volumes")
         .then((results: Record<string, VolumeData>) => {
-          let rows: IRow[] = [];
+          let rows: IVolumeRow[] = [];
           let index = 0;
           for (const key in results) {
             const value = results[key];

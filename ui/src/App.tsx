@@ -23,7 +23,7 @@ import RunContainerDialog from "./components/RunContainerDialog";
 import DeleteForeverDialog from "./components/DeleteForeverDialog";
 import {MyContext} from ".";
 import {isError} from "./common/isError";
-import ImportIntoNewDialog from "./components/ImportIntoNew";
+import ImportDialog from "./components/ImportIntoNew";
 import { useGetVolumes } from "./hooks/useGetVolumes";
 
 const ddClient = createDockerDesktopClient();
@@ -236,37 +236,37 @@ export function App() {
 
     const handleRunContainer = (row) => () => {
         setOpenRunContainerDialog(true);
-        context.actions.setVolumeName(row.volumeName);
+        context.actions.setVolume(row);
     };
 
     const handleClone = (row) => () => {
         setOpenCloneDialog(true);
-        context.actions.setVolumeName(row.volumeName);
+        context.actions.setVolume(row);
     };
 
     const handleExport = (row) => () => {
         setOpenExportDialog(true);
-        context.actions.setVolumeName(row.volumeName);
+        context.actions.setVolume(row);
     };
 
     const handleImport = (row) => () => {
-        context.actions.setVolumeName(row.volumeName);
+        context.actions.setVolume(row);
         setOpenImportIntoNewDialog(true);
     };
 
     const handleSave = (row) => () => {
         setOpenSaveDialog(true);
-        context.actions.setVolumeName(row.volumeName);
+        context.actions.setVolume(row);
     };
 
     const handleLoad = (row) => async () => {
         setOpenLoadDialog(true);
-        context.actions.setVolumeName(row.volumeName);
+        context.actions.setVolume(row);
     };
 
     const handleTransfer = (row) => async () => {
         setOpenTransferDialog(true);
-        context.actions.setVolumeName(row.volumeName);
+        context.actions.setVolume(row);
     };
 
     const handleEmpty = (row) => async () => {
@@ -276,7 +276,7 @@ export function App() {
 
     const handleDelete = (row) => async () => {
         setOpenDeleteForeverDialog(true);
-        context.actions.setVolumeName(row.volumeName);
+        context.actions.setVolume(row);
     };
 
     const handleCellClick = (params: GridCellParams) => {
@@ -341,39 +341,40 @@ export function App() {
 
     const handleRunContainerDialogClose = () => {
         setOpenRunContainerDialog(false);
-        context.actions.setVolumeName('');
+        context.actions.setVolume(null);
     };
 
     const handleExportDialogClose = () => {
         setOpenExportDialog(false);
         listVolumes();
-        context.actions.setVolumeName('');
+        context.actions.setVolume(null);
     };
 
     const handleImportIntoNewDialogClose = (actionSuccessfullyCompleted: boolean) => {
         setOpenImportIntoNewDialog(false);
+        context.actions.setVolume(null);
         if (actionSuccessfullyCompleted) {
-            calculateVolumeSize(context.store.volumeName);
-            context.actions.setVolumeName('');
+            if (context.store.volume) calculateVolumeSize(context.store.volume.volumeName);
         }
     };
 
 
     const handleSaveDialogClose = () => {
         setOpenSaveDialog(false);
-        context.actions.setVolumeName('');
+        context.actions.setVolume(null);
     };
 
     const handleLoadDialogClose = (actionSuccessfullyCompleted: boolean) => {
         setOpenLoadDialog(false);
+        context.actions.setVolume(null);
         if (actionSuccessfullyCompleted) {
-            calculateVolumeSize(context.store.volumeName);
-            context.actions.setVolumeName('');
+            calculateVolumeSize(context.store.volume.volumeName);
         }
     };
 
     const handleCloneDialogClose = (actionSuccessfullyCompleted: boolean) => {
         setOpenCloneDialog(false);
+        context.actions.setVolume(null);
         if (actionSuccessfullyCompleted) {
             listVolumes();
         }
@@ -381,15 +382,16 @@ export function App() {
 
     const handleTransferDialogClose = () => {
         setOpenTransferDialog(false);
+        context.actions.setVolume(null);
     };
 
     const handleDeleteForeverDialogClose = (
         actionSuccessfullyCompleted: boolean
     ) => {
         setOpenDeleteForeverDialog(false);
+        context.actions.setVolume(null);
         if (actionSuccessfullyCompleted) {
             listVolumes();
-            context.actions.setVolumeName('');
         }
     };
 
@@ -486,7 +488,7 @@ export function App() {
                     )}
 
                     {openImportIntoNewDialog && (
-                        <ImportIntoNewDialog
+                        <ImportDialog
                             volumes={rows}
                             open={openImportIntoNewDialog}
                             onClose={handleImportIntoNewDialogClose}
