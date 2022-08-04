@@ -37,7 +37,10 @@ func (h *Handler) LoadImage(ctx echo.Context) error {
 		Image:        image,
 		AttachStdout: true,
 		AttachStderr: true,
-		Cmd:          []string{"/bin/sh", "-c", "cp -Rp /volume-data/. /mount-volume/;"},
+		// remove hidden and not-hidden files and folders:
+		// ..?* matches all dot-dot files except '..'
+		// .[!.]* matches all dot files except '.' and files whose name begins with '..'
+		Cmd: []string{"/bin/sh", "-c", "rm -rf /mount-volume/..?* /mount-volume/.[!.]* /mount-volume/* && cp -Rp /volume-data/. /mount-volume/;"},
 	}, &container.HostConfig{
 		Binds: []string{
 			volumeName + ":" + "/mount-volume",
