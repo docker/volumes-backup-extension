@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import {
   Backdrop,
   Button,
@@ -25,6 +25,7 @@ import { useImportFromPath } from "../hooks/useImportFromPath";
 import { ImageAutocomplete } from "./ImageAutocomplete";
 import { VolumeInput } from "./VolumeInput";
 import { useImportFromImage } from "../hooks/useImportFromImage";
+import { MyContext } from "..";
 
 const ddClient = createDockerDesktopClient();
 
@@ -42,6 +43,10 @@ export default function ImportIntoNewDialog({ volumes, open, onClose }: Props) {
   const [volumeName, setVolumeName] = useState("");
   const [volumeHasError, setVolumeHasError] = useState(false);
   const [path, setPath] = useState<string>("");
+
+  // when executed from a Volume context we don't need to create it.
+  const context = useContext(MyContext);
+  const providedVolumeName = context.store.volumeName;
 
   const { createVolume, isInProgress: isCreating } = useCreateVolume();
   const { importVolume, isInProgress: isImportingFromPath } =
@@ -64,13 +69,28 @@ export default function ImportIntoNewDialog({ volumes, open, onClose }: Props) {
       });
   };
 
-  const createAndImport = async () => {
+  /**
+   * Only creates the volume when
+   * @returns
+   */
+  const handleCreateVolume = async () => {
+    if (providedVolumeName) return;
     await createVolume(volumeName);
+  };
+
+  const createAndImport = async () => {
+    await handleCreateVolume();
     if (fromRadioValue === "file") {
-      await importVolume({ volumeName, path });
+      await importVolume({
+        volumeName: providedVolumeName || volumeName,
+        path,
+      });
       onClose(true);
     } else {
-      await loadImage({ volumeName, imageName: image });
+      await loadImage({
+        volumeName: providedVolumeName || volumeName,
+        imageName: image,
+      });
       onClose(true);
     }
   };
@@ -182,13 +202,17 @@ export default function ImportIntoNewDialog({ volumes, open, onClose }: Props) {
                 <VolumeIcon />
               </Grid>
               <Grid item flex={1}>
-                <VolumeInput
-                  value={volumeName}
-                  hasError={volumeHasError}
-                  setHasError={setVolumeHasError}
-                  onChange={setVolumeName}
-                  volumes={volumes}
-                />
+                {providedVolumeName ? (
+                  <Typography pt={1} variant="body1">{providedVolumeName}</Typography>
+                ) : (
+                  <VolumeInput
+                    value={volumeName}
+                    hasError={volumeHasError}
+                    setHasError={setVolumeHasError}
+                    onChange={setVolumeName}
+                    volumes={volumes}
+                  />
+                )}
               </Grid>
             </Grid>
           </FormControl>

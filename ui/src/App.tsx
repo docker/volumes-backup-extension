@@ -15,7 +15,6 @@ import {
     Upload as UploadIcon,
 } from "@mui/icons-material";
 import ExportDialog from "./components/ExportDialog";
-import ImportDialog from "./components/ImportDialog";
 import SaveDialog from "./components/SaveDialog";
 import LoadDialog from "./components/LoadDialog";
 import CloneDialog from "./components/CloneDialog";
@@ -55,8 +54,6 @@ export function App() {
         React.useState<boolean>(false);
 
     const [openExportDialog, setOpenExportDialog] =
-        React.useState<boolean>(false);
-    const [openImportDialog, setOpenImportDialog] =
         React.useState<boolean>(false);
     const [openImportIntoNewDialog, setOpenImportIntoNewDialog] = React.useState<boolean>(false);
     const [openSaveDialog, setOpenSaveDialog] = React.useState<boolean>(false);
@@ -164,11 +161,11 @@ export function App() {
                 <GridActionsCellItem
                     key={"action_import_" + params.row.id}
                     icon={
-                        <Tooltip title="Import gzip'ed tarball">
-                            <UploadIcon>Import gzip'ed tarball</UploadIcon>
+                        <Tooltip title="Import">
+                            <UploadIcon>Import</UploadIcon>
                         </Tooltip>
                     }
-                    label="Import gzip'ed tarball"
+                    label="Import"
                     onClick={handleImport(params.row)}
                 />,
                 <GridActionsCellItem
@@ -253,8 +250,8 @@ export function App() {
     };
 
     const handleImport = (row) => () => {
-        setOpenImportDialog(true);
         context.actions.setVolumeName(row.volumeName);
+        setOpenImportIntoNewDialog(true);
     };
 
     const handleSave = (row) => () => {
@@ -344,36 +341,34 @@ export function App() {
 
     const handleRunContainerDialogClose = () => {
         setOpenRunContainerDialog(false);
+        context.actions.setVolumeName('');
     };
 
     const handleExportDialogClose = () => {
         setOpenExportDialog(false);
         listVolumes();
-    };
-
-    const handleImportDialogClose = (actionSuccessfullyCompleted: boolean) => {
-        setOpenImportDialog(false);
-        if (actionSuccessfullyCompleted) {
-            calculateVolumeSize(context.store.volumeName);
-        }
+        context.actions.setVolumeName('');
     };
 
     const handleImportIntoNewDialogClose = (actionSuccessfullyCompleted: boolean) => {
         setOpenImportIntoNewDialog(false);
         if (actionSuccessfullyCompleted) {
             calculateVolumeSize(context.store.volumeName);
+            context.actions.setVolumeName('');
         }
     };
 
 
     const handleSaveDialogClose = () => {
         setOpenSaveDialog(false);
+        context.actions.setVolumeName('');
     };
 
     const handleLoadDialogClose = (actionSuccessfullyCompleted: boolean) => {
         setOpenLoadDialog(false);
         if (actionSuccessfullyCompleted) {
             calculateVolumeSize(context.store.volumeName);
+            context.actions.setVolumeName('');
         }
     };
 
@@ -394,6 +389,7 @@ export function App() {
         setOpenDeleteForeverDialog(false);
         if (actionSuccessfullyCompleted) {
             listVolumes();
+            context.actions.setVolumeName('');
         }
     };
 
@@ -486,13 +482,6 @@ export function App() {
                         <ExportDialog
                             open={openExportDialog}
                             onClose={handleExportDialogClose}
-                        />
-                    )}
-
-                    {openImportDialog && (
-                        <ImportDialog
-                            open={openImportDialog}
-                            onClose={handleImportDialogClose}
                         />
                     )}
 

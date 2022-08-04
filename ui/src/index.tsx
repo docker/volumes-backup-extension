@@ -5,20 +5,26 @@ import { DockerMuiThemeProvider } from "@docker/docker-mui-theme";
 
 import { App } from "./App";
 
-export const MyContext = React.createContext(null);
+interface IAppContext {
+  store: {
+    volumeName: string;
+  };
+  actions: {
+    setVolumeName(v: string): void;
+  };
+}
 
-const ThemeProvider = (props) => {
+export const MyContext = React.createContext<IAppContext>(null);
+
+const AppProvider = (props) => {
   const [store, setStore] = useState({
     volumeName: "",
   });
 
-  const [actions, setActions] = useState({
-    setVolumeName: (value) => {
-      setStore({
-        volumeName: value,
-      });
-    },
-  });
+  const actions = {
+    setVolumeName: (value: string) =>
+      setStore((oldStore) => ({ ...oldStore, volumeName: value })),
+  };
 
   return (
     <MyContext.Provider value={{ actions, store }}>
@@ -36,9 +42,9 @@ ReactDOM.render(
     */}
     <DockerMuiThemeProvider>
       <CssBaseline />
-      <ThemeProvider>
+      <AppProvider>
         <App />
-      </ThemeProvider>
+      </AppProvider>
     </DockerMuiThemeProvider>
   </React.StrictMode>,
   document.getElementById("root")
