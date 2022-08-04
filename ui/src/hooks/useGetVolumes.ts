@@ -5,7 +5,8 @@ const ddClient = createDockerDesktopClient();
 
 type VolumeData = {
   Driver: string;
-  Size: string;
+  Size: number;
+  SizeHuman: string;
   Containers: string[];
 };
 
@@ -44,7 +45,7 @@ export const useGetVolumes = () => {
               volumeContainers: value.Containers.length
                 ? value.Containers
                 : null,
-              volumeSize: value.Size,
+              volumeSize: value.SizeHuman,
             });
             index++;
           }

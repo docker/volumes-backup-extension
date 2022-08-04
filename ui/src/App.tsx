@@ -159,7 +159,7 @@ export function App() {
                     }
                     label="Export volume"
                     onClick={handleExport(params.row)}
-                    disabled={params.row.volumeSize === "0B"}
+                    disabled={params.row.volumeSize === "0 B"}
                 />,
                 <GridActionsCellItem
                     key={"action_import_" + params.row.id}
@@ -181,7 +181,7 @@ export function App() {
                     label="Save to image"
                     onClick={handleSave(params.row)}
                     showInMenu
-                    disabled={params.row.volumeSize === "0B"}
+                    disabled={params.row.volumeSize === "0 B"}
                 />,
                 <GridActionsCellItem
                     key={"action_load_" + params.row.id}
@@ -204,7 +204,7 @@ export function App() {
                     label="Transfer to host"
                     onClick={handleTransfer(params.row)}
                     showInMenu
-                    disabled={params.row.volumeSize === "0B"}
+                    disabled={params.row.volumeSize === "0 B"}
                 />,
                 <GridActionsCellItem
                     key={"action_empty_" + params.row.id}
@@ -216,7 +216,7 @@ export function App() {
                     label="Empty volume"
                     onClick={handleEmpty(params.row)}
                     showInMenu
-                    disabled={params.row.volumeSize === "0B"}
+                    disabled={params.row.volumeSize === "0 B"}
                 />,
                 <GridActionsCellItem
                     key={"action_delete_" + params.row.id}
@@ -405,12 +405,15 @@ export function App() {
         try {
             ddClient.extension.vm.service
                 .get(`/volumes/${volumeName}/size`)
-                .then((size: string) => {
+                .then((res: any) => {
+                    // e.g. {"Bytes":16000,"Human":"16.0 kB"}
+                    const resJSON = JSON.stringify(res)
+                    const sizeObj = JSON.parse(resJSON)
                     let rowsCopy = rows.slice(); // copy the array
                     const index = rowsCopy.findIndex(
                         (element) => element.volumeName === volumeName
                     );
-                    rowsCopy[index].volumeSize = size;
+                    rowsCopy[index].volumeSize = sizeObj.Human;
 
                     setData(rowsCopy);
 

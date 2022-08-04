@@ -3,18 +3,25 @@ package backend
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/felipecruz91/vackup-docker-extension/internal/log"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
-func GetVolumesSize(ctx context.Context, cli *client.Client, volumeName string) map[string]string {
+type VolumeSize struct {
+	Bytes int64
+	Human string
+}
+
+func GetVolumesSize(ctx context.Context, cli *client.Client, volumeName string) map[string]VolumeSize {
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
 		Tty:   true,
-		Cmd:   []string{"/bin/sh", "-c", "du -d 0 -h /var/lib/docker/volumes/" + volumeName},
+		Cmd:   []string{"/bin/sh", "-c", "du -d 0 /var/lib/docker/volumes/" + volumeName},
 		Image: "docker.io/justincormack/nsenter1",
 	}, &container.HostConfig{
 		PidMode:    "host",
@@ -51,9 +58,9 @@ func GetVolumesSize(ctx context.Context, cli *client.Client, volumeName string) 
 	output := buf.String()
 
 	lines := strings.Split(strings.TrimSuffix(output, "\n"), "\n")
-	m := make(map[string]string)
+	m := make(map[string]VolumeSize)
 	for _, line := range lines {
-		s := strings.Split(line, "\t") // e.g. 41.5M	/var/lib/docker/volumes/my-volume
+		s := strings.Split(line, "\t") // e.g. 924	/var/lib/docker/volumes/my-volume
 		if len(s) != 2 {
 			log.Warnf("skipping line: %s", line)
 			continue
@@ -62,18 +69,27 @@ func GetVolumesSize(ctx context.Context, cli *client.Client, volumeName string) 
 		size := s[0]
 		path := strings.TrimSuffix(s[1], "\r")
 
+		sizeKB, err := strconv.ParseInt(size, 10, 64)
+		if err != nil {
+			log.Warn(err)
+			continue
+		}
+
 		if path == "/var/lib/docker/volumes/backingFsBlockDev" || path == "/var/lib/docker/volumes/metadata.db" {
 			// ignore "backingFsBlockDev" and "metadata.db" system volumes
 			continue
 		}
 
-		if size == "8.0K" {
+		if sizeKB == 8 {
 			// Apparently, inside the VM if a directory size is 8.0K, it is in fact "empty".
 			// Therefore, we set it to "0B" to indicate that the directory is empty.
-			size = "0B"
+			sizeKB = 0
 		}
 
-		m[filepath.Base(path)] = size
+		m[filepath.Base(path)] = VolumeSize{
+			Bytes: sizeKB * 1000,
+			Human: byteCountSI(sizeKB * 1000),
+		}
 	}
 
 	err = cli.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{})
@@ -82,4 +98,25 @@ func GetVolumesSize(ctx context.Context, cli *client.Client, volumeName string) 
 	}
 
 	return m
+}
+
+// byteCountSI converts a size in bytes to a human-readable string in SI (decimal) format.
+//
+// e.g. 999 -> "999 B"
+//
+// e.g. 1000 -> "1.0 kB"
+//
+// e.g. 987,654,321	 -> "987.7 MB"
+func byteCountSI(b int64) string {
+	const unit = 1000
+	if b < unit {
+		return fmt.Sprintf("%d B", b)
+	}
+	div, exp := int64(unit), 0
+	for n := b / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB",
+		float64(b)/float64(div), "kMGTPE"[exp])
 }
