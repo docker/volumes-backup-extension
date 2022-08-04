@@ -157,7 +157,7 @@ export default function ImportDialog({ volumes, open, onClose }: Props) {
 
   return (
     <Dialog fullWidth maxWidth="sm" open={open} onClose={onClose}>
-      <DialogTitle>Import into a new volume</DialogTitle>
+      <DialogTitle>{selectedVolumeName ? 'Import content' : 'Import into a new volume'}</DialogTitle>
       <DialogContent>
         <Backdrop
           sx={{
