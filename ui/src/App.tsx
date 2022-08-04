@@ -23,7 +23,7 @@ import RunContainerDialog from "./components/RunContainerDialog";
 import DeleteForeverDialog from "./components/DeleteForeverDialog";
 import {MyContext} from ".";
 import {isError} from "./common/isError";
-import ImportDialog from "./components/ImportIntoNew";
+import ImportDialog from "./components/ImportDialog";
 import { useGetVolumes } from "./hooks/useGetVolumes";
 
 const ddClient = createDockerDesktopClient();
