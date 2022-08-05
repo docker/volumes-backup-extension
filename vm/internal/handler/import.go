@@ -43,7 +43,10 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 		Image:        "docker.io/library/busybox",
 		AttachStdout: true,
 		AttachStderr: true,
-		Cmd:          []string{"/bin/sh", "-c", "tar -xvzf /vackup"},
+		// remove hidden and not-hidden files and folders:
+		// ..?* matches all dot-dot files except '..'
+		// .[!.]* matches all dot files except '.' and files whose name begins with '..'
+		Cmd: []string{"/bin/sh", "-c", "rm -rf /vackup-volume/..?* /vackup-volume/.[!.]* /vackup-volume/* && tar -xvzf /vackup"},
 	}, &container.HostConfig{
 		Binds: binds,
 	}, nil, nil, "")
