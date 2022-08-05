@@ -17,7 +17,8 @@ type VolumesResponse struct {
 
 type VolumeData struct {
 	Driver     string
-	Size       string
+	Size       int64
+	SizeHuman  string
 	Containers []string
 }
 
@@ -41,11 +42,13 @@ func (h *Handler) Volumes(ctx echo.Context) error {
 		entry, ok := res.data[k]
 		if !ok {
 			res.data[k] = VolumeData{
-				Size: v,
+				Size:      v.Bytes,
+				SizeHuman: v.Human,
 			}
 			continue
 		}
-		entry.Size = v
+		entry.Size = v.Bytes
+		entry.SizeHuman = v.Human
 		res.data[k] = entry
 	}
 	res.Unlock()

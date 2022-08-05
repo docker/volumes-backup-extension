@@ -80,5 +80,6 @@ func TestVolumeSize(t *testing.T) {
 	t.Log(size)
 
 	require.Equal(t, http.StatusOK, rec.Code)
-	require.Regexp(t, "\".*K\"\n", size)
+	require.Equal(t, `{"Bytes":16000,"Human":"16.0 kB"}
+`, size)
 }

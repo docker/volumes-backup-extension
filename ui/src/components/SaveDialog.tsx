@@ -20,7 +20,7 @@ export default function SaveDialog({...props}) {
     const ddClient = useDockerDesktopClient();
 
     const context = useContext(MyContext);
-    const defaultImageName = `vackup-${context.store.volumeName}:latest`;
+    const defaultImageName = `vackup-${context.store.volume.volumeName}:latest`;
     const [imageName, setImageName] = React.useState<string>(defaultImageName);
     const [actionInProgress, setActionInProgress] =
         React.useState<boolean>(false);
@@ -29,15 +29,15 @@ export default function SaveDialog({...props}) {
         setActionInProgress(true);
 
         ddClient.extension.vm.service
-            .get(`/volumes/${context.store.volumeName}/save?image=${imageName}`)
+            .get(`/volumes/${context.store.volume.volumeName}/save?image=${imageName}`)
             .then((_: any) => {
                 ddClient.desktopUI.toast.success(
-                    `Volume ${context.store.volumeName} copied into image ${imageName}, under /volume-data`
+                    `Volume ${context.store.volume.volumeName} copied into image ${imageName}, under /volume-data`
                 );
             })
             .catch((error) => {
                 ddClient.desktopUI.toast.error(
-                    `Failed to copy volume ${context.store.volumeName} into image ${imageName}: ${error.message}. HTTP status code: ${error.statusCode}`
+                    `Failed to copy volume ${context.store.volume.volumeName} into image ${imageName}: ${error.message}. HTTP status code: ${error.statusCode}`
                 );
             })
             .finally(() => {

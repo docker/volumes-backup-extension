@@ -4,21 +4,28 @@ import CssBaseline from "@mui/material/CssBaseline";
 import { DockerMuiThemeProvider } from "@docker/docker-mui-theme";
 
 import { App } from "./App";
+import type { IVolumeRow } from "./hooks/useGetVolumes";
 
-export const MyContext = React.createContext(null);
+interface IAppContext {
+  store: {
+    volume: IVolumeRow | null;
+  };
+  actions: {
+    setVolume(v: IVolumeRow | null): void;
+  };
+}
 
-const ThemeProvider = (props) => {
+export const MyContext = React.createContext<IAppContext>(null);
+
+const AppProvider = (props) => {
   const [store, setStore] = useState({
-    volumeName: "",
+    volume: null,
   });
 
-  const [actions, setActions] = useState({
-    setVolumeName: (value) => {
-      setStore({
-        volumeName: value,
-      });
-    },
-  });
+  const actions = {
+    setVolume: (value: IVolumeRow | null) =>
+      setStore((oldStore) => ({ ...oldStore, volume: value })),
+  };
 
   return (
     <MyContext.Provider value={{ actions, store }}>
@@ -36,9 +43,9 @@ ReactDOM.render(
     */}
     <DockerMuiThemeProvider>
       <CssBaseline />
-      <ThemeProvider>
+      <AppProvider>
         <App />
-      </ThemeProvider>
+      </AppProvider>
     </DockerMuiThemeProvider>
   </React.StrictMode>,
   document.getElementById("root")

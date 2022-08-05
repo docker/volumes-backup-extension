@@ -1,7 +1,7 @@
 import React, {useContext, useEffect} from "react";
-import {DataGrid, GridActionsCellItem, GridCellParams,} from "@mui/x-data-grid";
+import {DataGrid, GridActionsCellItem, GridCellParams, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarDensitySelector, GridToolbarFilterButton,} from "@mui/x-data-grid";
 import {createDockerDesktopClient} from "@docker/extension-api-client";
-import {Backdrop, Box, CircularProgress, Grid, LinearProgress, Stack, Tooltip, Typography,} from "@mui/material";
+import {Backdrop, Box, Button, CircularProgress, Grid, LinearProgress, Stack, Tooltip, Typography,} from "@mui/material";
 import {
     ArrowCircleDown as ArrowCircleDownIcon,
     CopyAll as CopyAllIcon,
@@ -16,7 +16,6 @@ import {
     CloudUpload as CloudUploadIcon,
 } from "@mui/icons-material";
 import ExportDialog from "./components/ExportDialog";
-import ImportDialog from "./components/ImportDialog";
 import SaveDialog from "./components/SaveDialog";
 import PushDialog from "./components/PushDialog";
 import LoadDialog from "./components/LoadDialog";
@@ -26,24 +25,31 @@ import RunContainerDialog from "./components/RunContainerDialog";
 import DeleteForeverDialog from "./components/DeleteForeverDialog";
 import {MyContext} from ".";
 import {isError} from "./common/isError";
+import ImportDialog from "./components/ImportDialog";
+import { useGetVolumes } from "./hooks/useGetVolumes";
 
-const client = createDockerDesktopClient();
+const ddClient = createDockerDesktopClient();
 
-function useDockerDesktopClient() {
-    return client;
+function CustomToolbar({openDialog}) {
+    return (
+      <GridToolbarContainer>
+        <Grid container justifyContent="space-between">
+            <Grid item>
+                <GridToolbarColumnsButton />
+                <GridToolbarFilterButton />
+                <GridToolbarDensitySelector />
+            </Grid>
+            <Grid item>
+                <Button variant="contained" onClick={openDialog} endIcon={<DownloadIcon />}>Import into new volume</Button>
+            </Grid>
+        </Grid>
+      </GridToolbarContainer>
+    );
 }
-
-type VolumeData = {
-    Driver: string;
-    Size: string;
-    Containers: string[];
-};
+  
 
 export function App() {
     const context = useContext(MyContext);
-    const [rows, setRows] = React.useState([]);
-    const [reloadTable, setReloadTable] = React.useState<boolean>(false);
-    const [loadingVolumes, setLoadingVolumes] = React.useState<boolean>(true);
     const [volumesSizeLoadingMap, setVolumesSizeLoadingMap] = React.useState<Record<string, boolean>>({});
 
     const [actionInProgress, setActionInProgress] =
@@ -51,8 +57,7 @@ export function App() {
 
     const [openExportDialog, setOpenExportDialog] =
         React.useState<boolean>(false);
-    const [openImportDialog, setOpenImportDialog] =
-        React.useState<boolean>(false);
+    const [openImportIntoNewDialog, setOpenImportIntoNewDialog] = React.useState<boolean>(false);
     const [openSaveDialog, setOpenSaveDialog] = React.useState<boolean>(false);
     const [openPushDialog, setOpenPushDialog] = React.useState<boolean>(false);
     const [openLoadDialog, setOpenLoadDialog] = React.useState<boolean>(false);
@@ -63,7 +68,6 @@ export function App() {
         React.useState<boolean>(false);
     const [openDeleteForeverDialog, setOpenDeleteForeverDialog] =
         React.useState<boolean>(false);
-    const ddClient = useDockerDesktopClient();
 
     const columns = [
         {field: "id", headerName: "ID", width: 70, hide: true},
@@ -155,16 +159,16 @@ export function App() {
                     }
                     label="Export volume"
                     onClick={handleExport(params.row)}
-                    disabled={params.row.volumeSize === "0B"}
+                    disabled={params.row.volumeSize === "0 B"}
                 />,
                 <GridActionsCellItem
                     key={"action_import_" + params.row.id}
                     icon={
-                        <Tooltip title="Import gzip'ed tarball">
-                            <UploadIcon>Import gzip'ed tarball</UploadIcon>
+                        <Tooltip title="Import">
+                            <UploadIcon>Import</UploadIcon>
                         </Tooltip>
                     }
-                    label="Import gzip'ed tarball"
+                    label="Import"
                     onClick={handleImport(params.row)}
                 />,
                 <GridActionsCellItem
@@ -177,7 +181,7 @@ export function App() {
                     label="Save to image"
                     onClick={handleSave(params.row)}
                     showInMenu
-                    disabled={params.row.volumeSize === "0B"}
+                    disabled={params.row.volumeSize === "0 B"}
                 />,
                 <GridActionsCellItem
                     key={"action_push_" + params.row.id}
@@ -212,7 +216,7 @@ export function App() {
                     label="Transfer to host"
                     onClick={handleTransfer(params.row)}
                     showInMenu
-                    disabled={params.row.volumeSize === "0B"}
+                    disabled={params.row.volumeSize === "0 B"}
                 />,
                 <GridActionsCellItem
                     key={"action_empty_" + params.row.id}
@@ -224,7 +228,7 @@ export function App() {
                     label="Empty volume"
                     onClick={handleEmpty(params.row)}
                     showInMenu
-                    disabled={params.row.volumeSize === "0B"}
+                    disabled={params.row.volumeSize === "0 B"}
                 />,
                 <GridActionsCellItem
                     key={"action_delete_" + params.row.id}
@@ -247,27 +251,27 @@ export function App() {
 
     const handleRunContainer = (row) => () => {
         setOpenRunContainerDialog(true);
-        context.actions.setVolumeName(row.volumeName);
+        context.actions.setVolume(row);
     };
 
     const handleClone = (row) => () => {
         setOpenCloneDialog(true);
-        context.actions.setVolumeName(row.volumeName);
+        context.actions.setVolume(row);
     };
 
     const handleExport = (row) => () => {
         setOpenExportDialog(true);
-        context.actions.setVolumeName(row.volumeName);
+        context.actions.setVolume(row);
     };
 
     const handleImport = (row) => () => {
-        setOpenImportDialog(true);
-        context.actions.setVolumeName(row.volumeName);
+        context.actions.setVolume(row);
+        setOpenImportIntoNewDialog(true);
     };
 
     const handleSave = (row) => () => {
         setOpenSaveDialog(true);
-        context.actions.setVolumeName(row.volumeName);
+        context.actions.setVolume(row);
     };
 
     const handlePush = (row) => () => {
@@ -277,12 +281,12 @@ export function App() {
 
     const handleLoad = (row) => async () => {
         setOpenLoadDialog(true);
-        context.actions.setVolumeName(row.volumeName);
+        context.actions.setVolume(row);
     };
 
     const handleTransfer = (row) => async () => {
         setOpenTransferDialog(true);
-        context.actions.setVolumeName(row.volumeName);
+        context.actions.setVolume(row);
     };
 
     const handleEmpty = (row) => async () => {
@@ -292,7 +296,7 @@ export function App() {
 
     const handleDelete = (row) => async () => {
         setOpenDeleteForeverDialog(true);
-        context.actions.setVolumeName(row.volumeName);
+        context.actions.setVolume(row);
     };
 
     const handleCellClick = (params: GridCellParams) => {
@@ -301,47 +305,7 @@ export function App() {
         }
     };
 
-    useEffect(() => {
-        const listVolumes = async () => {
-            const startTime = performance.now();
-            setLoadingVolumes(true);
-
-            try {
-                ddClient.extension.vm.service
-                    .get("/volumes")
-                    .then((results: Record<string, VolumeData>) => {
-                        let rows = [];
-                        let index = 0;
-
-                        for (const key in results) {
-                            const value = results[key];
-                            rows.push({
-                                id: index,
-                                volumeDriver: value.Driver,
-                                volumeName: key,
-                                volumeContainers: value.Containers,
-                                volumeSize: value.Size,
-                            });
-                            index++;
-                        }
-
-                        setRows(rows);
-                        setLoadingVolumes(false);
-                        const endTime = performance.now();
-                        console.log(`[listVolumes] took ${endTime - startTime} ms.`);
-                    });
-            } catch (error) {
-                setLoadingVolumes(false);
-                ddClient.desktopUI.toast.error(
-                    `Failed to list volumes: ${error.stderr}`
-                );
-            }
-        };
-
-        listVolumes();
-
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [reloadTable]);
+    const {data: rows, isLoading, listVolumes, setData} = useGetVolumes();
 
     useEffect(() => {
         const volumeEvents = async () => {
@@ -352,9 +316,7 @@ export function App() {
                 {
                     stream: {
                         onOutput(data) {
-                            setReloadTable((prevState) => {
-                                return !prevState;
-                            });
+                            listVolumes();
                         },
                         onClose(exitCode) {
                             console.log("onClose with exit code " + exitCode);
@@ -366,6 +328,7 @@ export function App() {
         };
 
         volumeEvents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const emptyVolume = async (volumeName: string) => {
@@ -398,22 +361,27 @@ export function App() {
 
     const handleRunContainerDialogClose = () => {
         setOpenRunContainerDialog(false);
+        context.actions.setVolume(null);
     };
 
     const handleExportDialogClose = () => {
         setOpenExportDialog(false);
-        setReloadTable(!reloadTable);
+        listVolumes();
+        context.actions.setVolume(null);
     };
 
-    const handleImportDialogClose = (actionSuccessfullyCompleted: boolean) => {
-        setOpenImportDialog(false);
+    const handleImportIntoNewDialogClose = (actionSuccessfullyCompleted: boolean) => {
+        setOpenImportIntoNewDialog(false);
+        context.actions.setVolume(null);
         if (actionSuccessfullyCompleted) {
-            calculateVolumeSize(context.store.volumeName);
+            if (context.store.volume) calculateVolumeSize(context.store.volume.volumeName);
         }
     };
 
+
     const handleSaveDialogClose = () => {
         setOpenSaveDialog(false);
+        context.actions.setVolume(null);
     };
 
     const handlePushDialogClose = () => {
@@ -422,28 +390,32 @@ export function App() {
 
     const handleLoadDialogClose = (actionSuccessfullyCompleted: boolean) => {
         setOpenLoadDialog(false);
+        context.actions.setVolume(null);
         if (actionSuccessfullyCompleted) {
-            calculateVolumeSize(context.store.volumeName);
+            calculateVolumeSize(context.store.volume.volumeName);
         }
     };
 
     const handleCloneDialogClose = (actionSuccessfullyCompleted: boolean) => {
         setOpenCloneDialog(false);
+        context.actions.setVolume(null);
         if (actionSuccessfullyCompleted) {
-            setReloadTable(!reloadTable);
+            listVolumes();
         }
     };
 
     const handleTransferDialogClose = () => {
         setOpenTransferDialog(false);
+        context.actions.setVolume(null);
     };
 
     const handleDeleteForeverDialogClose = (
         actionSuccessfullyCompleted: boolean
     ) => {
         setOpenDeleteForeverDialog(false);
+        context.actions.setVolume(null);
         if (actionSuccessfullyCompleted) {
-            setReloadTable(!reloadTable);
+            listVolumes();
         }
     };
 
@@ -455,14 +427,17 @@ export function App() {
         try {
             ddClient.extension.vm.service
                 .get(`/volumes/${volumeName}/size`)
-                .then((size: string) => {
+                .then((res: any) => {
+                    // e.g. {"Bytes":16000,"Human":"16.0 kB"}
+                    const resJSON = JSON.stringify(res)
+                    const sizeObj = JSON.parse(resJSON)
                     let rowsCopy = rows.slice(); // copy the array
                     const index = rowsCopy.findIndex(
                         (element) => element.volumeName === volumeName
                     );
-                    rowsCopy[index].volumeSize = size;
+                    rowsCopy[index].volumeSize = sizeObj.Human;
 
-                    setRows(rowsCopy);
+                    setData(rowsCopy);
 
                     let volumesSizeLoadingMapCopy = volumesSizeLoadingMap;
                     volumesSizeLoadingMapCopy[volumeName] = false;
@@ -494,11 +469,12 @@ export function App() {
                             <CircularProgress color="info"/>
                         </Backdrop>
                         <DataGrid
-                            loading={loadingVolumes}
+                            loading={isLoading}
                             components={{
                                 LoadingOverlay: LinearProgress,
+                                Toolbar: () => <CustomToolbar openDialog={() => setOpenImportIntoNewDialog(true)} />,
                             }}
-                            rows={rows}
+                            rows={rows || []}
                             columns={columns}
                             pageSize={10}
                             rowsPerPageOptions={[10]}
@@ -535,10 +511,11 @@ export function App() {
                         />
                     )}
 
-                    {openImportDialog && (
+                    {openImportIntoNewDialog && (
                         <ImportDialog
-                            open={openImportDialog}
-                            onClose={handleImportDialogClose}
+                            volumes={rows}
+                            open={openImportIntoNewDialog}
+                            onClose={handleImportIntoNewDialogClose}
                         />
                     )}
 
