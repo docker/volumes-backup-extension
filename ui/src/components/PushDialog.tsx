@@ -20,7 +20,7 @@ export default function PushDialog({...props}) {
     const ddClient = useDockerDesktopClient();
 
     const context = useContext(MyContext);
-    const defaultImageName = `vackup-${context.store.volumeName}:latest`;
+    const defaultImageName = `vackup-${context.store.volume.volumeName}:latest`;
     const [imageName, setImageName] = React.useState<string>(defaultImageName);
     const [actionInProgress, setActionInProgress] =
         React.useState<boolean>(false);
@@ -28,14 +28,14 @@ export default function PushDialog({...props}) {
     const saveVolume = async () => {
         setActionInProgress(true);
 
-        ddClient.extension.host.cli.exec("volumes-share-client", ["push", imageName, context.store.volumeName]).then((result) => {
+        ddClient.extension.host.cli.exec("volumes-share-client", ["push", imageName, context.store.volume.volumeName]).then((result) => {
             ddClient.desktopUI.toast.success(
-                `Volume ${context.store.volumeName} pushed as ${imageName} to registry`
+                `Volume ${context.store.volume.volumeName} pushed as ${imageName} to registry`
             );
         }).catch((error) => {
             console.error(error)
             ddClient.desktopUI.toast.error(
-                `Failed to push volume ${context.store.volumeName} as ${imageName} to registry: ${error.message}. HTTP status code: ${error.statusCode}`
+                `Failed to push volume ${context.store.volume.volumeName} as ${imageName} to registry: ${error.message}. HTTP status code: ${error.statusCode}`
             );
         }).finally(() => {
             setActionInProgress(false);

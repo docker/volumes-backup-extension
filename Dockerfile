@@ -24,8 +24,8 @@ RUN npm run build
 
 FROM golang:1.17-alpine AS volume-share-client-builder
 WORKDIR /output
-RUN apk update && \
-    apk add --no-cache build-base>=0.4-r1 \
+RUN apk update \
+    && apk add --no-cache build-base=0.5-r3 \
     && rm -rf /var/cache/apk/*
 COPY client .
 RUN make cross

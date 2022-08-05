@@ -193,7 +193,7 @@ export function App() {
                     label="Push to registry"
                     onClick={handlePush(params.row)}
                     showInMenu
-                    disabled={params.row.volumeSize === "0B"}
+                    disabled={params.row.volumeSize === "0 B"}
                 />,
                 <GridActionsCellItem
                     key={"action_load_" + params.row.id}
@@ -276,7 +276,7 @@ export function App() {
 
     const handlePush = (row) => () => {
         setOpenPushDialog(true);
-        context.actions.setVolumeName(row.volumeName);
+        context.actions.setVolume(row);
     };
 
     const handleLoad = (row) => async () => {
