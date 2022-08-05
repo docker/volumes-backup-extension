@@ -30,18 +30,18 @@ export default function LoadDialog({...props}) {
         let actionSuccessfullyCompleted = false
 
         ddClient.extension.vm.service
-            .get(`/volumes/${context.store.volumeName}/load?image=${imageName}`)
+            .get(`/volumes/${context.store.volume.volumeName}/load?image=${imageName}`)
             .then((_: any) => {
                 actionSuccessfullyCompleted = true
                 ddClient.desktopUI.toast.success(
-                    `Copied /volume-data from image ${imageName} into volume ${context.store.volumeName}`
+                    `Copied /volume-data from image ${imageName} into volume ${context.store.volume.volumeName}`
                 );
             })
             .catch((error) => {
                 console.log(error)
                 actionSuccessfullyCompleted = false
                 ddClient.desktopUI.toast.error(
-                    `Failed to copy /volume-data from image ${imageName} to into volume ${context.store.volumeName}: ${error.message}. HTTP status code: ${error.statusCode}`
+                    `Failed to copy /volume-data from image ${imageName} to into volume ${context.store.volume.volumeName}: ${error.message}. HTTP status code: ${error.statusCode}`
                 );
             })
             .finally(() => {
@@ -90,11 +90,11 @@ export default function LoadDialog({...props}) {
                         <Grid item>
                             <Typography variant="body1" color="text.secondary" sx={{mb: 2}}>
                                 The /volume-data from image {imageName} will be copied to volume{" "}
-                                {context.store.volumeName}.
+                                {context.store.volume.volumeName}.
                             </Typography>
                             <Typography variant="body1" color="text.secondary" sx={{mb: 2}}>
                                 Once the operation is completed, you can inspect the volume
-                                contents of {context.store.volumeName} or export its content
+                                contents of {context.store.volume.volumeName} or export its content
                                 into a local directory.
                             </Typography>
                             <Typography variant="body1" color="text.secondary">

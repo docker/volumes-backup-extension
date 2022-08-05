@@ -34,7 +34,7 @@ export default function DeleteForeverDialog({ ...props }) {
       // TODO: check if volume already exists
       const output = await ddClient.docker.cli.exec("volume", [
         "rm",
-        context.store.volumeName,
+        context.store.volume.volumeName,
       ]);
       if (output.stderr !== "") {
         ddClient.desktopUI.toast.error(output.stderr);
@@ -42,13 +42,13 @@ export default function DeleteForeverDialog({ ...props }) {
       }
 
       ddClient.desktopUI.toast.success(
-        `Volume ${context.store.volumeName} deleted`
+        `Volume ${context.store.volume.volumeName} deleted`
       );
 
       actionSuccessfullyCompleted = true
     } catch (error) {
       ddClient.desktopUI.toast.error(
-        `Failed to delete volume ${context.store.volumeName}: ${error.stderr} Exit code: ${error.code}`
+        `Failed to delete volume ${context.store.volume.volumeName}: ${error.stderr} Exit code: ${error.code}`
       );
     } finally {
       setActionInProgress(false);

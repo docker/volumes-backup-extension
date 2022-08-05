@@ -30,7 +30,7 @@ export default function RunContainerDialog({ ...props }) {
   const [image, setImage] = React.useState<string>("");
   const [containerPath, setContainerPath] = React.useState<string>("");
   const [containerName, setContainerName] = React.useState<string>(
-    `container-from-vol-${context.store.volumeName}`
+    `container-from-vol-${context.store.volume.volumeName}`
   );
   const [containerEnvVars, setContainerEnvVars] = React.useState<string>("");
   const [containerPorts, setContainerPorts] = React.useState<string>("");
@@ -41,14 +41,14 @@ export default function RunContainerDialog({ ...props }) {
     setActionInProgress(true);
     try {
       console.log(
-        `Running a container from volume ${context.store.volumeName}...`
+        `Running a container from volume ${context.store.volume.volumeName}...`
       );
 
       let args = [
         `--name=${containerName}`,
         "-d",
         "-i",
-        `-v=${context.store.volumeName}:${containerPath}`,
+        `-v=${context.store.volume.volumeName}:${containerPath}`,
       ];
 
       if (containerPorts !== "") {
@@ -77,11 +77,11 @@ export default function RunContainerDialog({ ...props }) {
       }
 
       ddClient.desktopUI.toast.success(
-        `Container ${containerName} is running from volume ${context.store.volumeName}`
+        `Container ${containerName} is running from volume ${context.store.volume.volumeName}`
       );
     } catch (error) {
       ddClient.desktopUI.toast.error(
-        `Failed to run container volume ${context.store.volumeName}: ${error.stderr} Exit code: ${error.code}`
+        `Failed to run container volume ${context.store.volume.volumeName}: ${error.stderr} Exit code: ${error.code}`
       );
     } finally {
       setActionInProgress(false);

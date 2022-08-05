@@ -21,7 +21,7 @@ export default function ExportDialog({...props}) {
     const context = useContext(MyContext);
 
     const [fileName, setFileName] = React.useState<string>(
-        `${context.store.volumeName}.tar.gz`
+        `${context.store.volume.volumeName}.tar.gz`
     );
     const [path, setPath] = React.useState<string>("");
     const [actionInProgress, setActionInProgress] =
@@ -44,7 +44,7 @@ export default function ExportDialog({...props}) {
     const exportVolume = async () => {
         setActionInProgress(true);
 
-        console.log("volume name:", context.store.volumeName);
+        console.log("volume name:", context.store.volume.volumeName);
         console.log("path:", path);
         console.log("fileName:", fileName);
 
@@ -52,15 +52,15 @@ export default function ExportDialog({...props}) {
         // console.log("encodedPath:", encodedPath);
 
         ddClient.extension.vm.service
-            .get(`/volumes/${context.store.volumeName}/export?path=${path}&fileName=${fileName}`)
+            .get(`/volumes/${context.store.volume.volumeName}/export?path=${path}&fileName=${fileName}`)
             .then((_: any) => {
                 ddClient.desktopUI.toast.success(
-                    `Volume ${context.store.volumeName} exported to ${path}`
+                    `Volume ${context.store.volume.volumeName} exported to ${path}`
                 );
             })
             .catch((error) => {
                 ddClient.desktopUI.toast.error(
-                    `Failed to backup volume ${context.store.volumeName} to ${path}: ${error.message}. HTTP status code: ${error.statusCode}`
+                    `Failed to backup volume ${context.store.volume.volumeName} to ${path}: ${error.message}. HTTP status code: ${error.statusCode}`
                 );
             })
             .finally(() => {
@@ -96,7 +96,7 @@ export default function ExportDialog({...props}) {
                             label="File name"
                             fullWidth
                             variant="standard"
-                            defaultValue={`${context.store.volumeName}.tar.gz`}
+                            defaultValue={`${context.store.volume.volumeName}.tar.gz`}
                             spellCheck={false}
                             onChange={(e) => {
                                 setFileName(e.target.value);

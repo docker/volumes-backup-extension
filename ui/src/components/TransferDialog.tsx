@@ -91,7 +91,7 @@ export default function TransferDialog({ ...props }) {
 
     try {
       console.log(
-        `Transferring data from source volume ${context.store.volumeName} to destination volume ${volumeName} in host ${destHost}...`
+        `Transferring data from source volume ${context.store.volume.volumeName} to destination volume ${volumeName} in host ${destHost}...`
       );
 
       // docker run --rm \
@@ -102,7 +102,7 @@ export default function TransferDialog({ ...props }) {
 
       const transferredOutput = await ddClient.docker.cli.exec("run", [
         "--rm",
-        `-v=${context.store.volumeName}:/from`,
+        `-v=${context.store.volume.volumeName}:/from`,
         "alpine",
         "ash",
         "-c",
@@ -114,11 +114,11 @@ export default function TransferDialog({ ...props }) {
       }
 
       ddClient.desktopUI.toast.success(
-        `Volume ${context.store.volumeName} transferred to destination volume ${volumeName} in host ${destHost}`
+        `Volume ${context.store.volume.volumeName} transferred to destination volume ${volumeName} in host ${destHost}`
       );
     } catch (error) {
       ddClient.desktopUI.toast.error(
-        `Failed to clone volume ${context.store.volumeName} to destinaton volume ${volumeName}: ${error.stderr} Exit code: ${error.code}`
+        `Failed to clone volume ${context.store.volume.volumeName} to destinaton volume ${volumeName}: ${error.stderr} Exit code: ${error.code}`
       );
     } finally {
       setActionInProgress(false);

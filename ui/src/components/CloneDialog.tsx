@@ -28,7 +28,7 @@ export default function CloneDialog({ ...props }) {
   const context = useContext(MyContext);
 
   const [volumeName, setVolumeName] = React.useState<string>(
-    `${context.store.volumeName}-cloned`
+    `${context.store.volume.volumeName}-cloned`
   );
   const [actionInProgress, setActionInProgress] =
     React.useState<boolean>(false);
@@ -50,7 +50,7 @@ export default function CloneDialog({ ...props }) {
 
       const cloneOutput = await ddClient.docker.cli.exec("run", [
         "--rm",
-        `-v=${context.store.volumeName}:/from`,
+        `-v=${context.store.volume.volumeName}:/from`,
         `-v=${volumeName}:/to`,
         "alpine",
         "ash",
@@ -63,13 +63,13 @@ export default function CloneDialog({ ...props }) {
       }
 
       ddClient.desktopUI.toast.success(
-        `Volume ${context.store.volumeName} cloned to destination volume ${volumeName}`
+        `Volume ${context.store.volume.volumeName} cloned to destination volume ${volumeName}`
       );
 
       actionSuccessfullyCompleted = true
     } catch (error) {
       ddClient.desktopUI.toast.error(
-        `Failed to clone volume ${context.store.volumeName} to destinaton volume ${volumeName}: ${error.stderr} Exit code: ${error.code}`
+        `Failed to clone volume ${context.store.volume.volumeName} to destinaton volume ${volumeName}: ${error.stderr} Exit code: ${error.code}`
       );
     } finally {
       setActionInProgress(false);
@@ -102,7 +102,7 @@ export default function CloneDialog({ ...props }) {
               label="Volume name"
               fullWidth
               variant="standard"
-              defaultValue={`${context.store.volumeName}-cloned`}
+              defaultValue={`${context.store.volume.volumeName}-cloned`}
               spellCheck={false}
               onChange={(e) => {
                 setVolumeName(e.target.value);
