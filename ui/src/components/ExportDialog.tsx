@@ -197,7 +197,7 @@ export default function ExportDialog({ open, onClose }: Props) {
         >
           <CircularProgress color="info" />
         </Backdrop>
-        <FormControl sx={{width: "100%"}}>
+        <FormControl>
           <FormLabel id="from-label">
             <Typography variant="h3" my={1}>
               From:
@@ -205,7 +205,7 @@ export default function ExportDialog({ open, onClose }: Props) {
           </FormLabel>
           <VolumeOrInput />
         </FormControl>
-        <FormControl>
+        <FormControl sx={{width: "100%"}}>
           <FormLabel id="to-label">
             <Typography variant="h3" mt={3} mb={1}>
               To:
