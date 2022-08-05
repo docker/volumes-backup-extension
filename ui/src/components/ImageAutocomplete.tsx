@@ -18,7 +18,7 @@ export const ImageAutocomplete = ({ value, onChange }: Props) => {
     <Autocomplete
       fullWidth
       disablePortal
-      id="combo-box-demo"
+      id="image-autocomplete"
       value={value}
       onChange={(_, newValue: string) => onChange(newValue)}
       options={imageNames}
