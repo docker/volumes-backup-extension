@@ -104,8 +104,8 @@ export default function ImportDialog({ volumes, open, onClose }: Props) {
         {fromRadioValue === "file" && (
           <Stack pt={1} pb={2} pl={4}>
             <Typography pb={1} variant="body2">
-              Select a file (.tar.gz) whose content is to be imported into the
-              new volume.
+              Select a file (.tar.gz) whose content is to be imported into the{" "}
+              {selectedVolumeName ? "existing" : "new"} volume.
             </Typography>
             <Grid container alignItems="center" gap={2}>
               <Grid item flex={1}>
@@ -157,7 +157,9 @@ export default function ImportDialog({ volumes, open, onClose }: Props) {
 
   return (
     <Dialog fullWidth maxWidth="sm" open={open} onClose={onClose}>
-      <DialogTitle>{selectedVolumeName ? 'Import content' : 'Import into a new volume'}</DialogTitle>
+      <DialogTitle>
+        {selectedVolumeName ? "Import content" : "Import into a new volume"}
+      </DialogTitle>
       <DialogContent>
         <Backdrop
           sx={{
