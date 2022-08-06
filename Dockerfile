@@ -22,7 +22,8 @@ RUN --mount=type=cache,target=/usr/src/app/.npm \
 COPY ui /ui
 RUN npm run build
 
-FROM golang:1.17-alpine AS volume-share-client-builder
+FROM --platform=$BUILDPLATFORM golang:1.17-alpine AS volume-share-client-builder
+ENV CGO_ENABLED=0
 WORKDIR /output
 RUN apk update \
     && apk add --no-cache build-base=0.5-r3 \
