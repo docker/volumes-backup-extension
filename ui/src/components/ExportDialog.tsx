@@ -1,5 +1,6 @@
 import React, { useContext, useState } from "react";
 import {
+  Alert,
   Backdrop,
   Button,
   CircularProgress,
@@ -117,7 +118,8 @@ export default function ExportDialog({ open, onClose }: Props) {
                   disabled
                   margin="dense"
                   id="directory"
-                  label="Directory"
+                  label={path ? "" : "Directory"}
+                  value={path}
                   onClick={selectExportDirectory}
                 />
               </Grid>
@@ -205,12 +207,20 @@ export default function ExportDialog({ open, onClose }: Props) {
           </FormLabel>
           <VolumeOrInput />
         </FormControl>
-        <FormControl sx={{width: "100%"}}>
+        <FormControl sx={{ width: "100%" }}>
           <FormLabel id="to-label">
             <Typography variant="h3" mt={3} mb={1}>
               To:
             </Typography>
           </FormLabel>
+          {fromRadioValue === "local-image" && (
+            <Alert
+              sx={(theme) => ({ marginBottom: theme.spacing(2) })}
+              severity="warning"
+            >
+              Any existing data inside /volume-data directory will be replaced.
+            </Alert>
+          )}
           <RadioGroup
             aria-labelledby="to-label"
             defaultValue="directory"
