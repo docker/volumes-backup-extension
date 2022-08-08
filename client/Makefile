@@ -12,7 +12,6 @@ cross: ## Cross compile the server
 	GOOS=linux  GOARCH=arm64 $(GO_BUILD) -o dist/linux-arm64/$(BINARY) .
 	GOOS=darwin  GOARCH=amd64 $(GO_BUILD) -o dist/darwin-amd64/$(BINARY) .
 	GOOS=darwin  GOARCH=arm64 $(GO_BUILD) -o dist/darwin-arm64/$(BINARY) .
-	# TODO: ./client_windows.go:48:13: undefined: npipe
-	#GOOS=windows GOARCH=amd64 $(GO_BUILD) -o dist/windows-amd64/$(BINARY).exe .
+	GOOS=windows GOARCH=amd64 $(GO_BUILD) -o dist/windows-amd64/$(BINARY).exe .
 
 .PHONY: cli cross
