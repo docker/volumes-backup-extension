@@ -1,22 +1,32 @@
 package handler
 
 import (
-	"bytes"
+	"encoding/json"
 	"github.com/docker/distribution/reference"
 	dockertypes "github.com/docker/docker/api/types"
 	"github.com/felipecruz91/vackup-docker-extension/internal/backend"
 	"github.com/felipecruz91/vackup-docker-extension/internal/log"
 	"github.com/labstack/echo"
 	"github.com/sirupsen/logrus"
+	"io/ioutil"
 	"net/http"
+	"strings"
 )
 
 type PushRequest struct {
 	Reference string `json:"reference"`
 }
 
+type PushErrorLine struct {
+	ErrorDetail ErrorDetail `json:"errorDetail"`
+	Error       string      `json:"error"`
+}
+type ErrorDetail struct {
+	Message string `json:"message"`
+}
+
 // PushVolume pushes a volume to a registry.
-// The user must be previously authenticated to the registry with `docker login <registry>`.
+// The user must be previously authenticated to the registry with `docker login <registry>`, otherwise it returns 401 StatusUnauthorized.
 func (h *Handler) PushVolume(ctx echo.Context) error {
 	var request PushRequest
 	if err := ctx.Bind(&request); err != nil {
@@ -42,7 +52,7 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 	// Save the content of the volume into an image
 	if err := backend.Save(ctxReq, h.DockerClient, volumeName, parsedRef.String()); err != nil {
 		log.Error(err)
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
 	// Push the image to registry
@@ -50,23 +60,38 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 	if encodedAuth == "" {
 		encodedAuth = "Cg==" // from running: echo "" | base64
 	}
-	r, err := h.DockerClient.ImagePush(ctxReq, parsedRef.String(), dockertypes.ImagePushOptions{
+	pushResp, err := h.DockerClient.ImagePush(ctxReq, parsedRef.String(), dockertypes.ImagePushOptions{
 		RegistryAuth: encodedAuth,
 	})
 	if err != nil {
 		log.Error(err)
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
-	defer r.Close()
+	defer pushResp.Close()
 
-	buf := new(bytes.Buffer)
-	_, err = buf.ReadFrom(r)
-	if err != nil {
-		log.Error(err)
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	response, err := ioutil.ReadAll(pushResp)
+
+	for _, line := range strings.Split(string(response), "\n") {
+		log.Info(line)
+
+		if !strings.Contains(line, "error") {
+			continue
+		}
+
+		pel := PushErrorLine{}
+		if err := json.Unmarshal([]byte(line), &pel); err == nil {
+			// the image pull had an error, e.g:
+			// {"errorDetail":{"message":"unauthorized: authentication required"},"error":"unauthorized: authentication required"}
+			// or
+			// {"errorDetail":{"message":"no basic auth credentials"},"error":"no basic auth credentials"}
+			log.Error(err)
+			if pel.Error == "unauthorized: authentication required" || pel.Error == "no basic auth credentials" {
+				return ctx.String(http.StatusUnauthorized, pel.Error)
+			} else {
+				return ctx.String(http.StatusInternalServerError, pel.Error)
+			}
+		}
 	}
-
-	log.Info(buf.String())
 
 	return ctx.String(http.StatusCreated, "")
 }
