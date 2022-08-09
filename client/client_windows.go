@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/sirupsen/logrus"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	npipe "gopkg.in/natefinch/npipe.v2"
@@ -40,13 +41,15 @@ type ClientOpt func(Client) error
 
 // New returns a new volume client
 func New(opts ...ClientOpt) (Client, error) {
+	metadataExtensionSocket := "ext.sock" // name of the socket in metadata.json
 	c := &cl{
 		httpc: http.Client{
 			Transport: &http.Transport{
 				DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
 					var socket string
-					name := strings.TrimSuffix(strings.ReplaceAll("volume-contents.sock", "-", ""), ".sock")
-					socket = `\\.\pipe\dockerDesktopPlugin` + cases.Title(language.English, cases.NoLower).String(name)
+					metadataExtensionSocket = strings.TrimSuffix(strings.ReplaceAll(metadataExtensionSocket, "-", ""), ".sock")
+					socket = `\\.\pipe\dockerDesktopPlugin` + cases.Title(language.English, cases.NoLower).String(metadataExtensionSocket)
+					logrus.Infof("npipe: %s", socket)
 					return npipe.Dial(socket)
 				},
 			},
@@ -86,7 +89,11 @@ func (c *cl) Push(ctx context.Context, ref string, volume string, options Volume
 	req.Header.Set("Content-Type", "application/json")
 
 	res, err := c.httpc.Do(req)
-	if res.StatusCode != http.StatusOK {
+	if err != nil {
+		return err
+	}
+
+	if res.StatusCode != http.StatusCreated {
 		b, _ := io.ReadAll(res.Body)
 		return errors.New(string(b))
 	}
