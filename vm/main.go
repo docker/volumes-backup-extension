@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -11,7 +12,6 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/felipecruz91/vackup-docker-extension/internal/handler"
 	"github.com/felipecruz91/vackup-docker-extension/internal/log"
-	"github.com/felipecruz91/vackup-docker-extension/pkg/socket"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"github.com/sirupsen/logrus"
@@ -44,8 +44,7 @@ func main() {
 	}))
 
 	log.Infof("Starting listening on %s\n", socketPath)
-	unixSocket := "unix:" + socketPath
-	ln, err := socket.ListenOn(unixSocket)
+	ln, err := net.Listen("unix", socketPath)
 	if err != nil {
 		log.Fatal(err)
 	}
