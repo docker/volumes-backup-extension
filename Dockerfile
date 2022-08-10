@@ -36,7 +36,7 @@ LABEL org.opencontainers.image.title="vackup-docker-extension" \
 WORKDIR /
 COPY docker-compose.yaml .
 COPY metadata.json .
-COPY docker.svg .
+COPY icon.svg .
 COPY --from=builder /backend/bin/service /
 COPY --from=client-builder /ui/build ui
 
