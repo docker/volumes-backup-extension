@@ -30,7 +30,7 @@ export const Header = () => (
       </Link>
     </Grid>
     <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
-      Backup and share Docker volumes effortlessly.
+      Back up, clone, restore, and share Docker volumes effortlessly.
     </Typography>
   </>
 );
