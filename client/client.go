@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 )
@@ -38,7 +39,9 @@ type cl struct {
 
 // New returns a new volume client
 func New(extensionDir string) (Client, error) {
-	logrus.Infof("extensionDir: %s", extensionDir)
+	// e.g. from "felipecruz/vackup-docker-extension" to "felipecruz_vackup-docker-extension"
+	safeExtensionDir := strings.Replace(extensionDir, "/", "_", 1)
+	logrus.Infof("safeExtensionDir: %s", safeExtensionDir)
 
 	c := &cl{
 		httpc: http.Client{
@@ -54,10 +57,10 @@ func New(extensionDir string) (Client, error) {
 					// It is the extension installation directory name followed by ".sock".
 					case "darwin":
 						// e.g. "/Users/felipecruz/.docker/ext-sockets/felipecruz_vackup-docker-extension.sock"
-						socket = filepath.Join(hd, ".docker", "ext-sockets", extensionDir+".sock")
+						socket = filepath.Join(hd, ".docker", "ext-sockets", safeExtensionDir+".sock")
 					case "linux":
 						// e.g. "/home/felipecruz/.docker/desktop/ext-sockets/felipecruz_vackup-docker-extension.sock"
-						socket = filepath.Join(hd, ".docker", "desktop", "ext-sockets", extensionDir+".sock")
+						socket = filepath.Join(hd, ".docker", "desktop", "ext-sockets", safeExtensionDir+".sock")
 					}
 					logrus.Infof("unix socket: %s", socket)
 					return net.Dial("unix", socket)
