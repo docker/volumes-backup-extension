@@ -13,21 +13,18 @@ import (
 	"strings"
 )
 
-type PushRequest struct {
+type PullRequest struct {
 	Reference string `json:"reference"`
 }
 
-type PushErrorLine struct {
+type PullErrorLine struct {
 	ErrorDetail ErrorDetail `json:"errorDetail"`
 	Error       string      `json:"error"`
 }
-type ErrorDetail struct {
-	Message string `json:"message"`
-}
 
-// PushVolume pushes a volume to a registry.
+// PullVolume pulls a volume from a registry.
 // The user must be previously authenticated to the registry with `docker login <registry>`, otherwise it returns 401 StatusUnauthorized.
-func (h *Handler) PushVolume(ctx echo.Context) error {
+func (h *Handler) PullVolume(ctx echo.Context) error {
 	var request PushRequest
 	if err := ctx.Bind(&request); err != nil {
 		return err
@@ -49,27 +46,21 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 	}
 	log.Infof("parsedRef.String(): %s", parsedRef.String())
 
-	// Save the content of the volume into an image
-	if err := backend.Save(ctxReq, h.DockerClient, volumeName, parsedRef.String()); err != nil {
-		log.Error(err)
-		return ctx.String(http.StatusInternalServerError, err.Error())
-	}
-
 	// Push the image to registry
 	encodedAuth := ctx.Request().Header.Get("X-Registry-Auth")
 	if encodedAuth == "" {
 		encodedAuth = "Cg==" // from running: echo "" | base64
 	}
-	pushResp, err := h.DockerClient.ImagePush(ctxReq, parsedRef.String(), dockertypes.ImagePushOptions{
+	pullResp, err := h.DockerClient.ImagePull(ctxReq, parsedRef.String(), dockertypes.ImagePullOptions{
 		RegistryAuth: encodedAuth,
 	})
 	if err != nil {
 		log.Error(err)
 		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
-	defer pushResp.Close()
+	defer pullResp.Close()
 
-	response, err := ioutil.ReadAll(pushResp)
+	response, err := ioutil.ReadAll(pullResp)
 
 	for _, line := range strings.Split(string(response), "\n") {
 		log.Info(line)
@@ -80,7 +71,8 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 
 		pel := PushErrorLine{}
 		if err := json.Unmarshal([]byte(line), &pel); err == nil {
-			// the image push had an error, e.g:
+			// TODO: double check
+			// the image pull had an error, e.g:
 			// {"errorDetail":{"message":"unauthorized: authentication required"},"error":"unauthorized: authentication required"}
 			// or
 			// {"errorDetail":{"message":"no basic auth credentials"},"error":"no basic auth credentials"}
@@ -91,6 +83,12 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 				return ctx.String(http.StatusInternalServerError, pel.Error)
 			}
 		}
+	}
+
+	// Load the image into the volume
+	if err := backend.Load(ctxReq, h.DockerClient, volumeName, parsedRef.String()); err != nil {
+		log.Error(err)
+		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
 	return ctx.String(http.StatusCreated, "")

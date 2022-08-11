@@ -133,7 +133,7 @@ func (c *cl) Pull(ctx context.Context, reference string, volume string, options 
 	req.Header.Set("Content-Type", "application/json")
 
 	res, err := c.httpc.Do(req)
-	if res.StatusCode != http.StatusOK {
+	if res.StatusCode != http.StatusCreated {
 		b, _ := io.ReadAll(res.Body)
 		return errors.New(string(b))
 	}
