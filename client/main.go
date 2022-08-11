@@ -12,9 +12,19 @@ import (
 )
 
 func main() {
+	var extensionDir string
+
 	app := &cli.App{
 		Name:  "vpush",
-		Usage: "Push/Pulll volumes",
+		Usage: "Push/Pull volumes",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:        "extension-dir",
+				Required:    true,
+				Usage:       "The directory name where the extension is installed.",
+				Destination: &extensionDir,
+			},
+		},
 		Before: func(c *cli.Context) error {
 			return nil
 		},
@@ -26,7 +36,7 @@ func main() {
 					ref := c.Args().Get(0)
 					volume := c.Args().Get(1)
 
-					volumeClient, err := New()
+					volumeClient, err := New(extensionDir)
 					if err != nil {
 						return err
 					}
@@ -63,7 +73,7 @@ func main() {
 					ref := c.Args().Get(0)
 					volume := c.Args().Get(1)
 
-					volumeClient, err := New()
+					volumeClient, err := New(extensionDir)
 					if err != nil {
 						return err
 					}

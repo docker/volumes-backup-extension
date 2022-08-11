@@ -37,11 +37,12 @@ type cl struct {
 	httpc http.Client
 }
 
-type ClientOpt func(Client) error
-
 // New returns a new volume client
-func New(opts ...ClientOpt) (Client, error) {
+func New(extensionDir string) (Client, error) {
+	logrus.Infof("extensionDir not used on Windows as the socket name doesn't depend on it.")
+
 	metadataExtensionSocket := "ext.sock" // name of the socket in metadata.json
+	
 	c := &cl{
 		httpc: http.Client{
 			Transport: &http.Transport{
@@ -54,12 +55,6 @@ func New(opts ...ClientOpt) (Client, error) {
 				},
 			},
 		},
-	}
-
-	for _, opt := range opts {
-		if err := opt(c); err != nil {
-			return nil, err
-		}
 	}
 
 	return c, nil

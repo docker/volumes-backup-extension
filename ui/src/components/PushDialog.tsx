@@ -28,7 +28,7 @@ export default function PushDialog({...props}) {
     const saveVolume = async () => {
         setActionInProgress(true);
 
-        ddClient.extension.host.cli.exec("volumes-share-client", ["push", imageName, context.store.volume.volumeName]).then((result) => {
+        ddClient.extension.host.cli.exec("volumes-share-client", ["--extension-dir", process.env['REACT_APP_EXTENSION_INSTALLATION_DIR_NAME'], "push", imageName, context.store.volume.volumeName]).then((result) => {
             ddClient.desktopUI.toast.success(
                 `Volume ${context.store.volume.volumeName} pushed as ${imageName} to registry`
             );

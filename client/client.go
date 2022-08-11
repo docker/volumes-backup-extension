@@ -36,15 +36,10 @@ type cl struct {
 	httpc http.Client
 }
 
-type ClientOpt func(Client) error
-
 // New returns a new volume client
-func New(opts ...ClientOpt) (Client, error) {
-	// TODO: pass extension name when calling the ./volumes-share-client or use an env variable
-	// The socket name in the **host** is not the one defined in the "metadata.json" of the extension.
-	// It is the extension installation directory name followed by ".sock".
-	extensionInstallationDir := "felipecruz_vackup-docker-extension"
-	hostSocketName := extensionInstallationDir + ".sock"
+func New(extensionDir string) (Client, error) {
+	logrus.Infof("extensionDir: %s", extensionDir)
+
 	c := &cl{
 		httpc: http.Client{
 			Transport: &http.Transport{
@@ -55,24 +50,20 @@ func New(opts ...ClientOpt) (Client, error) {
 					}
 					var socket string
 					switch runtime.GOOS {
+					// The socket name in the **host** is no longer the one defined in the "metadata.json" of the extension.
+					// It is the extension installation directory name followed by ".sock".
 					case "darwin":
 						// e.g. "/Users/felipecruz/.docker/ext-sockets/felipecruz_vackup-docker-extension.sock"
-						socket = filepath.Join(hd, ".docker", "ext-sockets", hostSocketName)
+						socket = filepath.Join(hd, ".docker", "ext-sockets", extensionDir+".sock")
 					case "linux":
 						// e.g. "/home/felipecruz/.docker/desktop/ext-sockets/felipecruz_vackup-docker-extension.sock"
-						socket = filepath.Join(hd, ".docker", "desktop", "ext-sockets", hostSocketName)
+						socket = filepath.Join(hd, ".docker", "desktop", "ext-sockets", extensionDir+".sock")
 					}
 					logrus.Infof("unix socket: %s", socket)
 					return net.Dial("unix", socket)
 				},
 			},
 		},
-	}
-
-	for _, opt := range opts {
-		if err := opt(c); err != nil {
-			return nil, err
-		}
 	}
 
 	return c, nil
