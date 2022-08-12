@@ -2,15 +2,16 @@ package handler
 
 import (
 	"encoding/json"
+	"io/ioutil"
+	"net/http"
+	"strings"
+
 	"github.com/docker/distribution/reference"
 	dockertypes "github.com/docker/docker/api/types"
 	"github.com/felipecruz91/vackup-docker-extension/internal/backend"
 	"github.com/felipecruz91/vackup-docker-extension/internal/log"
 	"github.com/labstack/echo"
 	"github.com/sirupsen/logrus"
-	"io/ioutil"
-	"net/http"
-	"strings"
 )
 
 type PushRequest struct {
@@ -80,7 +81,7 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 
 		pel := PushErrorLine{}
 		if err := json.Unmarshal([]byte(line), &pel); err == nil {
-			// the image pull had an error, e.g:
+			// the image push had an error, e.g:
 			// {"errorDetail":{"message":"unauthorized: authentication required"},"error":"unauthorized: authentication required"}
 			// or
 			// {"errorDetail":{"message":"no basic auth credentials"},"error":"no basic auth credentials"}

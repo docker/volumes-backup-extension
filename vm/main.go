@@ -64,6 +64,7 @@ func main() {
 	router.GET("/volumes/:volume/save", h.SaveVolume)
 	router.GET("/volumes/:volume/load", h.LoadImage)
 	router.POST("/volumes/:volume/push", h.PushVolume)
+	router.POST("/volumes/:volume/pull", h.PullVolume)
 
 	// Start server
 	go func() {

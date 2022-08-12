@@ -1,0 +1,82 @@
+package handler
+
+import (
+	"github.com/docker/distribution/reference"
+	dockertypes "github.com/docker/docker/api/types"
+	"github.com/felipecruz91/vackup-docker-extension/internal/backend"
+	"github.com/felipecruz91/vackup-docker-extension/internal/log"
+	"github.com/labstack/echo"
+	"github.com/sirupsen/logrus"
+	"io/ioutil"
+	"net/http"
+	"strings"
+)
+
+type PullRequest struct {
+	Reference string `json:"reference"`
+}
+
+// PullVolume pulls a volume from a registry.
+// The user must be previously authenticated to the registry with `docker login <registry>`, otherwise it returns 401 StatusUnauthorized.
+func (h *Handler) PullVolume(ctx echo.Context) error {
+	var request PullRequest
+	if err := ctx.Bind(&request); err != nil {
+		return err
+	}
+
+	ctxReq := ctx.Request().Context()
+	volumeName := ctx.Param("volume")
+	log.Infof("volumeName: %s", volumeName)
+	log.Infof("reference: %s", request.Reference)
+	logrus.Infof("received pull request for volume %s\n", volumeName)
+
+	if volumeName == "" {
+		return ctx.String(http.StatusBadRequest, "volume is required")
+	}
+
+	parsedRef, err := reference.ParseAnyReference(request.Reference)
+	if err != nil {
+		return ctx.String(http.StatusBadRequest, err.Error())
+	}
+	log.Infof("parsedRef.String(): %s", parsedRef.String())
+
+	// Pull the volume (image) from registry
+	encodedAuth := ctx.Request().Header.Get("X-Registry-Auth")
+	if encodedAuth == "" {
+		encodedAuth = "Cg==" // from running: echo "" | base64
+	}
+
+	log.Infof("Pulling image %s...", parsedRef.String())
+	pullResp, err := h.DockerClient.ImagePull(ctxReq, parsedRef.String(), dockertypes.ImagePullOptions{
+		RegistryAuth: encodedAuth,
+	})
+
+	if err != nil {
+		log.Error(err)
+
+		if strings.Contains(err.Error(), "unauthorized: authentication required") {
+			return ctx.String(http.StatusUnauthorized, err.Error())
+		}
+
+		return ctx.String(http.StatusInternalServerError, err.Error())
+	}
+	defer pullResp.Close()
+
+	pullRespBytes, err := ioutil.ReadAll(pullResp)
+	if err != nil {
+		return ctx.String(http.StatusInternalServerError, err.Error())
+	}
+
+	for _, line := range strings.Split(string(pullRespBytes), "\n") {
+		log.Info(line)
+	}
+
+	// Load the image into the volume
+	log.Infof("Loading image %s into volume %s...", parsedRef.String(), volumeName)
+	if err := backend.Load(ctxReq, h.DockerClient, volumeName, parsedRef.String()); err != nil {
+		log.Error(err)
+		return ctx.String(http.StatusInternalServerError, err.Error())
+	}
+
+	return ctx.String(http.StatusCreated, "")
+}
