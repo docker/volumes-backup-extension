@@ -26,6 +26,9 @@ import { ImageAutocomplete } from "./ImageAutocomplete";
 import { useImportFromImage } from "../hooks/useImportFromImage";
 import { MyContext } from "..";
 import { VolumeOrInput } from "./VolumeOrInput";
+import { RegistryImageInput } from "./RegistryImageInput";
+import { usePullFromRegistry } from "../hooks/usePullFromRegistry";
+import { USE_REGISTRY_VERSION } from "../common/version";
 
 const ddClient = createDockerDesktopClient();
 
@@ -36,23 +39,28 @@ interface Props {
 }
 
 export default function ImportDialog({ volumes, open, onClose }: Props) {
-  const [fromRadioValue, setFromRadioValue] = useState<"file" | "image">(
-    "file"
-  );
+  const [fromRadioValue, setFromRadioValue] = useState<
+    "file" | "image" | "pull-registry"
+  >("file");
   const [image, setImage] = useState<string>("");
   const [volumeName, setVolumeName] = useState("");
   const [volumeHasError, setVolumeHasError] = useState(false);
   const [path, setPath] = useState<string>("");
+  const [registryImage, setRegistryImage] = useState("");
+  const [registryImageError, setRegistryImageError] = useState("");
 
   // when executed from a Volume context we don't need to create it.
   const context = useContext(MyContext);
   const selectedVolumeName = context.store.volume?.volumeName;
+  const sdkVersion = context.store.sdkVersion;
+  const canUseRegistry = sdkVersion >= USE_REGISTRY_VERSION;
 
   const { createVolume, isInProgress: isCreating } = useCreateVolume();
   const { importVolume, isInProgress: isImportingFromPath } =
     useImportFromPath();
   const { loadImage, isInProgress: isImportingFromImage } =
     useImportFromImage();
+  const { pullFromRegistry, isLoading: isPulling } = usePullFromRegistry();
 
   const selectImportTarGzFile = () => {
     ddClient.desktopUI.dialog
@@ -71,21 +79,27 @@ export default function ImportDialog({ volumes, open, onClose }: Props) {
 
   const handleCreateVolume = async () => {
     if (selectedVolumeName) return;
-    await createVolume(volumeName);
+    return await createVolume(volumeName);
   };
 
   const createAndImport = async () => {
-    await handleCreateVolume();
+    const volumeId = await handleCreateVolume();
     if (fromRadioValue === "file") {
       await importVolume({
         volumeName: selectedVolumeName || volumeName,
         path,
       });
       onClose(true);
-    } else {
+    } else if (fromRadioValue === "image") {
       await loadImage({
         volumeName: selectedVolumeName || volumeName,
         imageName: image,
+      });
+      onClose(true);
+    } else {
+      await pullFromRegistry({
+        imageName: registryImage,
+        volumeId: volumeId?.[0],
       });
       onClose(true);
     }
@@ -154,6 +168,32 @@ export default function ImportDialog({ volumes, open, onClose }: Props) {
     );
   };
 
+  const renderPullFromRegistryRadioButton = () => {
+    return (
+      <>
+        <FormControlLabel
+          value="pull-registry"
+          control={<Radio />}
+          label="Registry"
+        />
+        <Stack pt={1} pb={2} pl={4} width="100%">
+          <Typography pb={2} variant="body2">
+            Pull content from a registry like DockerHub or GitHub Container
+            Registry.
+          </Typography>
+          {fromRadioValue === "pull-registry" && (
+            <RegistryImageInput
+              error={registryImageError}
+              value={registryImage}
+              setValue={setRegistryImage}
+              setError={setRegistryImageError}
+            />
+          )}
+        </Stack>
+      </>
+    );
+  };
+
   return (
     <Dialog fullWidth maxWidth="sm" open={open} onClose={onClose}>
       <DialogTitle>
@@ -165,7 +205,12 @@ export default function ImportDialog({ volumes, open, onClose }: Props) {
             backgroundColor: "rgba(245,244,244,0.4)",
             zIndex: (theme) => theme.zIndex.drawer + 1,
           }}
-          open={isCreating || isImportingFromPath || isImportingFromImage}
+          open={
+            isCreating ||
+            isImportingFromPath ||
+            isImportingFromImage ||
+            isPulling
+          }
         >
           <CircularProgress color="info" />
         </Backdrop>
@@ -193,6 +238,7 @@ export default function ImportDialog({ volumes, open, onClose }: Props) {
             >
               {renderFormControlFile()}
               {renderImageRadioButton()}
+              {canUseRegistry && renderPullFromRegistryRadioButton()}
             </RadioGroup>
           </FormControl>
 
@@ -227,6 +273,8 @@ export default function ImportDialog({ volumes, open, onClose }: Props) {
           onClick={createAndImport}
           disabled={Boolean(
             (fromRadioValue === "file" && !path) ||
+              (fromRadioValue === "pull-registry" &&
+                (!registryImage || Boolean(registryImageError))) ||
               (fromRadioValue === "image" && !image) ||
               (volumeName && volumeHasError)
           )}
