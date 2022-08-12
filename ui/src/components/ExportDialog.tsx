@@ -1,4 +1,4 @@
-import React, { useContext, useRef, useState } from "react";
+import React, { useContext, useState } from "react";
 import {
   Alert,
   Backdrop,
@@ -28,6 +28,7 @@ import { useExportToImage } from "../hooks/useExportToImage";
 import { NewImageInput } from "./NewImageInput";
 import { usePushVolumeToRegistry } from "../hooks/usePushVolumeToRegistry";
 import { RegistryImageInput } from "./RegistryImageInput";
+import { USE_REGISTRY_VERSION } from "../common/version";
 
 const ddClient = createDockerDesktopClient();
 
@@ -38,6 +39,8 @@ interface Props {
 
 export default function ExportDialog({ open, onClose }: Props) {
   const context = useContext(MyContext);
+  const version = context.store.version;
+  const canUseRegistry = version >= USE_REGISTRY_VERSION;
 
   const [fromRadioValue, setFromRadioValue] = useState<
     "directory" | "local-image" | "new-image" | "push-registry"
@@ -267,7 +270,7 @@ export default function ExportDialog({ open, onClose }: Props) {
             {renderDirectoryRadioButton()}
             {renderLocalImageRadioButton()}
             {renderNewImageRadioButton()}
-            {renderPushToRegistryRadioButton()}
+            {canUseRegistry && renderPushToRegistryRadioButton()}
           </RadioGroup>
         </FormControl>
       </DialogContent>

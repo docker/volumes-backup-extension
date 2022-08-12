@@ -14,6 +14,7 @@ export const useCreateVolume = () => {
           ddClient.desktopUI.toast.error(createVolumeOutput.stderr);
         }
         setIsInProgress(false);
+        return createVolumeOutput.lines();
       })
       .catch((error) => {
         ddClient.desktopUI.toast.error(

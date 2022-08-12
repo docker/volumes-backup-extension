@@ -1,0 +1,1 @@
+export const USE_REGISTRY_VERSION = '0.2.4';

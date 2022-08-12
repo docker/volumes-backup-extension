@@ -28,6 +28,7 @@ import { MyContext } from "..";
 import { VolumeOrInput } from "./VolumeOrInput";
 import { RegistryImageInput } from "./RegistryImageInput";
 import { usePullFromRegistry } from "../hooks/usePullFromRegistry";
+import { USE_REGISTRY_VERSION } from "../common/version";
 
 const ddClient = createDockerDesktopClient();
 
@@ -51,6 +52,8 @@ export default function ImportDialog({ volumes, open, onClose }: Props) {
   // when executed from a Volume context we don't need to create it.
   const context = useContext(MyContext);
   const selectedVolumeName = context.store.volume?.volumeName;
+  const version = context.store.version;
+  const canUseRegistry = version >= USE_REGISTRY_VERSION;
 
   const { createVolume, isInProgress: isCreating } = useCreateVolume();
   const { importVolume, isInProgress: isImportingFromPath } =
@@ -76,11 +79,11 @@ export default function ImportDialog({ volumes, open, onClose }: Props) {
 
   const handleCreateVolume = async () => {
     if (selectedVolumeName) return;
-    await createVolume(volumeName);
+    return await createVolume(volumeName);
   };
 
   const createAndImport = async () => {
-    await handleCreateVolume();
+    const volumeId = await handleCreateVolume();
     if (fromRadioValue === "file") {
       await importVolume({
         volumeName: selectedVolumeName || volumeName,
@@ -94,7 +97,10 @@ export default function ImportDialog({ volumes, open, onClose }: Props) {
       });
       onClose(true);
     } else {
-      await pullFromRegistry({ imageName: registryImage });
+      await pullFromRegistry({
+        imageName: registryImage,
+        volumeId: volumeId?.[0],
+      });
       onClose(true);
     }
   };
@@ -232,7 +238,7 @@ export default function ImportDialog({ volumes, open, onClose }: Props) {
             >
               {renderFormControlFile()}
               {renderImageRadioButton()}
-              {renderPullFromRegistryRadioButton()}
+              {canUseRegistry && renderPullFromRegistryRadioButton()}
             </RadioGroup>
           </FormControl>
 

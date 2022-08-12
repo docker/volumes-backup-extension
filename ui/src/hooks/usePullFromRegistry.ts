@@ -8,7 +8,7 @@ export const usePullFromRegistry = () => {
   const [isLoading, setIsLoading] = useState(false);
   const context = useContext(MyContext);
 
-  const pullFromRegistry = ({ imageName }: { imageName: string }) => {
+  const pullFromRegistry = ({ imageName, volumeId }: { imageName: string, volumeId: string }) => {
     setIsLoading(true);
 
     return ddClient.extension.host.cli
@@ -17,17 +17,17 @@ export const usePullFromRegistry = () => {
         process.env["REACT_APP_EXTENSION_INSTALLATION_DIR_NAME"],
         "pull",
         imageName,
-        context.store.volume.volumeName,
+        volumeId || context.store.volume.volumeName,
       ])
       .then((result) => {
         ddClient.desktopUI.toast.success(
-          `Volume ${context.store.volume.volumeName} pulled as ${imageName} from registry`
+          `Volume ${volumeId || context.store.volume.volumeName} pulled as ${imageName} from registry`
         );
       })
       .catch((error) => {
         console.error(error);
         ddClient.desktopUI.toast.error(
-          `Failed to pull volume ${context.store.volume.volumeName} as ${imageName} from registry: ${error.message}. HTTP status code: ${error.statusCode}`
+          `Failed to pull volume ${volumeId || context.store.volume.volumeName} as ${imageName} from registry: ${error.message}. HTTP status code: ${error.statusCode}`
         );
       })
       .finally(() => {
