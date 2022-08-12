@@ -27,6 +27,7 @@ import { ImageAutocomplete } from "./ImageAutocomplete";
 import { useExportToImage } from "../hooks/useExportToImage";
 import { NewImageInput } from "./NewImageInput";
 import { usePushVolumeToRegistry } from "../hooks/usePushVolumeToRegistry";
+import { RegistryImageInput } from "./RegistryImageInput";
 
 const ddClient = createDockerDesktopClient();
 
@@ -50,17 +51,6 @@ export default function ExportDialog({ open, onClose }: Props) {
   const [newImageHasError, setNewImageHasError] = useState<boolean>(false);
   const [registryImage, setRegistryImage] = useState("");
   const [registryImageError, setRegistryImageError] = useState("");
-
-  const handleRegistryImageValidation = (newVal: string) => {
-    if (!newVal) setRegistryImageError(null);
-    if (!new RegExp(/(?:.*\/)([^:]+)(?::.+)?/gm).test(newVal)) {
-      setRegistryImageError(
-        "Please specify at least <user>/<repo-name>:<tag>."
-      );
-    } else {
-      setRegistryImageError(null);
-    }
-  };
 
   const { isLoading: isExportingToFile, exportVolume } = useExportVolume();
   const { isLoading: isExportingToImage, exportToImage } = useExportToImage();
@@ -220,18 +210,11 @@ export default function ExportDialog({ open, onClose }: Props) {
             Container Registry.
           </Typography>
           {fromRadioValue === "push-registry" && (
-            <TextField
-              fullWidth
-              label="<registry>/<user>/<repo-name>:<tag>"
-              helperText={
-                registryImageError ||
-                "The default registry is DockerHub, if you do not specify one."
-              }
-              placeholder="docker.io/johndoe/my-image-name:latest"
+            <RegistryImageInput
+              error={registryImageError}
               value={registryImage}
-              error={!!registryImageError}
-              onChange={(e) => setRegistryImage(e.target.value)}
-              onBlur={(e) => handleRegistryImageValidation(e.target.value)}
+              setValue={setRegistryImage}
+              setError={setRegistryImageError}
             />
           )}
         </Stack>
