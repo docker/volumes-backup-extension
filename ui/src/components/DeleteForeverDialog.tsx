@@ -72,8 +72,8 @@ export default function DeleteForeverDialog({ ...props }) {
         <DialogContentText>The volume will be deleted permanently. This action cannot be undone. Are you sure?</DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button onClick={() => props.onClose(false)}>Cancel</Button>
-        <Button onClick={deleteVolume}>
+        <Button variant="outlined" onClick={() => props.onClose(false)}>Cancel</Button>
+        <Button variant="contained" onClick={deleteVolume}>
           Delete forever
         </Button>
       </DialogActions>

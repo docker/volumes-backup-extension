@@ -33,7 +33,7 @@ function CustomToolbar({openDialog}) {
                 <GridToolbarDensitySelector />
             </Grid>
             <Grid item>
-                <Button variant="contained" onClick={openDialog} endIcon={<DownloadIcon />}>Import into new volume</Button>
+                <Button variant="contained" onClick={openDialog} endIcon={<UploadIcon />}>Import into new volume</Button>
             </Grid>
         </Grid>
       </GridToolbarContainer>

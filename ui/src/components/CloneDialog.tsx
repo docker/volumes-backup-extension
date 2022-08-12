@@ -93,15 +93,13 @@ export default function CloneDialog({ ...props }) {
         <DialogContentText>Clones a volume.</DialogContentText>
 
         <Grid container direction="column" spacing={2}>
-          <Grid item>
+          <Grid item mt={2}>
             <TextField
               required
               autoFocus
-              margin="dense"
               id="volume-name"
               label="Volume name"
               fullWidth
-              variant="standard"
               defaultValue={`${context.store.volume.volumeName}-cloned`}
               spellCheck={false}
               onChange={(e) => {
@@ -120,8 +118,8 @@ export default function CloneDialog({ ...props }) {
         </Grid>
       </DialogContent>
       <DialogActions>
-        <Button onClick={() => props.onClose(false)}>Cancel</Button>
-        <Button onClick={cloneVolume} disabled={volumeName === ""}>
+        <Button variant="outlined" onClick={() => props.onClose(false)}>Cancel</Button>
+        <Button variant="contained" onClick={cloneVolume} disabled={volumeName === ""}>
           Clone
         </Button>
       </DialogActions>

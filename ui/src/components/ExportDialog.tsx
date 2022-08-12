@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useRef, useState } from "react";
 import {
   Alert,
   Backdrop,
@@ -48,8 +48,19 @@ export default function ExportDialog({ open, onClose }: Props) {
   const [image, setImage] = useState<string>("");
   const [newImage, setNewImage] = useState<string>("");
   const [newImageHasError, setNewImageHasError] = useState<boolean>(false);
-  const defaultImageName = `vackup-${context.store.volume.volumeName}:latest`;
-  const [registryImage, setRegistryImage] = useState(defaultImageName);
+  const [registryImage, setRegistryImage] = useState("");
+  const [registryImageError, setRegistryImageError] = useState("");
+
+  const handleRegistryImageValidation = (newVal: string) => {
+    if (!newVal) setRegistryImageError(null);
+    if (!new RegExp(/(?:.*\/)([^:]+)(?::.+)?/gm).test(newVal)) {
+      setRegistryImageError(
+        "Please specify at least <user>/<repo-name>:<tag>."
+      );
+    } else {
+      setRegistryImageError(null);
+    }
+  };
 
   const { isLoading: isExportingToFile, exportVolume } = useExportVolume();
   const { isLoading: isExportingToImage, exportToImage } = useExportToImage();
@@ -99,47 +110,49 @@ export default function ExportDialog({ open, onClose }: Props) {
           control={<Radio />}
           label="Local file"
         />
-        {fromRadioValue === "directory" && (
-          <Stack pt={1} pb={2} pl={4}>
-            <Typography pb={1} variant="body2">
-              Create a compressed file (gzip’ed tarball) in a selected directory
-              with the content of a chosen volume.
-            </Typography>
 
-            <TextField
-              autoFocus
-              margin="dense"
-              id="file-name"
-              label="File name"
-              fullWidth
-              defaultValue={`${context.store.volume.volumeName}.tar.gz`}
-              spellCheck={false}
-              onChange={(e) => {
-                setFileName(e.target.value);
-              }}
-            />
-            <Grid container alignItems="center" gap={2}>
-              <Grid item flex={1}>
-                <TextField
-                  fullWidth
-                  disabled
-                  margin="dense"
-                  id="directory"
-                  label={path ? "" : "Directory"}
-                  value={path}
+        <Stack pt={1} pb={2} pl={4}>
+          <Typography pb={1} variant="body2">
+            Create a compressed file (gzip’ed tarball) in a selected directory
+            with the content of a chosen volume.
+          </Typography>
+          {fromRadioValue === "directory" && (
+            <>
+              <TextField
+                autoFocus
+                margin="dense"
+                id="file-name"
+                label="File name"
+                fullWidth
+                defaultValue={`${context.store.volume.volumeName}.tar.gz`}
+                spellCheck={false}
+                onChange={(e) => {
+                  setFileName(e.target.value);
+                }}
+              />
+              <Grid container alignItems="center" gap={2}>
+                <Grid item flex={1}>
+                  <TextField
+                    fullWidth
+                    disabled
+                    margin="dense"
+                    id="directory"
+                    label={path ? "" : "Directory"}
+                    value={path}
+                    onClick={selectExportDirectory}
+                  />
+                </Grid>
+                <Button
+                  size="large"
+                  variant="outlined"
                   onClick={selectExportDirectory}
-                />
+                >
+                  Select directory
+                </Button>
               </Grid>
-              <Button
-                size="large"
-                variant="outlined"
-                onClick={selectExportDirectory}
-              >
-                Select directory
-              </Button>
-            </Grid>
-          </Stack>
-        )}
+            </>
+          )}
+        </Stack>
       </>
     );
   };
@@ -152,18 +165,18 @@ export default function ExportDialog({ open, onClose }: Props) {
           control={<Radio />}
           label="Local image"
         />
-        {fromRadioValue === "local-image" && (
-          <Stack pt={1} pb={2} pl={4} width="100%">
-            <Typography pb={1} variant="body2">
-              Copy the volume content to a busybox image in the /volume-data
-              directory.
-            </Typography>
+        <Stack pt={1} pb={2} pl={4} width="100%">
+          <Typography pb={1} variant="body2">
+            Copy the volume content to a busybox image in the /volume-data
+            directory.
+          </Typography>
+          {fromRadioValue === "local-image" && (
             <ImageAutocomplete
               value={image}
               onChange={(v) => setImage(v as any)}
             />
-          </Stack>
-        )}
+          )}
+        </Stack>
       </>
     );
   };
@@ -176,19 +189,19 @@ export default function ExportDialog({ open, onClose }: Props) {
           control={<Radio />}
           label="New image"
         />
-        {fromRadioValue === "new-image" && (
-          <Stack pt={1} pb={2} pl={4} width="100%">
-            <Typography pb={1} variant="body2">
-              Create a new image and copy the volume’s content into it.
-            </Typography>
+        <Stack pt={1} pb={2} pl={4} width="100%">
+          <Typography pb={1} variant="body2">
+            Create a new image and copy the volume’s content into it.
+          </Typography>
+          {fromRadioValue === "new-image" && (
             <NewImageInput
               value={newImage}
               onChange={setNewImage}
               hasError={newImageHasError}
               setHasError={setNewImageHasError}
             />
-          </Stack>
-        )}
+          )}
+        </Stack>
       </>
     );
   };
@@ -201,21 +214,27 @@ export default function ExportDialog({ open, onClose }: Props) {
           control={<Radio />}
           label="Registry"
         />
-        {fromRadioValue === "push-registry" && (
-          <Stack pt={1} pb={2} pl={4} width="100%">
-            <Typography pb={2} variant="body2">
-              Push the volume content to a registry like DockerHub or GitHub
-              Container Registry.
-            </Typography>
+        <Stack pt={1} pb={2} pl={4} width="100%">
+          <Typography pb={2} variant="body2">
+            Push the volume content to a registry like DockerHub or GitHub
+            Container Registry.
+          </Typography>
+          {fromRadioValue === "push-registry" && (
             <TextField
               fullWidth
               label="<registry>/<user>/<repo-name>:<tag>"
-              placeholder={defaultImageName}
+              helperText={
+                registryImageError ||
+                "The default registry is DockerHub, if you do not specify one."
+              }
+              placeholder="docker.io/johndoe/my-image-name:latest"
               value={registryImage}
+              error={!!registryImageError}
               onChange={(e) => setRegistryImage(e.target.value)}
+              onBlur={(e) => handleRegistryImageValidation(e.target.value)}
             />
-          </Stack>
-        )}
+          )}
+        </Stack>
       </>
     );
   };
@@ -280,7 +299,10 @@ export default function ExportDialog({ open, onClose }: Props) {
             (fromRadioValue === "directory" &&
               (path === "" || fileName === "")) ||
             (fromRadioValue === "local-image" && !image) ||
-            (fromRadioValue === "new-image" && (!newImage || newImageHasError))
+            (fromRadioValue === "new-image" &&
+              (!newImage || newImageHasError)) ||
+            (fromRadioValue === "push-registry" &&
+              (!registryImage || Boolean(registryImageError)))
           }
         >
           Export
