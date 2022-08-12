@@ -27,6 +27,7 @@ import {MyContext} from ".";
 import {isError} from "./common/isError";
 import ImportDialog from "./components/ImportDialog";
 import { useGetVolumes } from "./hooks/useGetVolumes";
+import { Header } from "./components/Header";
 
 const ddClient = createDockerDesktopClient();
 
@@ -452,10 +453,7 @@ export function App() {
 
     return (
         <>
-            <Typography variant="h3">Vackup Extension</Typography>
-            <Typography variant="body1" color="text.secondary" sx={{mt: 2}}>
-                Easily backup and restore docker volumes.
-            </Typography>
+            <Header />
             <Stack direction="column" alignItems="start" spacing={2} sx={{mt: 4}}>
                 <Grid container>
                     <Grid item flex={1}>

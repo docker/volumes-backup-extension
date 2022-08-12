@@ -4,28 +4,27 @@ import {
   Button,
   TextField,
   Typography,
-  Grid,
   Backdrop,
   CircularProgress,
+  Alert,
+  FormControl,
+  FormLabel,
+  InputAdornment,
+  Stack,
 } from "@mui/material";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
-import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import { createDockerDesktopClient } from "@docker/extension-api-client";
 
 import { MyContext } from "../index";
 import { isError } from "../common/isError";
+import { VolumeOrInput } from "./VolumeOrInput";
 
-const client = createDockerDesktopClient();
-
-function useDockerDesktopClient() {
-  return client;
-}
+const ddClient = createDockerDesktopClient();
 
 export default function TransferDialog({ ...props }) {
-  const ddClient = useDockerDesktopClient();
   const context = useContext(MyContext);
 
   const [volumeName, setVolumeName] = React.useState<string>("");
@@ -139,43 +138,43 @@ export default function TransferDialog({ ...props }) {
         >
           <CircularProgress color="info" />
         </Backdrop>
-        <DialogContentText>
-          SSH must be enabled and configured between the source and destination
-          Docker hosts.
-        </DialogContentText>
-
-        <Grid container direction="column" spacing={2} mt={2}>
-          <Grid
-            container
-            direction="row"
-            alignItems="flex-end"
-            textAlign="center"
-            justifyContent="center"
-            spacing={1}
-          >
-            <Grid item>
-              <Button variant="outlined" disabled>
-                ssh://
-              </Button>
-            </Grid>
-            <Grid item>
-              <TextField
-                required
-                autoFocus
-                margin="dense"
-                id="dest-host"
-                label="Destination host"
-                fullWidth
-                variant="standard"
-                placeholder={"192.168.1.50"}
-                spellCheck={false}
-                onChange={(e) => {
-                  setDestHost(e.target.value);
-                }}
-              />
-            </Grid>
-          </Grid>
-          <Grid item>
+        <Alert
+          sx={(theme) => ({ marginBottom: theme.spacing(2) })}
+          severity="warning"
+        >
+          Any existing data inside the destination volume will be replaced.
+        </Alert>
+        <FormControl>
+          <FormLabel id="from-label">
+            <Typography variant="h3" my={1}>
+              From:
+            </Typography>
+          </FormLabel>
+          <VolumeOrInput />
+        </FormControl>
+        <FormControl sx={{ width: "100%" }}>
+          <FormLabel id="to-label">
+            <Typography variant="h3" mt={3} mb={1}>
+              To:
+            </Typography>
+          </FormLabel>
+          <Stack mt={1} spacing={3}>
+            <TextField
+              fullWidth
+              autoFocus
+              id="dest-host"
+              label="Destination host"
+              helperText="SSH must be enabled and configured between the source and destination Docker hosts. Check you have the remote host SSH public key in your known_hosts file."
+              placeholder={"user@192.168.1.50"}
+              spellCheck={false}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">ssh://</InputAdornment>
+                ),
+              }}
+              value={destHost}
+              onChange={(event) => setDestHost(event.target.value)}
+            />
             <Autocomplete
               id="autocomplete-destination-volume"
               open={autocompleteOpen}
@@ -212,24 +211,18 @@ export default function TransferDialog({ ...props }) {
                 />
               )}
             />
-          </Grid>
-          {volumeName !== "" && (
-            <Grid item>
-              <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-                The volume will be transferred to an existing volume named{" "}
-                {volumeName} in host {destHost}.
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
-                ⚠️ This will replace all the existing data inside the existing
-                volume.
-              </Typography>
-            </Grid>
-          )}
-        </Grid>
+          </Stack>
+        </FormControl>
       </DialogContent>
       <DialogActions>
-        <Button onClick={props.onClose}>Cancel</Button>
-        <Button onClick={transferVolume} disabled={volumeName === ""}>
+        <Button variant="outlined" onClick={props.onClose}>
+          Cancel
+        </Button>
+        <Button
+          variant="contained"
+          onClick={transferVolume}
+          disabled={volumeName === ""}
+        >
           Transfer
         </Button>
       </DialogActions>

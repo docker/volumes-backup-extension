@@ -2,15 +2,16 @@ package handler
 
 import (
 	"encoding/json"
+	"io/ioutil"
+	"net/http"
+	"strings"
+
 	"github.com/docker/distribution/reference"
 	dockertypes "github.com/docker/docker/api/types"
 	"github.com/felipecruz91/vackup-docker-extension/internal/backend"
 	"github.com/felipecruz91/vackup-docker-extension/internal/log"
 	"github.com/labstack/echo"
 	"github.com/sirupsen/logrus"
-	"io/ioutil"
-	"net/http"
-	"strings"
 )
 
 type PushRequest struct {

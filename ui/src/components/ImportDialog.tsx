@@ -187,7 +187,7 @@ export default function ImportDialog({ volumes, open, onClose }: Props) {
             </FormLabel>
             <RadioGroup
               aria-labelledby="from-label"
-              defaultValue="female"
+              defaultValue="file"
               name="radio-buttons-group"
               value={fromRadioValue}
               onChange={handleChange}
