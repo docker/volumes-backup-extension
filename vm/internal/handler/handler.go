@@ -30,6 +30,7 @@ func pullImagesIfNotPresent(ctx context.Context, cli *client.Client) {
 		"docker.io/library/alpine",
 		"docker.io/library/busybox",
 		"docker.io/justincormack/nsenter1",
+		"docker.io/library/registry:2",
 	}
 
 	for _, image := range images {

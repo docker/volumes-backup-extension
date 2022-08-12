@@ -70,6 +70,8 @@ jobs:
       - name: Build and export to Docker
         uses: docker/build-push-action@v2
         with:
+          build-args: |
+            EXTENSION_INSTALL_DIR_NAME=${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}
           push: false
           load: true # Export to Docker Engine rather than pushing to a registry
           tags: ${{ github.run_id }}
@@ -106,7 +108,7 @@ jobs:
         id: docker_meta
         uses: docker/metadata-action@v3
         with:
-          images: felipecruz/${{ github.event.repository.name }}
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}
           flavor: |
             latest=false
           tags: |
@@ -119,6 +121,8 @@ jobs:
       - name: Docker Build and Push to Docker Hub
         uses: docker/build-push-action@v2
         with:
+          build-args: |
+            EXTENSION_INSTALL_DIR_NAME=${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}
           push: true
           tags: ${{ steps.docker_meta.outputs.tags }}
           labels: ${{ steps.docker_meta.outputs.labels }}

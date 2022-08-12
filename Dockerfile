@@ -11,6 +11,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     go build -trimpath -ldflags="-s -w" -o bin/service
 
 FROM --platform=$BUILDPLATFORM node:17.7-alpine3.14 AS client-builder
+ARG EXTENSION_INSTALL_DIR_NAME
 WORKDIR /ui
 # cache packages in layer
 COPY ui/package.json /ui/package.json
@@ -20,7 +21,17 @@ RUN --mount=type=cache,target=/usr/src/app/.npm \
     npm ci
 # install
 COPY ui /ui
-RUN npm run build
+RUN echo "REACT_APP_EXTENSION_INSTALLATION_DIR_NAME=$EXTENSION_INSTALL_DIR_NAME" >> /ui/.env \
+    && npm run build
+
+FROM --platform=$BUILDPLATFORM golang:1.17-alpine AS volume-share-client-builder
+ENV CGO_ENABLED=0
+WORKDIR /output
+RUN apk update \
+    && apk add --no-cache build-base=0.5-r3 \
+    && rm -rf /var/cache/apk/*
+COPY client .
+RUN make cross
 
 FROM busybox:1.35.0
 LABEL org.opencontainers.image.title="vackup-docker-extension" \
@@ -39,7 +50,8 @@ COPY metadata.json .
 COPY icon.svg .
 COPY --from=builder /backend/bin/service /
 COPY --from=client-builder /ui/build ui
+COPY --from=volume-share-client-builder output/dist ./host
 
 RUN mkdir -p /vackup
 
-CMD /service -socket /run/guest-services/extension-vackup.sock
+CMD /service -socket /run/guest-services/ext.sock

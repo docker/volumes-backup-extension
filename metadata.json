@@ -3,7 +3,7 @@
   "vm": {
     "composefile": "docker-compose.yaml",
     "exposes": {
-      "socket": "extension-vackup.sock"
+      "socket": "ext.sock"
     }
   },
   "ui": {
@@ -12,8 +12,29 @@
       "src": "index.html",
       "root": "ui",
       "backend": {
-        "socket": "extension-vackup.sock"
+        "socket": "ext.sock"
       }
     }
+  },
+  "host": {
+    "binaries": [
+      {
+        "darwin": [
+          {
+            "path": "/host/darwin-amd64/volumes-share-client"
+          }
+        ],
+        "linux": [
+          {
+            "path": "/host/linux-amd64/volumes-share-client"
+          }
+        ],
+        "windows": [
+          {
+            "path": "/host/windows-amd64/volumes-share-client.exe"
+          }
+        ]
+      }
+    ]
   }
 }
