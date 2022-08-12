@@ -3,25 +3,17 @@ import {DataGrid, GridActionsCellItem, GridCellParams, GridToolbarColumnsButton,
 import {createDockerDesktopClient} from "@docker/extension-api-client";
 import {Backdrop, Box, Button, CircularProgress, Grid, LinearProgress, Stack, Tooltip, Typography,} from "@mui/material";
 import {
-    ArrowCircleDown as ArrowCircleDownIcon,
     CopyAll as CopyAllIcon,
     Delete as DeleteIcon,
     DeleteForever as DeleteForeverIcon,
-    Devices as DevicesIcon,
+    DesktopWindows as DesktopWindowsIcon,
     Download as DownloadIcon,
     Visibility as VisibilityIcon,
-    Layers as LayersIcon,
-    PlayArrow as PlayArrowIcon,
     Upload as UploadIcon,
-    CloudUpload as CloudUploadIcon,
 } from "@mui/icons-material";
 import ExportDialog from "./components/ExportDialog";
-import SaveDialog from "./components/SaveDialog";
-import PushDialog from "./components/PushDialog";
-import LoadDialog from "./components/LoadDialog";
 import CloneDialog from "./components/CloneDialog";
 import TransferDialog from "./components/TransferDialog";
-import RunContainerDialog from "./components/RunContainerDialog";
 import DeleteForeverDialog from "./components/DeleteForeverDialog";
 import {MyContext} from ".";
 import {isError} from "./common/isError";
@@ -41,7 +33,7 @@ function CustomToolbar({openDialog}) {
                 <GridToolbarDensitySelector />
             </Grid>
             <Grid item>
-                <Button variant="contained" onClick={openDialog} endIcon={<DownloadIcon />}>Import into new volume</Button>
+                <Button variant="contained" onClick={openDialog} endIcon={<UploadIcon />}>Import into new volume</Button>
             </Grid>
         </Grid>
       </GridToolbarContainer>
@@ -59,13 +51,8 @@ export function App() {
     const [openExportDialog, setOpenExportDialog] =
         React.useState<boolean>(false);
     const [openImportIntoNewDialog, setOpenImportIntoNewDialog] = React.useState<boolean>(false);
-    const [openSaveDialog, setOpenSaveDialog] = React.useState<boolean>(false);
-    const [openPushDialog, setOpenPushDialog] = React.useState<boolean>(false);
-    const [openLoadDialog, setOpenLoadDialog] = React.useState<boolean>(false);
     const [openCloneDialog, setOpenCloneDialog] = React.useState<boolean>(false);
     const [openTransferDialog, setOpenTransferDialog] =
-        React.useState<boolean>(false);
-    const [openRunContainerDialog, setOpenRunContainerDialog] =
         React.useState<boolean>(false);
     const [openDeleteForeverDialog, setOpenDeleteForeverDialog] =
         React.useState<boolean>(false);
@@ -130,17 +117,7 @@ export function App() {
                     showInMenu
                 />,
                 <GridActionsCellItem
-                    key={"action_run_container_from_volume_" + params.row.id}
-                    icon={
-                        <Tooltip title="Run container from volume">
-                            <PlayArrowIcon>Run container from volume</PlayArrowIcon>
-                        </Tooltip>
-                    }
-                    label="Run container from volume"
-                    onClick={handleRunContainer(params.row)}
-                    disabled={actionInProgress}
-                />,
-                <GridActionsCellItem
+                    showInMenu
                     key={"action_clone_volume_" + params.row.id}
                     icon={
                         <Tooltip title="Clone volume">
@@ -173,50 +150,14 @@ export function App() {
                     onClick={handleImport(params.row)}
                 />,
                 <GridActionsCellItem
-                    key={"action_save_" + params.row.id}
-                    icon={
-                        <Tooltip title="Save to image">
-                            <LayersIcon>Save to image</LayersIcon>
-                        </Tooltip>
-                    }
-                    label="Save to image"
-                    onClick={handleSave(params.row)}
-                    showInMenu
-                    disabled={params.row.volumeSize === "0 B"}
-                />,
-                <GridActionsCellItem
-                    key={"action_push_" + params.row.id}
-                    icon={
-                        <Tooltip title="Push to registry">
-                            <CloudUploadIcon>Push to registry</CloudUploadIcon>
-                        </Tooltip>
-                    }
-                    label="Push to registry"
-                    onClick={handlePush(params.row)}
-                    showInMenu
-                    disabled={params.row.volumeSize === "0 B"}
-                />,
-                <GridActionsCellItem
-                    key={"action_load_" + params.row.id}
-                    icon={
-                        <Tooltip title="Load from image">
-                            <ArrowCircleDownIcon>Load from image</ArrowCircleDownIcon>
-                        </Tooltip>
-                    }
-                    label="Load from image"
-                    onClick={handleLoad(params.row)}
-                    showInMenu
-                />,
-                <GridActionsCellItem
                     key={"action_transfer_" + params.row.id}
                     icon={
                         <Tooltip title="Transfer to host">
-                            <DevicesIcon>Transfer to host</DevicesIcon>
+                            <DesktopWindowsIcon>Transfer to host</DesktopWindowsIcon>
                         </Tooltip>
                     }
                     label="Transfer to host"
                     onClick={handleTransfer(params.row)}
-                    showInMenu
                     disabled={params.row.volumeSize === "0 B"}
                 />,
                 <GridActionsCellItem
@@ -250,11 +191,6 @@ export function App() {
         ddClient.desktopUI.navigate.viewVolume(row.volumeName);
     };
 
-    const handleRunContainer = (row) => () => {
-        setOpenRunContainerDialog(true);
-        context.actions.setVolume(row);
-    };
-
     const handleClone = (row) => () => {
         setOpenCloneDialog(true);
         context.actions.setVolume(row);
@@ -268,21 +204,6 @@ export function App() {
     const handleImport = (row) => () => {
         context.actions.setVolume(row);
         setOpenImportIntoNewDialog(true);
-    };
-
-    const handleSave = (row) => () => {
-        setOpenSaveDialog(true);
-        context.actions.setVolume(row);
-    };
-
-    const handlePush = (row) => () => {
-        setOpenPushDialog(true);
-        context.actions.setVolume(row);
-    };
-
-    const handleLoad = (row) => async () => {
-        setOpenLoadDialog(true);
-        context.actions.setVolume(row);
     };
 
     const handleTransfer = (row) => async () => {
@@ -360,11 +281,6 @@ export function App() {
         }
     };
 
-    const handleRunContainerDialogClose = () => {
-        setOpenRunContainerDialog(false);
-        context.actions.setVolume(null);
-    };
-
     const handleExportDialogClose = () => {
         setOpenExportDialog(false);
         listVolumes();
@@ -376,24 +292,6 @@ export function App() {
         context.actions.setVolume(null);
         if (actionSuccessfullyCompleted) {
             if (context.store.volume) calculateVolumeSize(context.store.volume.volumeName);
-        }
-    };
-
-
-    const handleSaveDialogClose = () => {
-        setOpenSaveDialog(false);
-        context.actions.setVolume(null);
-    };
-
-    const handlePushDialogClose = () => {
-        setOpenPushDialog(false);
-    };
-
-    const handleLoadDialogClose = (actionSuccessfullyCompleted: boolean) => {
-        setOpenLoadDialog(false);
-        context.actions.setVolume(null);
-        if (actionSuccessfullyCompleted) {
-            calculateVolumeSize(context.store.volume.volumeName);
         }
     };
 
@@ -495,13 +393,6 @@ export function App() {
                         />
                     </Grid>
 
-                    {openRunContainerDialog && (
-                        <RunContainerDialog
-                            open={openRunContainerDialog}
-                            onClose={handleRunContainerDialogClose}
-                        />
-                    )}
-
                     {openExportDialog && (
                         <ExportDialog
                             open={openExportDialog}
@@ -515,18 +406,6 @@ export function App() {
                             open={openImportIntoNewDialog}
                             onClose={handleImportIntoNewDialogClose}
                         />
-                    )}
-
-                    {openSaveDialog && (
-                        <SaveDialog open={openSaveDialog} onClose={handleSaveDialogClose}/>
-                    )}
-
-                    {openPushDialog && (
-                        <PushDialog open={openPushDialog} onClose={handlePushDialogClose}/>
-                    )}
-
-                    {openLoadDialog && (
-                        <LoadDialog open={openLoadDialog} onClose={handleLoadDialogClose}/>
                     )}
 
                     {openCloneDialog && (

@@ -101,12 +101,12 @@ export default function ImportDialog({ volumes, open, onClose }: Props) {
     return (
       <>
         <FormControlLabel value="file" control={<Radio />} label="Local file" />
-        {fromRadioValue === "file" && (
-          <Stack pt={1} pb={2} pl={4}>
-            <Typography pb={1} variant="body2">
-              Select a file (.tar.gz) whose content is to be imported into the{" "}
-              {selectedVolumeName ? "existing" : "new"} volume.
-            </Typography>
+        <Stack pt={1} pb={2} pl={4}>
+          <Typography pb={1} variant="body2">
+            Select a file (.tar.gz) whose content is to be imported into the{" "}
+            {selectedVolumeName ? "existing" : "new"} volume.
+          </Typography>
+          {fromRadioValue === "file" && (
             <Grid container alignItems="center" gap={2}>
               <Grid item flex={1}>
                 <TextField
@@ -125,8 +125,8 @@ export default function ImportDialog({ volumes, open, onClose }: Props) {
                 Select file
               </Button>
             </Grid>
-          </Stack>
-        )}
+          )}
+        </Stack>
       </>
     );
   };
@@ -139,18 +139,17 @@ export default function ImportDialog({ volumes, open, onClose }: Props) {
           control={<Radio />}
           label="Local image"
         />
-        {fromRadioValue === "image" && (
-          <Stack pt={1} pb={2} pl={4} width="100%">
-            <Typography pb={1} variant="body2">
-              Select an image whose content is to be imported into the new
-              volume.
-            </Typography>
+        <Stack pt={1} pb={2} pl={4} width="100%">
+          <Typography pb={1} variant="body2">
+            Select an image whose content is to be imported into the new volume.
+          </Typography>
+          {fromRadioValue === "image" && (
             <ImageAutocomplete
               value={image}
               onChange={(v) => setImage(v as any)}
             />
-          </Stack>
-        )}
+          )}
+        </Stack>
       </>
     );
   };

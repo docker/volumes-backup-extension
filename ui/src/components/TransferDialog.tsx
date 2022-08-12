@@ -54,6 +54,7 @@ export default function TransferDialog({ ...props }) {
     return () => {
       active = false;
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autocompleteLoading]);
 
   useEffect(() => {
@@ -105,7 +106,7 @@ export default function TransferDialog({ ...props }) {
         "alpine",
         "ash",
         "-c",
-        `"cd /from ; tar -czf - . \" | ssh ${destHost} \"docker run --rm -i -v \"${volumeName}\":/to alpine ash -c 'cd /to ; tar -xpvzf - '"`,
+        `"cd /from ; tar -czf - . " | ssh ${destHost} "docker run --rm -i -v "${volumeName}":/to alpine ash -c 'cd /to ; tar -xpvzf - '"`,
       ]);
       if (isError(transferredOutput.stderr)) {
         ddClient.desktopUI.toast.error(transferredOutput.stderr);
