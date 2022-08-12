@@ -52,8 +52,8 @@ export default function ImportDialog({ volumes, open, onClose }: Props) {
   // when executed from a Volume context we don't need to create it.
   const context = useContext(MyContext);
   const selectedVolumeName = context.store.volume?.volumeName;
-  const version = context.store.version;
-  const canUseRegistry = version >= USE_REGISTRY_VERSION;
+  const sdkVersion = context.store.sdkVersion;
+  const canUseRegistry = sdkVersion >= USE_REGISTRY_VERSION;
 
   const { createVolume, isInProgress: isCreating } = useCreateVolume();
   const { importVolume, isInProgress: isImportingFromPath } =

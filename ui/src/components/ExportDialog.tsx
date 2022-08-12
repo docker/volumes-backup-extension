@@ -39,8 +39,8 @@ interface Props {
 
 export default function ExportDialog({ open, onClose }: Props) {
   const context = useContext(MyContext);
-  const version = context.store.version;
-  const canUseRegistry = version >= USE_REGISTRY_VERSION;
+  const sdkVersion = context.store.sdkVersion;
+  const canUseRegistry = sdkVersion >= USE_REGISTRY_VERSION;
 
   const [fromRadioValue, setFromRadioValue] = useState<
     "directory" | "local-image" | "new-image" | "push-registry"
