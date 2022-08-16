@@ -21,11 +21,13 @@ import { createDockerDesktopClient } from "@docker/extension-api-client";
 import { MyContext } from "../index";
 import { isError } from "../common/isError";
 import { VolumeOrInput } from "./VolumeOrInput";
+import { useNotificationContext } from "../NotificationContext";
 
 const ddClient = createDockerDesktopClient();
 
 export default function TransferDialog({ ...props }) {
   const context = useContext(MyContext);
+  const { sendNotification } = useNotificationContext();
 
   const [volumeName, setVolumeName] = React.useState<string>("");
   const [destHost, setDestHost] = React.useState<string>("");
@@ -74,12 +76,12 @@ export default function TransferDialog({ ...props }) {
       ]);
 
       if (listVolumesOutput.stderr !== "") {
-        ddClient.desktopUI.toast.error(listVolumesOutput.stderr);
+        sendNotification(listVolumesOutput.stderr);
         return;
       }
       return listVolumesOutput.lines();
     } catch (error) {
-      ddClient.desktopUI.toast.error(
+      sendNotification(
         `Unable to list volumes for docker host ${destHost}: ${error.stderr} Exit code: ${error.code}`
       );
       return [];
@@ -109,15 +111,15 @@ export default function TransferDialog({ ...props }) {
         `"cd /from ; tar -czf - . " | ssh ${destHost} "docker run --rm -i -v "${volumeName}":/to alpine ash -c 'cd /to ; tar -xpvzf - '"`,
       ]);
       if (isError(transferredOutput.stderr)) {
-        ddClient.desktopUI.toast.error(transferredOutput.stderr);
+        sendNotification(transferredOutput.stderr);
         return;
       }
 
-      ddClient.desktopUI.toast.success(
+      sendNotification(
         `Volume ${context.store.volume.volumeName} transferred to destination volume ${volumeName} in host ${destHost}`
       );
     } catch (error) {
-      ddClient.desktopUI.toast.error(
+      sendNotification(
         `Failed to clone volume ${context.store.volume.volumeName} to destinaton volume ${volumeName}: ${error.stderr} Exit code: ${error.code}`
       );
     } finally {

@@ -11,6 +11,7 @@ import {
     Visibility as VisibilityIcon,
     Upload as UploadIcon,
 } from "@mui/icons-material";
+import { useNotificationContext } from "./NotificationContext";
 import ExportDialog from "./components/ExportDialog";
 import CloneDialog from "./components/CloneDialog";
 import TransferDialog from "./components/TransferDialog";
@@ -43,6 +44,7 @@ function CustomToolbar({openDialog}) {
 
 export function App() {
     const context = useContext(MyContext);
+    const { sendNotification } = useNotificationContext();
     const [volumesSizeLoadingMap, setVolumesSizeLoadingMap] = React.useState<Record<string, boolean>>({});
 
     const [actionInProgress, setActionInProgress] =
@@ -266,14 +268,14 @@ export function App() {
                 '"rm -rf /vackup-volume/..?* /vackup-volume/.[!.]* /vackup-volume/*"', // hidden and not-hidden files and folders: .[!.]* matches all dot files except . and files whose name begins with .., and ..?* matches all dot-dot files except ..
             ]);
             if (isError(output.stderr)) {
-                ddClient.desktopUI.toast.error(output.stderr);
+                sendNotification(output.stderr);
                 return;
             }
-            ddClient.desktopUI.toast.success(
+            sendNotification(
                 `The content of volume ${volumeName} has been removed`
             );
         } catch (error) {
-            ddClient.desktopUI.toast.error(
+            sendNotification(
                 `Failed to empty volume ${volumeName}: ${error.stderr} Exit code: ${error.code}`
             );
         } finally {
@@ -343,7 +345,7 @@ export function App() {
                     setVolumesSizeLoadingMap(volumesSizeLoadingMapCopy);
                 });
         } catch (error) {
-            ddClient.desktopUI.toast.error(
+            sendNotification(
                 `Failed to recalculate volume size: ${error.stderr}`
             );
         }

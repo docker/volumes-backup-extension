@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { createDockerDesktopClient } from "@docker/extension-api-client";
+import { useNotificationContext } from "../NotificationContext";
 const ddClient = createDockerDesktopClient();
 
 export const useCreateVolume = () => {
+  const { sendNotification } = useNotificationContext();
   const [isInProgress, setIsInProgress] = useState(false);
 
   const createVolume = async (volumeName: string) => {
@@ -11,13 +13,13 @@ export const useCreateVolume = () => {
       .exec("volume", ["create", volumeName])
       .then((createVolumeOutput) => {
         if (createVolumeOutput.stderr !== "") {
-          ddClient.desktopUI.toast.error(createVolumeOutput.stderr);
+          sendNotification(createVolumeOutput.stderr);
         }
         setIsInProgress(false);
         return createVolumeOutput.lines();
       })
       .catch((error) => {
-        ddClient.desktopUI.toast.error(
+        sendNotification(
           `Failed to create volume ${volumeName}: ${error.stderr} Exit code: ${error.code}`
         );
       });

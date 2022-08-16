@@ -6,6 +6,7 @@ import { createDockerDesktopClient } from "@docker/extension-api-client";
 
 import { App } from "./App";
 import type { IVolumeRow } from "./hooks/useGetVolumes";
+import { NotificationProvider } from "./NotificationContext";
 
 const ddClient = createDockerDesktopClient();
 
@@ -62,7 +63,9 @@ ReactDOM.render(
     <DockerMuiThemeProvider>
       <CssBaseline />
       <AppProvider>
-        <App />
+        <NotificationProvider>
+          <App />
+        </NotificationProvider>
       </AppProvider>
     </DockerMuiThemeProvider>
   </React.StrictMode>,

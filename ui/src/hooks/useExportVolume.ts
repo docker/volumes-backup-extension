@@ -1,11 +1,13 @@
 import { createDockerDesktopClient } from "@docker/extension-api-client";
 import { useContext, useState } from "react";
 import { MyContext } from "..";
+import { useNotificationContext } from "../NotificationContext";
 
 const ddClient = createDockerDesktopClient();
 
 export const useExportVolume = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const { sendNotification } = useNotificationContext();
   const context = useContext(MyContext);
   const selectedVolumeName = context.store.volume?.volumeName;
 
@@ -23,12 +25,12 @@ export const useExportVolume = () => {
         `/volumes/${selectedVolumeName}/export?path=${path}&fileName=${fileName}`
       )
       .then((_: any) => {
-        ddClient.desktopUI.toast.success(
+        sendNotification(
           `Volume ${selectedVolumeName} exported to ${path}`
         );
       })
       .catch((error) => {
-        ddClient.desktopUI.toast.error(
+        sendNotification(
           `Failed to backup volume ${selectedVolumeName} to ${path}: ${error.message}. HTTP status code: ${error.statusCode}`
         );
       })

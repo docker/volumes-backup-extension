@@ -86,13 +86,13 @@ export default function ImportDialog({ volumes, open, onClose }: Props) {
     const volumeId = await handleCreateVolume();
     if (fromRadioValue === "file") {
       await importVolume({
-        volumeName: selectedVolumeName || volumeName,
+        volumeName: volumeId?.[0] || selectedVolumeName,
         path,
       });
       onClose(true);
     } else if (fromRadioValue === "image") {
       await loadImage({
-        volumeName: selectedVolumeName || volumeName,
+        volumeName: volumeId?.[0] || selectedVolumeName,
         imageName: image,
       });
       onClose(true);

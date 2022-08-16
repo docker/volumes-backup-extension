@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { createDockerDesktopClient } from "@docker/extension-api-client";
+import { useNotificationContext } from "../NotificationContext";
 const ddClient = createDockerDesktopClient();
 
 interface Image {
@@ -18,6 +19,7 @@ interface Image {
 export const useGetImages = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [data, setData] = useState<Image[]>();
+  const { sendNotification } = useNotificationContext();
 
   useEffect(() => {
     getImages().then(setData);
@@ -32,7 +34,7 @@ export const useGetImages = () => {
         return images;
       })
       .catch((error) => {
-        ddClient.desktopUI.toast.error(
+        sendNotification(
           `Failed to get images: ${error.stderr} Exit code: ${error.code}`
         );
       });

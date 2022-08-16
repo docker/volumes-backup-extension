@@ -12,6 +12,7 @@ import DialogTitle from "@mui/material/DialogTitle";
 import { createDockerDesktopClient } from "@docker/extension-api-client";
 
 import { MyContext } from "../index";
+import { useNotificationContext } from "../NotificationContext";
 
 const client = createDockerDesktopClient();
 
@@ -22,6 +23,7 @@ function useDockerDesktopClient() {
 export default function DeleteForeverDialog({ ...props }) {
   const ddClient = useDockerDesktopClient();
   const context = useContext(MyContext);
+  const { sendNotification } = useNotificationContext();
 
   const [actionInProgress, setActionInProgress] =
     React.useState<boolean>(false);
@@ -37,17 +39,17 @@ export default function DeleteForeverDialog({ ...props }) {
         context.store.volume.volumeName,
       ]);
       if (output.stderr !== "") {
-        ddClient.desktopUI.toast.error(output.stderr);
+        sendNotification(output.stderr);
         return;
       }
 
-      ddClient.desktopUI.toast.success(
+      sendNotification(
         `Volume ${context.store.volume.volumeName} deleted`
       );
 
       actionSuccessfullyCompleted = true
     } catch (error) {
-      ddClient.desktopUI.toast.error(
+      sendNotification(
         `Failed to delete volume ${context.store.volume.volumeName}: ${error.stderr} Exit code: ${error.code}`
       );
     } finally {
