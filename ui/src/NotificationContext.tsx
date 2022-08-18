@@ -3,10 +3,6 @@ import Snackbar from "@mui/material/Snackbar/Snackbar";
 import SnackbarContent from "@mui/material/SnackbarContent/SnackbarContent";
 import Button from "@mui/material/Button/Button";
 
-export default function VackupSnackbar({ open, onClose }) {
-  return <Snackbar open={open} onClose={onClose} />;
-}
-
 interface IValues {
   message: string;
   action?: {
@@ -58,6 +54,8 @@ export const NotificationProvider: FC = ({ children }) => {
             message={values.message}
             action={buildAction(values.action || DEFAULT_ACTION)}
             sx={{
+              backgroundColor: (theme) => theme.palette.common.white,
+              borderRadius: '4px !important',
               ".MuiSnackbarContent-message": {
                 maxWidth: "400px",
                 wordWrap: "break-word",
