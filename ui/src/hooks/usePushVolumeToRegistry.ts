@@ -27,9 +27,16 @@ export const usePushVolumeToRegistry = () => {
         );
       })
       .catch((error) => {
-        sendNotification(
-          `Failed to push volume ${context.store.volume.volumeName} as ${imageName} to registry: ${error.message}. HTTP status code: ${error.statusCode}`
-        );
+        if (error?.stderr.includes('denied: requested access to the resource is denied')) {
+          sendNotification(
+            `Access denied when trying to push to ${imageName}.
+            Are you logged in? If so, check your permissions.`
+          )
+        } else {
+          sendNotification(
+            `Failed to push volume ${context.store.volume.volumeName} as ${imageName} to registry: ${error.message}. HTTP status code: ${error.statusCode}`
+          );
+        }
       })
       .finally(() => {
         setIsLoading(false);

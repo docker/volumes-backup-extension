@@ -11,6 +11,17 @@ export const useExportToImage = () => {
   const context = useContext(MyContext);
   const selectedVolumeName = context.store.volume?.volumeName;
 
+  const navigateToImage = (imageName: string, imageId: string, tag: string) => {
+    ddClient.desktopUI.navigate
+      .viewImage(imageId, tag || "latest")
+      .catch(() => {
+        sendNotification(`Couldn't navigate to image ${imageName}`, {
+          name: "Try again",
+          onClick: () => navigateToImage(imageName, imageId, tag),
+        });
+      });
+  };
+
   const exportToImage = ({ imageName }: { imageName: string }) => {
     setIsLoading(true);
 
@@ -25,8 +36,10 @@ export const useExportToImage = () => {
             name: "See image",
             onClick: async () => {
               const [_, tag] = imageName.split(":");
-              const image = (await ddClient.docker.cli.exec('image', ['inspect', imageName])).parseJsonObject();
-              ddClient.desktopUI.navigate.viewImage(image[0].Id, tag || "latest");
+              const image = (
+                await ddClient.docker.cli.exec("image", ["inspect", imageName])
+              ).parseJsonObject();
+              navigateToImage(imageName, image[0].Id, tag);
             },
           }
         );

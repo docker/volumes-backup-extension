@@ -87,7 +87,7 @@ export default function CloneDialog({ ...props }) {
   };
 
   return (
-    <Dialog open={props.open} onClose={props.onClose}>
+    <Dialog fullWidth maxWidth="sm" open={props.open} onClose={props.onClose}>
       <DialogTitle>Clone a volume</DialogTitle>
       <DialogContent>
         <Backdrop
