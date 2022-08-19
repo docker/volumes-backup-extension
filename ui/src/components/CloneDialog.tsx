@@ -66,13 +66,15 @@ export default function CloneDialog({ ...props }) {
 
       sendNotification(
         `Volume ${context.store.volume.volumeName} cloned to destination volume ${volumeName}`,
-        {
-          name: "See volume",
-          onClick: () =>
-            ddClient.desktopUI.navigate.viewVolume(
-              context.store.volume.volumeName
-            ),
-        }
+        [
+          {
+            name: "See volume",
+            onClick: () =>
+              ddClient.desktopUI.navigate.viewVolume(
+                context.store.volume.volumeName
+              ),
+          },
+        ]
       );
 
       actionSuccessfullyCompleted = true;

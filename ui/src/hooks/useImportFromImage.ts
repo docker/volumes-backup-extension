@@ -20,10 +20,12 @@ export const useImportFromImage = () => {
         setIsInProgress(false);
         sendNotification(
           `Copied /volume-data from image ${imageName} into volume ${volumeName}`,
-          {
-            name: "See volume",
-            onClick: () => ddClient.desktopUI.navigate.viewVolume(volumeName),
-          }
+          [
+            {
+              name: "See volume",
+              onClick: () => ddClient.desktopUI.navigate.viewVolume(volumeName),
+            },
+          ]
         );
       })
       .catch((error) => {

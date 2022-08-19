@@ -35,13 +35,13 @@ export default function LoadDialog({...props}) {
                 actionSuccessfullyCompleted = true
                 sendNotification(
                     `Copied /volume-data from image ${imageName} into volume ${context.store.volume.volumeName}`,
-                    {
+                    [{
                         name: "See volume",
                         onClick: () =>
                           ddClient.desktopUI.navigate.viewVolume(
                             context.store.volume.volumeName
                           ),
-                    }
+                    }]
                 );
             })
             .catch((error) => {

@@ -15,10 +15,15 @@ export const useExportToImage = () => {
     ddClient.desktopUI.navigate
       .viewImage(imageId, tag || "latest")
       .catch(() => {
-        sendNotification(`Couldn't navigate to image ${imageName}`, {
-          name: "Try again",
-          onClick: () => navigateToImage(imageName, imageId, tag),
-        });
+        sendNotification(`Couldn't navigate to image ${imageName}`, [
+          {
+            name: "Try again",
+            onClick: () => navigateToImage(imageName, imageId, tag),
+          },
+          {
+            name: "Dismiss",
+          },
+        ]);
       });
   };
 
@@ -32,16 +37,21 @@ export const useExportToImage = () => {
       .then((_: any) => {
         sendNotification(
           `Volume ${selectedVolumeName} exported to ${imageName}`,
-          {
-            name: "See image",
-            onClick: async () => {
-              const [_, tag] = imageName.split(":");
-              const image = (
-                await ddClient.docker.cli.exec("image", ["inspect", imageName])
-              ).parseJsonObject();
-              navigateToImage(imageName, image[0].Id, tag);
+          [
+            {
+              name: "See image",
+              onClick: async () => {
+                const [_, tag] = imageName.split(":");
+                const image = (
+                  await ddClient.docker.cli.exec("image", [
+                    "inspect",
+                    imageName,
+                  ])
+                ).parseJsonObject();
+                navigateToImage(imageName, image[0].Id, tag);
+              },
             },
-          }
+          ]
         );
       })
       .catch((error) => {

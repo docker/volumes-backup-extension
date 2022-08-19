@@ -32,13 +32,15 @@ export const usePullFromRegistry = () => {
           `Volume ${
             volumeId || context.store.volume.volumeName
           } pulled as ${imageName} from registry`,
-          {
-            name: "See volume",
-            onClick: () =>
-              ddClient.desktopUI.navigate.viewVolume(
-                volumeId || context.store.volume.volumeName
-              ),
-          }
+          [
+            {
+              name: "See volume",
+              onClick: () =>
+                ddClient.desktopUI.navigate.viewVolume(
+                  volumeId || context.store.volume.volumeName
+                ),
+            },
+          ]
         );
       })
       .catch((error) => {

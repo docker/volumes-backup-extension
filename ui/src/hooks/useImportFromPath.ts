@@ -19,10 +19,12 @@ export const useImportFromPath = () => {
       .get(`/volumes/${volumeName}/import?path=${path}`)
       .then((_: any) => {
         setIsInProgress(false);
-        sendNotification(`File ${path} imported into volume ${volumeName}`, {
-          name: "See volume",
-          onClick: () => ddClient.desktopUI.navigate.viewVolume(volumeName),
-        });
+        sendNotification(`File ${path} imported into volume ${volumeName}`, [
+          {
+            name: "See volume",
+            onClick: () => ddClient.desktopUI.navigate.viewVolume(volumeName),
+          },
+        ]);
       })
       .catch((error) => {
         setIsInProgress(false);
