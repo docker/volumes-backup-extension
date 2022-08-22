@@ -20,7 +20,9 @@ export const useCreateVolume = () => {
       })
       .catch((error) => {
         sendNotification(
-          `Failed to create volume ${volumeName}: ${error.stderr} Exit code: ${error.code}`
+          `Failed to create volume ${volumeName}: ${error.stderr} Exit code: ${error.code}`,
+          [],
+          "error"
         );
       });
   };

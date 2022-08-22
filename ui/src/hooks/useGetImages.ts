@@ -4,16 +4,16 @@ import { useNotificationContext } from "../NotificationContext";
 const ddClient = createDockerDesktopClient();
 
 interface Image {
-    Containers: -1
-    Created: number
-    Id: string
-    Labels: Record<string, string>
-    ParentId: string
-    RepoDigests: any
-    RepoTags: string[]
-    SharedSize: number
-    Size: number
-    VirtualSize: number
+  Containers: -1;
+  Created: number;
+  Id: string;
+  Labels: Record<string, string>;
+  ParentId: string;
+  RepoDigests: any;
+  RepoTags: string[];
+  SharedSize: number;
+  Size: number;
+  VirtualSize: number;
 }
 
 export const useGetImages = () => {
@@ -24,7 +24,7 @@ export const useGetImages = () => {
   useEffect(() => {
     getImages().then(setData);
   }, []);
-  
+
   const getImages = async () => {
     setIsLoading(true);
     return ddClient.docker
@@ -35,7 +35,9 @@ export const useGetImages = () => {
       })
       .catch((error) => {
         sendNotification(
-          `Failed to get images: ${error.stderr} Exit code: ${error.code}`
+          `Failed to get images: ${error.stderr} Exit code: ${error.code}`,
+          [],
+          "error"
         );
       });
   };

@@ -36,7 +36,7 @@ export const useExportToImage = () => {
       )
       .then((_: any) => {
         sendNotification(
-          `Volume ${selectedVolumeName} exported to ${imageName}`,
+          `Volume ${selectedVolumeName} exported to ${imageName}. The new image will be available in a few seconds.`,
           [
             {
               name: "See image",
@@ -56,7 +56,9 @@ export const useExportToImage = () => {
       })
       .catch((error) => {
         sendNotification(
-          `Failed to backup volume ${selectedVolumeName} to ${imageName}: ${error.message}. HTTP status code: ${error.statusCode}`
+          `Failed to backup volume ${selectedVolumeName} to ${imageName}: ${error.message}. HTTP status code: ${error.statusCode}`,
+          [],
+          "error"
         );
       })
       .finally(() => {

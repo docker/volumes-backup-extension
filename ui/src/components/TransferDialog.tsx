@@ -56,7 +56,7 @@ export default function TransferDialog({ ...props }) {
     return () => {
       active = false;
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autocompleteLoading]);
 
   useEffect(() => {
@@ -111,7 +111,7 @@ export default function TransferDialog({ ...props }) {
         `"cd /from ; tar -czf - . " | ssh ${destHost} "docker run --rm -i -v "${volumeName}":/to alpine ash -c 'cd /to ; tar -xpvzf - '"`,
       ]);
       if (isError(transferredOutput.stderr)) {
-        sendNotification(transferredOutput.stderr);
+        sendNotification(transferredOutput.stderr, [], "error");
         return;
       }
 
@@ -120,7 +120,9 @@ export default function TransferDialog({ ...props }) {
       );
     } catch (error) {
       sendNotification(
-        `Failed to clone volume ${context.store.volume.volumeName} to destinaton volume ${volumeName}: ${error.stderr} Exit code: ${error.code}`
+        `Failed to clone volume ${context.store.volume.volumeName} to destinaton volume ${volumeName}: ${error.stderr} Exit code: ${error.code}`,
+        [],
+        "error"
       );
     } finally {
       setActionInProgress(false);

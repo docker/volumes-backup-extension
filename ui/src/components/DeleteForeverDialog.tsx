@@ -39,7 +39,7 @@ export default function DeleteForeverDialog({ ...props }) {
         context.store.volume.volumeName,
       ]);
       if (output.stderr !== "") {
-        sendNotification(output.stderr);
+        sendNotification(output.stderr, [], "error");
         return;
       }
 
@@ -50,7 +50,7 @@ export default function DeleteForeverDialog({ ...props }) {
       actionSuccessfullyCompleted = true
     } catch (error) {
       sendNotification(
-        `Failed to delete volume ${context.store.volume.volumeName}: ${error.stderr} Exit code: ${error.code}`
+        `Failed to delete volume ${context.store.volume.volumeName}: ${error.stderr} Exit code: ${error.code}`, [], "error"
       );
     } finally {
       setActionInProgress(false);

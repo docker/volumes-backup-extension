@@ -50,7 +50,9 @@ export const usePullFromRegistry = () => {
             volumeId || context.store.volume.volumeName
           } as ${imageName} from registry: ${
             error.message
-          }. HTTP status code: ${error.statusCode}`
+          }. HTTP status code: ${error.statusCode}`,
+          [],
+          "error"
         );
       })
       .finally(() => {

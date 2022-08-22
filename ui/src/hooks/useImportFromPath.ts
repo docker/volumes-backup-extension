@@ -29,7 +29,9 @@ export const useImportFromPath = () => {
       .catch((error) => {
         setIsInProgress(false);
         sendNotification(
-          `Failed to import file ${path} into volume ${volumeName}: ${error.message}. HTTP status code: ${error.statusCode}`
+          `Failed to import file ${path} into volume ${volumeName}: ${error.message}. HTTP status code: ${error.statusCode}`,
+          [],
+          "error"
         );
       });
   };

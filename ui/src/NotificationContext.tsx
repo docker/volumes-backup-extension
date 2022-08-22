@@ -6,13 +6,18 @@ import { Stack } from "@mui/material";
 
 interface IValues {
   message: string;
+  type?: "info" | "error";
   actions?: Array<{
     name: string;
     onClick?(): void;
   }>;
 }
 interface INotificationContext {
-  sendNotification(message: string, action?: IValues["actions"]): void;
+  sendNotification(
+    message: string,
+    action?: IValues["actions"],
+    type?: "info" | "error"
+  ): void;
 }
 const NotificationContext = createContext<INotificationContext>({
   sendNotification: () => null,
@@ -20,11 +25,16 @@ const NotificationContext = createContext<INotificationContext>({
 
 export const NotificationProvider: FC<{}> = ({ children }) => {
   const [open, setOpen] = useState(false);
-  const [values, setValues] = useState<IValues>({ message: "" });
-  const sendNotification = (message: string, actions?: IValues["actions"]) => {
-    setValues({ message, actions });
+  const [values, setValues] = useState<IValues>({ message: "", type: "info" });
+  const sendNotification = (
+    message: string,
+    actions?: IValues["actions"],
+    type?: "info" | "error"
+  ) => {
+    setValues({ message, type, actions });
     setOpen(true);
   };
+
   const DEFAULT_ACTION: IValues["actions"][0] = {
     name: "Dismiss",
     onClick: () => setOpen(false),
@@ -62,7 +72,13 @@ export const NotificationProvider: FC<{}> = ({ children }) => {
             message={values.message}
             action={buildActions(values.actions || [DEFAULT_ACTION])}
             sx={{
-              backgroundColor: (theme) => theme.palette.common.white,
+              backgroundColor:
+                values.type === "error"
+                  ? // @ts-expect-error docker theme
+                    (theme) => theme.palette.docker.red[200]
+                  : // @ts-expect-error docker theme
+                    (theme) => theme.palette.docker.grey[100],
+              color: (theme) => theme.palette.text.primary,
               borderRadius: "4px !important",
               ".MuiSnackbarContent-message": {
                 maxWidth: "400px",
