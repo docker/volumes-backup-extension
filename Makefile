@@ -1,4 +1,4 @@
-IMAGE?=felipecruz/vackup-docker-extension
+IMAGE?=docker/volumes-backup-extension
 TAG?=latest
 
 BUILDER=buildx-multi-arch

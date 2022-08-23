@@ -34,15 +34,40 @@ COPY client .
 RUN make cross
 
 FROM busybox:1.35.0
-LABEL org.opencontainers.image.title="vackup-docker-extension" \
-    org.opencontainers.image.description="Easily backup and restore docker volumes." \
-    org.opencontainers.image.vendor="Felipe" \
+LABEL org.opencontainers.image.title="Volumes Backup & Share" \
+    org.opencontainers.image.description="Back up, clone, restore, and share Docker volumes effortlessly." \
+    org.opencontainers.image.vendor="Docker Inc." \
     com.docker.desktop.extension.api.version=">= 0.2.3" \
-    com.docker.extension.screenshots="" \
-    com.docker.extension.detailed-description="" \
-    com.docker.extension.publisher-url="https://github.com/felipecruz91/vackup-docker-extension" \
-    com.docker.extension.additional-urls="[{\"title\":\"Author\", \"url\":\"https://twitter.com/felipecruz\"}]" \
-    com.docker.extension.changelog=""
+    com.docker.extension.screenshots="[ \
+        {\"alt\": \"Home page - list of volumes\", \"url\": \"https://raw.githubusercontent.com/docker/volumes-backup-extension/main/docs/images/1-table.png\"}, \
+        {\"alt\": \"Import data into a new volume\", \"url\": \"https://raw.githubusercontent.com/docker/volumes-backup-extension/main/docs/images/2-import-new.png\"}, \
+        {\"alt\": \"Export volume dialog\", \"url\": \"https://raw.githubusercontent.com/docker/volumes-backup-extension/main/docs/images/3-export.png\"}, \
+        {\"alt\": \"Transfer volume to another host\", \"url\": \"https://raw.githubusercontent.com/docker/volumes-backup-extension/main/docs/images/4-transfer.png\"}, \
+        {\"alt\": \"Clone volume dialog\", \"url\": \"https://raw.githubusercontent.com/docker/volumes-backup-extension/main/docs/images/5-clone.png\"}, \
+        {\"alt\": \"Delete volume dialog\", \"url\": \"https://raw.githubusercontent.com/docker/volumes-backup-extension/main/docs/images/6-delete.png\"} \
+    ]" \
+    com.docker.extension.detailed-description="<p>With Volumes Backup & Share you can easily create copies of your volumes and also share them with others through SSH or pushing them to a registry.</p> \
+    <h2 id="-features">✨ What can you do with this extension?</h2> \
+    <ul> \
+    <li>Export a volume:</li> \
+    <ul><li>To a compressed file in your local filesystem</li> \
+    <li>To an existing local image</li> \
+    <li>To a new local image</li> \
+    <li>To a new image in Docker Hub (or another registry)</li></ul> \
+    <li>Import data into a new container or into an existing container:</li> \
+    <ul><li>From a compressed file in your local filesystem</li> \
+    <li>From an existing image</li> \
+    <li>From an existing image in Docker Hub (or another registry)</li></ul> \
+    <li>Transfer a volume via SSH to another host that runs Docker Desktop or Docker engine.</li> \
+    <li>Clone, empty or delete a volume</li> \
+    </ul> \
+    "\
+    com.docker.extension.publisher-url="https://www.docker.com/" \
+    com.docker.extension.additional-urls="[ \
+        {\"title\":\"Support\", \"url\":\"https://github.com/docker/volumes-backup-extension/issues\"} \
+    ]" \
+    com.docker.desktop.extension.icon="https://raw.githubusercontent.com/docker/volumes-backup-extension/main/icon.svg" \
+    com.docker.extension.changelog="" 
 
 WORKDIR /
 COPY docker-compose.yaml .
