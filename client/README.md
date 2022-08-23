@@ -1,17 +1,15 @@
-# volumes-share-client
+# docker-credentials-client
 
-This is a client cli for volume share.
-
-## Pushing a volume
-
-Run
+This is a client cli to retrieve the Docker credentials in base64.
 
 ```shell
-$ ./volumes-share-client push VOLUME REFERENCE
+$ ./docker-credentials-client get-creds REFERENCE
 ```
 
-For example, if there is a volume named `my-volume` to push it to
-`rumpl/volume:1.0.0` you can run `./volumes-share-client push rumpl/volume:1.0.0 my-volume`
+For example, if there is an image with reference `john/my-image:1.0.0` (or equally `docker.io/john/my-image:1.0.0`, you can retrieve the Docker credentials from the `docker.io` (DockerHub) registry running:
 
-To create a new volume named `my-pulled-volume` with the contents of `rumpl/volume:1.0.0` you can run
-`./volumes-share-client pull rumpl/volume:1.0.0 my-pulled-volume`.
+```shell
+./docker-credentials-client get-creds john/my-image:1.0.0
+ey...
+```
+

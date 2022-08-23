@@ -8,8 +8,10 @@ import (
 	"github.com/felipecruz91/vackup-docker-extension/internal/backend"
 	"github.com/felipecruz91/vackup-docker-extension/internal/log"
 	"github.com/labstack/echo"
+	"io"
 	"net/http"
 	"os"
+	"runtime"
 )
 
 func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
@@ -30,7 +32,7 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 	stoppedContainers, err := backend.StopContainersAttachedToVolume(ctx.Request().Context(), h.DockerClient, volumeName)
 	if err != nil {
 		log.Error(err)
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
 	// Import
@@ -39,6 +41,19 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 		path + ":" + "/vackup",
 	}
 	log.Infof("binds: %+v", binds)
+
+	// Ensure the image is present before creating the container
+	reader, err := h.DockerClient.ImagePull(ctx.Request().Context(), "docker.io/library/busybox", types.ImagePullOptions{
+		Platform: "linux/" + runtime.GOARCH,
+	})
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(os.Stdout, reader)
+	if err != nil {
+		return err
+	}
+
 	resp, err := h.DockerClient.ContainerCreate(ctx.Request().Context(), &container.Config{
 		Image:        "docker.io/library/busybox",
 		AttachStdout: true,
@@ -52,12 +67,12 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 	}, nil, nil, "")
 	if err != nil {
 		log.Error(err)
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
 	if err := h.DockerClient.ContainerStart(ctx.Request().Context(), resp.ID, types.ContainerStartOptions{}); err != nil {
 		log.Error(err)
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
+		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
 	var exitCode int64
@@ -66,7 +81,7 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 	case err := <-errCh:
 		if err != nil {
 			log.Error(err)
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			return ctx.String(http.StatusInternalServerError, err.Error())
 		}
 	case status := <-statusCh:
 		log.Infof("status: %#+v\n", status)
@@ -76,30 +91,30 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 	out, err := h.DockerClient.ContainerLogs(ctx.Request().Context(), resp.ID, types.ContainerLogsOptions{ShowStdout: true})
 	if err != nil {
 		log.Error(err)
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
 	_, err = stdcopy.StdCopy(os.Stdout, os.Stderr, out)
 	if err != nil {
 		log.Error(err)
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
 	if exitCode != 0 {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("container exited with status code %d\n", exitCode))
+		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("container exited with status code %d\n", exitCode))
 	}
 
 	err = h.DockerClient.ContainerRemove(ctx.Request().Context(), resp.ID, types.ContainerRemoveOptions{})
 	if err != nil {
 		log.Error(err)
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
 	// Start container(s)
 	err = backend.StartContainersAttachedToVolume(ctx.Request().Context(), h.DockerClient, stoppedContainers)
 	if err != nil {
 		log.Error(err)
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
 	return ctx.String(http.StatusOK, "")

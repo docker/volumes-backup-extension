@@ -13,7 +13,8 @@ import (
 )
 
 type PullRequest struct {
-	Reference string `json:"reference"`
+	Reference         string `json:"reference"`
+	Base64EncodedAuth string `json:"base64EncodedAuth"`
 }
 
 // PullVolume pulls a volume from a registry.
@@ -30,6 +31,13 @@ func (h *Handler) PullVolume(ctx echo.Context) error {
 	log.Infof("reference: %s", request.Reference)
 	logrus.Infof("received pull request for volume %s\n", volumeName)
 
+	// To provide backwards compatibility with older versions of Docker Desktop,
+	// we're passing the encoded auth in the body of the request instead of in the headers.
+	// encodedAuth := ctx.Request().Header.Get("X-Registry-Auth")
+	if request.Base64EncodedAuth == "" {
+		request.Base64EncodedAuth = "Cg==" // from running: echo "" | base64
+	}
+
 	if volumeName == "" {
 		return ctx.String(http.StatusBadRequest, "volume is required")
 	}
@@ -41,14 +49,9 @@ func (h *Handler) PullVolume(ctx echo.Context) error {
 	log.Infof("parsedRef.String(): %s", parsedRef.String())
 
 	// Pull the volume (image) from registry
-	encodedAuth := ctx.Request().Header.Get("X-Registry-Auth")
-	if encodedAuth == "" {
-		encodedAuth = "Cg==" // from running: echo "" | base64
-	}
-
 	log.Infof("Pulling image %s...", parsedRef.String())
 	pullResp, err := h.DockerClient.ImagePull(ctxReq, parsedRef.String(), dockertypes.ImagePullOptions{
-		RegistryAuth: encodedAuth,
+		RegistryAuth: request.Base64EncodedAuth,
 	})
 
 	if err != nil {

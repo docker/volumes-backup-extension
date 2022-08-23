@@ -13,38 +13,60 @@ export const usePushVolumeToRegistry = () => {
   const pushVolumeToRegistry = ({ imageName }: { imageName: string }) => {
     setIsLoading(true);
 
-    return ddClient.extension.host.cli
-      .exec("volumes-share-client", [
-        "--extension-dir",
-        process.env["REACT_APP_EXTENSION_INSTALLATION_DIR_NAME"],
-        "push",
-        imageName,
-        context.store.volume.volumeName,
-      ])
+    ddClient.extension.host.cli
+      .exec("docker-credentials-client", ["get-creds", imageName])
       .then((result) => {
-        sendNotification(
-          `Volume ${context.store.volume.volumeName} pushed as ${imageName} to registry`
-        );
+        let data = { reference: imageName, base64EncodedAuth: "" };
+
+        const base64EncodedAuth = result.stdout;
+        // If the decoded base64 string is "e30=", it means is an empty JSON "{}"
+        if (base64EncodedAuth !== "e30=") {
+          data.base64EncodedAuth = base64EncodedAuth;
+        }
+
+        const requestConfig = {
+          method: "POST",
+          url: `/volumes/${context.store.volume.volumeName}/push`,
+          headers: {},
+          data: data,
+        };
+
+        ddClient.extension.vm.service
+          .request(requestConfig)
+          .then((result) => {
+            sendNotification(
+              `Volume ${context.store.volume.volumeName} pushed as ${imageName} to registry`
+            );
+          })
+          .catch((error) => {
+            console.error(error);
+            if (
+              error?.message.includes(
+                "denied: requested access to the resource is denied"
+              )
+            ) {
+              sendNotification(
+                `Access denied when trying to push to ${imageName}.
+                          Are you logged in? If so, check your permissions.`,
+                [],
+                "error"
+              );
+            } else {
+              sendNotification(
+                `Failed to push volume ${context.store.volume.volumeName} as ${imageName} to registry: ${error.message}. HTTP status code: ${error.statusCode}`,
+                [],
+                "error"
+              );
+            }
+          });
       })
       .catch((error) => {
-        if (
-          error?.stderr.includes(
-            "denied: requested access to the resource is denied"
-          )
-        ) {
-          sendNotification(
-            `Access denied when trying to push to ${imageName}.
-            Are you logged in? If so, check your permissions.`,
-            [],
-            "error"
-          );
-        } else {
-          sendNotification(
-            `Failed to push volume ${context.store.volume.volumeName} as ${imageName} to registry: ${error.message}. HTTP status code: ${error.statusCode}`,
-            [],
-            "error"
-          );
-        }
+        console.error(error);
+        sendNotification(
+          `Failed to get Docker credentials when pushing volume ${context.store.volume.volumeName} as ${imageName} to registry: ${error.message}. HTTP status code: ${error.statusCode}`,
+          [],
+          "error"
+        );
       })
       .finally(() => {
         setIsLoading(false);

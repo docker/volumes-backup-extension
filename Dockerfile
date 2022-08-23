@@ -11,7 +11,6 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     go build -trimpath -ldflags="-s -w" -o bin/service
 
 FROM --platform=$BUILDPLATFORM node:17.7-alpine3.14 AS client-builder
-ARG EXTENSION_INSTALL_DIR_NAME
 WORKDIR /ui
 # cache packages in layer
 COPY ui/package.json /ui/package.json
@@ -21,10 +20,9 @@ RUN --mount=type=cache,target=/usr/src/app/.npm \
     npm ci
 # install
 COPY ui /ui
-RUN echo "REACT_APP_EXTENSION_INSTALLATION_DIR_NAME=$EXTENSION_INSTALL_DIR_NAME" >> /ui/.env \
-    && npm run build
+RUN npm run build
 
-FROM --platform=$BUILDPLATFORM golang:1.17-alpine AS volume-share-client-builder
+FROM --platform=$BUILDPLATFORM golang:1.17-alpine AS docker-credentials-client-builder
 ENV CGO_ENABLED=0
 WORKDIR /output
 RUN apk update \
@@ -75,7 +73,7 @@ COPY metadata.json .
 COPY icon.svg .
 COPY --from=builder /backend/bin/service /
 COPY --from=client-builder /ui/build ui
-COPY --from=volume-share-client-builder output/dist ./host
+COPY --from=docker-credentials-client-builder output/dist ./host
 
 RUN mkdir -p /vackup
 

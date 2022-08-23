@@ -13,12 +13,14 @@ import (
 	"github.com/felipecruz91/vackup-docker-extension/internal/backend"
 	"github.com/labstack/echo"
 	"github.com/stretchr/testify/require"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -51,7 +53,7 @@ func TestPullVolume(t *testing.T) {
 
 	// Setup
 	e := echo.New()
-	requestJSON := fmt.Sprintf(`{"reference": "%s"}`, imageID)
+	requestJSON := fmt.Sprintf(`{"reference": "%s", "base64EncodedAuth": ""}`, imageID)
 	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(requestJSON))
 	req.Header.Add("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
@@ -63,6 +65,17 @@ func TestPullVolume(t *testing.T) {
 
 	// Provision a registry with an image (which represents a volume) ready to pull:
 	// Run a local registry
+	reader, err := cli.ImagePull(context.Background(), "docker.io/library/registry:2", types.ImagePullOptions{
+		Platform: "linux/" + runtime.GOARCH,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = io.Copy(os.Stdout, reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	resp2, err := cli.ContainerCreate(context.Background(), &container.Config{
 		Image: "docker.io/library/registry:2",
 		ExposedPorts: map[nat.Port]struct{}{
@@ -195,10 +208,9 @@ func TestPullVolumeUsingCorrectAuth(t *testing.T) {
 
 	// Setup
 	e := echo.New()
-	requestJSON := fmt.Sprintf(`{"reference": "%s"}`, imageID)
+	requestJSON := fmt.Sprintf(`{"reference": "%s", "base64EncodedAuth": "%s"}`, imageID, encodedAuth)
 	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(requestJSON))
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("X-Registry-Auth", encodedAuth)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetPath("/volumes/:volume/pull")
@@ -208,6 +220,17 @@ func TestPullVolumeUsingCorrectAuth(t *testing.T) {
 
 	// Run a local registry with auth
 	pwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	reader, err := cli.ImagePull(context.Background(), "docker.io/library/registry:2", types.ImagePullOptions{
+		Platform: "linux/" + runtime.GOARCH,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = io.Copy(os.Stdout, reader)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -352,10 +375,9 @@ func TestPullVolumeUsingWrongAuthShouldFail(t *testing.T) {
 
 	// Setup
 	e := echo.New()
-	requestJSON := fmt.Sprintf(`{"reference": "%s"}`, imageID)
+	requestJSON := fmt.Sprintf(`{"reference": "%s", "base64EncodedAuth": "%s"}`, imageID, encodedAuth)
 	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(requestJSON))
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("X-Registry-Auth", encodedAuth)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetPath("/volumes/:volume/pull")
@@ -365,6 +387,17 @@ func TestPullVolumeUsingWrongAuthShouldFail(t *testing.T) {
 
 	// Run a local registry with auth
 	pwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	reader, err := cli.ImagePull(context.Background(), "docker.io/library/registry:2", types.ImagePullOptions{
+		Platform: "linux/" + runtime.GOARCH,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = io.Copy(os.Stdout, reader)
 	if err != nil {
 		t.Fatal(err)
 	}
