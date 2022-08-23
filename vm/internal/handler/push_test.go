@@ -49,7 +49,7 @@ func TestPushVolume(t *testing.T) {
 
 	// Setup
 	e := echo.New()
-	requestJSON := fmt.Sprintf(`{"reference": "%s"}`, imageID)
+	requestJSON := fmt.Sprintf(`{"reference": "%s", "base64EncodedAuth": ""}`, imageID)
 	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(requestJSON))
 	req.Header.Add("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
@@ -178,10 +178,9 @@ func TestPushVolumeUsingCorrectAuth(t *testing.T) {
 
 	// Setup
 	e := echo.New()
-	requestJSON := fmt.Sprintf(`{"reference": "%s"}`, imageID)
+	requestJSON := fmt.Sprintf(`{"reference": "%s", "base64EncodedAuth": "%s"}`, imageID, encodedAuth)
 	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(requestJSON))
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("X-Registry-Auth", encodedAuth)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetPath("/volumes/:volume/push")
@@ -333,10 +332,9 @@ func TestPushVolumeUsingWrongAuthShouldFail(t *testing.T) {
 
 	// Setup
 	e := echo.New()
-	requestJSON := fmt.Sprintf(`{"reference": "%s"}`, imageID)
+	requestJSON := fmt.Sprintf(`{"reference": "%s", "base64EncodedAuth": "%s"}`, imageID, encodedAuth)
 	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(requestJSON))
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("X-Registry-Auth", encodedAuth)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetPath("/volumes/:volume/push")

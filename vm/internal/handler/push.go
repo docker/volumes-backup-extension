@@ -11,11 +11,11 @@ import (
 	"github.com/felipecruz91/vackup-docker-extension/internal/backend"
 	"github.com/felipecruz91/vackup-docker-extension/internal/log"
 	"github.com/labstack/echo"
-	"github.com/sirupsen/logrus"
 )
 
 type PushRequest struct {
-	Reference string `json:"reference"`
+	Reference         string `json:"reference"`
+	Base64EncodedAuth string `json:"base64EncodedAuth"`
 }
 
 type PushErrorLine struct {
@@ -38,7 +38,14 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 	volumeName := ctx.Param("volume")
 	log.Infof("volumeName: %s", volumeName)
 	log.Infof("reference: %s", request.Reference)
-	logrus.Infof("received push request for volume %s\n", volumeName)
+	log.Infof("received push request for volume %s\n", volumeName)
+
+	// To provide backwards compatibility with older versions of Docker Desktop,
+	// we're passing the encoded auth in the body of the request instead of in the headers.
+	// encodedAuth := ctx.Request().Header.Get("X-Registry-Auth")
+	if request.Base64EncodedAuth == "" {
+		request.Base64EncodedAuth = "Cg==" // from running: echo "" | base64
+	}
 
 	if volumeName == "" {
 		return ctx.String(http.StatusBadRequest, "volume is required")
@@ -57,12 +64,8 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 	}
 
 	// Push the image to registry
-	encodedAuth := ctx.Request().Header.Get("X-Registry-Auth")
-	if encodedAuth == "" {
-		encodedAuth = "Cg==" // from running: echo "" | base64
-	}
 	pushResp, err := h.DockerClient.ImagePush(ctxReq, parsedRef.String(), dockertypes.ImagePushOptions{
-		RegistryAuth: encodedAuth,
+		RegistryAuth: request.Base64EncodedAuth,
 	})
 	if err != nil {
 		log.Error(err)

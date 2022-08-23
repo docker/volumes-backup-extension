@@ -1,4 +1,4 @@
-BINARY?=volumes-share-client
+BINARY?=docker-credentials-client
 LDFLAGS="-s -w"
 GO_BUILD=$(STATIC_FLAGS) go build -trimpath -ldflags=$(LDFLAGS)
 
