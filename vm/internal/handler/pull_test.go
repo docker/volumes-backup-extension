@@ -19,6 +19,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -63,6 +64,13 @@ func TestPullVolume(t *testing.T) {
 
 	// Provision a registry with an image (which represents a volume) ready to pull:
 	// Run a local registry
+	_, err := cli.ImagePull(context.Background(), "docker.io/library/registry:2", types.ImagePullOptions{
+		Platform: "linux/" + runtime.GOARCH,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	resp2, err := cli.ContainerCreate(context.Background(), &container.Config{
 		Image: "docker.io/library/registry:2",
 		ExposedPorts: map[nat.Port]struct{}{
@@ -207,6 +215,13 @@ func TestPullVolumeUsingCorrectAuth(t *testing.T) {
 
 	// Run a local registry with auth
 	pwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = cli.ImagePull(c.Request().Context(), "docker.io/library/registry:2", types.ImagePullOptions{
+		Platform: "linux/" + runtime.GOARCH,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -363,6 +378,13 @@ func TestPullVolumeUsingWrongAuthShouldFail(t *testing.T) {
 
 	// Run a local registry with auth
 	pwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = cli.ImagePull(c.Request().Context(), "docker.io/library/registry:2", types.ImagePullOptions{
+		Platform: "linux/" + runtime.GOARCH,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -95,6 +95,13 @@ func TestPushVolume(t *testing.T) {
 	containerID = resp.ID
 
 	// Run a local registry
+	_, err = cli.ImagePull(c.Request().Context(), "docker.io/library/registry:2", types.ImagePullOptions{
+		Platform: "linux/" + runtime.GOARCH,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	resp2, err := cli.ContainerCreate(c.Request().Context(), &container.Config{
 		Image: "docker.io/library/registry:2",
 		ExposedPorts: map[nat.Port]struct{}{
@@ -225,6 +232,13 @@ func TestPushVolumeUsingCorrectAuth(t *testing.T) {
 
 	// Run a local registry
 	pwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = cli.ImagePull(c.Request().Context(), "docker.io/library/registry:2", types.ImagePullOptions{
+		Platform: "linux/" + runtime.GOARCH,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -383,6 +397,13 @@ func TestPushVolumeUsingWrongAuthShouldFail(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	_, err = cli.ImagePull(c.Request().Context(), "docker.io/library/registry:2", types.ImagePullOptions{
+		Platform: "linux/" + runtime.GOARCH,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	
 	resp2, err := cli.ContainerCreate(c.Request().Context(), &container.Config{
 		Image: "docker.io/library/registry:2",
 		ExposedPorts: map[nat.Port]struct{}{
