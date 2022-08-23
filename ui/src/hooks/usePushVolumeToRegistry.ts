@@ -41,7 +41,7 @@ export const usePushVolumeToRegistry = () => {
           .catch((error) => {
             console.error(error);
             if (
-              error?.stderr.includes(
+              error?.message.includes(
                 "denied: requested access to the resource is denied"
               )
             ) {
