@@ -50,22 +50,21 @@ LABEL org.opencontainers.image.title="Volumes Backup & Share" \
     <h2 id="-features">✨ What can you do with this extension?</h2> \
     <ul> \
     <li>Export a volume:</li> \
-    <ul><li>To a compressed file</li> \
+    <ul><li>To a compressed file in your local filesystem</li> \
     <li>To an existing local image</li> \
     <li>To a new local image</li> \
     <li>To a new image in Docker Hub (or another registry)</li></ul> \
     <li>Import data into a new container or into an existing container:</li> \
-    <ul><li>From a compressed file</li> \
+    <ul><li>From a compressed file in your local filesystem</li> \
     <li>From an existing image</li> \
     <li>From an existing image in Docker Hub (or another registry)</li></ul> \
-    <li>Transfer a volume to another host</li> \
+    <li>Transfer a volume via SSH to another host that runs Docker Desktop or Docker engine.</li> \
     <li>Clone, empty or delete a volume</li> \
     </ul> \
     "\
     com.docker.extension.publisher-url="https://www.docker.com/" \
     com.docker.extension.additional-urls="[ \
-        {\"title\":\"Support\", \"url\":\"https://github.com/docker/vackup-docker-extension/issues\"}, \
-        {\"title\":\"Vackup script from Bret Fisher\", \"url\":\"https://github.com/BretFisher/docker-vackup\"} \
+        {\"title\":\"Support\", \"url\":\"https://github.com/docker/vackup-docker-extension/issues\"} \
     ]" \
     com.docker.desktop.extension.icon="https://raw.githubusercontent.com/docker/vackup-docker-extension/main/icon.svg" \
     com.docker.extension.changelog="" 

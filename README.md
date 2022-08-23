@@ -1,19 +1,33 @@
-# vackup-docker-extension
+# Volumes Backup and Share Extension
 
-[![Build, Scan and Push](https://github.com/felipecruz91/vackup-docker-extension/actions/workflows/build-scan-push.yaml/badge.svg)](https://github.com/felipecruz91/vackup-docker-extension/actions/workflows/build-scan-push.yaml)
-[![Lint Dockerfile](https://github.com/felipecruz91/vackup-docker-extension/actions/workflows/hadolint.yaml/badge.svg)](https://github.com/felipecruz91/vackup-docker-extension/actions/workflows/hadolint.yaml)
+[![Build, Scan and Push](https://github.com/docker/vackup-docker-extension/actions/workflows/build-scan-push.yaml/badge.svg)](https://github.com/docker/vackup-docker-extension/actions/workflows/build-scan-push.yaml)
+[![Lint Dockerfile](https://github.com/docker/vackup-docker-extension/actions/workflows/hadolint.yaml/badge.svg)](https://github.com/docker/vackup-docker-extension/actions/workflows/hadolint.yaml)
 
-This repository contains a Docker Extension that backups Docker volumes. This extension is purely a demonstration of how it'd be to convert the [Vackup](https://github.com/BretFisher/docker-vackup) project by Bret Fisher into a Docker Extension.
-This example is part of the YouTube Livestream [Introducing Docker Extensions](https://www.youtube.com/watch?v=BHKp7Sc3VVc) hosted by Bret Fisher.
 
-![Extension Screenshot](./docs/images/screenshot-1.png)
+![Extension Screenshot](./docs/images/1-table.png)
 
+🚀 This extension was originally created by [Felipe Cruz](https://github.com/felipecruz91/)
+
+## Features
+- Export a volume:
+  - To a compressed file in your local filesystem
+  - To an existing local image
+  - To a new local image
+- To a new image in Docker Hub (or another registry)
+- Import data into a new container or into an existing container:
+  - From a compressed file in your local filesystem
+  - From an existing image
+  - From an existing image in Docker Hub (or another registry)
+- Transfer a volume via SSH to another host that runs Docker Desktop or Docker engine.
+- Clone a volume
+- Empty a volume
+- Delete a volume
 ## Installation
 
 Install Docker Extension with the [Extensions CLI](https://docs.docker.com/desktop/extensions-sdk/#prerequisites).
 
 ```bash
-  docker extension install felipecruz/vackup-docker-extension:latest
+  docker extension install docker/volumes-backup-extension:latest
 ```
 
 ## Run Locally
@@ -21,25 +35,25 @@ Install Docker Extension with the [Extensions CLI](https://docs.docker.com/deskt
 Clone the project
 
 ```bash
-  git clone https://github.com/felipecruz91/vackup-docker-extension.git
+  git clone https://github.com/docker/vackup-docker-extension.git
 ```
 
 Go to the project directory
 
 ```bash
-  cd vackup-docker-extension
+  cd volumes-backup-extension
 ```
 
 Build the extension
 
 ```bash
-  docker build -t felipecruz/vackup-docker-extension:latest .
+  docker build -t docker/volumes-backup-extension:latest .
 ```
 
 Install the extension
 
 ```bash
-  docker extension install felipecruz/vackup-docker-extension:latest
+  docker extension install docker/volumes-backup-extension:latest
 ```
 
 Developing the frontend
@@ -55,24 +69,25 @@ This starts a development server that listens on port 3000.
 You can now tell Docker Desktop to use this as the frontend source. In another terminal run:
 
 ```bash
-  docker extension dev ui-source felipecruz/vackup-docker-extension:latest http://localhost:3000
+  docker extension dev ui-source docker/volumes-backup-extension:latest http://localhost:3000
 ```
 
 In order to open the Chrome Dev Tools for your extension when you click on the extension tab, run:
 
 ```bash
-  docker extension dev debug felipecruz/vackup-docker-extension:latest
+  docker extension dev debug docker/volumes-backup-extension:latest
 ```
 
 Each subsequent click on the extension tab will also open Chrome Dev Tools. To stop this behaviour, run:
 
 ```bash
-  docker extension dev reset felipecruz/vackup-docker-extension:latest
+  docker extension dev reset docker/volumes-backup-extension:latest
 ```
 
 ## Acknowledgements
 
-- [Vackup: Backup and Restore Docker Volumes](https://github.com/BretFisher/docker-vackup)
+- [Vackup project by Bret Fisher](https://github.com/BretFisher/docker-vackup)
+- [Building Vackup - LiveStream on YouTube](https://www.youtube.com/watch?v=BHKp7Sc3VVc)
 
 ## License
 
