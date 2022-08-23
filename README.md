@@ -1,7 +1,7 @@
 # Volumes Backup and Share Extension
 
-[![Build, Scan and Push](https://github.com/docker/vackup-docker-extension/actions/workflows/build-scan-push.yaml/badge.svg)](https://github.com/docker/vackup-docker-extension/actions/workflows/build-scan-push.yaml)
-[![Lint Dockerfile](https://github.com/docker/vackup-docker-extension/actions/workflows/hadolint.yaml/badge.svg)](https://github.com/docker/vackup-docker-extension/actions/workflows/hadolint.yaml)
+[![Build, Scan and Push](https://github.com/docker/volumes-backup-extension/actions/workflows/build-scan-push.yaml/badge.svg)](https://github.com/docker/volumes-backup-extension/actions/workflows/build-scan-push.yaml)
+[![Lint Dockerfile](https://github.com/docker/volumes-backup-extension/actions/workflows/hadolint.yaml/badge.svg)](https://github.com/docker/volumes-backup-extension/actions/workflows/hadolint.yaml)
 
 
 ![Extension Screenshot](./docs/images/1-table.png)
@@ -35,7 +35,7 @@ Install Docker Extension with the [Extensions CLI](https://docs.docker.com/deskt
 Clone the project
 
 ```bash
-  git clone https://github.com/docker/vackup-docker-extension.git
+  git clone https://github.com/docker/volumes-backup-extension.git
 ```
 
 Go to the project directory

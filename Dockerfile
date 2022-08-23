@@ -39,12 +39,12 @@ LABEL org.opencontainers.image.title="Volumes Backup & Share" \
     org.opencontainers.image.vendor="Docker Inc." \
     com.docker.desktop.extension.api.version=">= 0.2.3" \
     com.docker.extension.screenshots="[ \
-        {\"alt\": \"Home page - list of volumes\", \"url\": \"https://raw.githubusercontent.com/docker/vackup-docker-extension/main/docs/images/1-table.png\"}, \
-        {\"alt\": \"Import data into a new volume\", \"url\": \"https://raw.githubusercontent.com/docker/vackup-docker-extension/main/docs/images/2-import-new.png\"}, \
-        {\"alt\": \"Export volume dialog\", \"url\": \"https://raw.githubusercontent.com/docker/vackup-docker-extension/main/docs/images/3-export.png\"}, \
-        {\"alt\": \"Transfer volume to another host\", \"url\": \"https://raw.githubusercontent.com/docker/vackup-docker-extension/main/docs/images/4-transfer.png\"}, \
-        {\"alt\": \"Clone volume dialog\", \"url\": \"https://raw.githubusercontent.com/docker/vackup-docker-extension/main/docs/images/5-clone.png\"}, \
-        {\"alt\": \"Delete volume dialog\", \"url\": \"https://raw.githubusercontent.com/docker/vackup-docker-extension/main/docs/images/6-delete.png\"} \
+        {\"alt\": \"Home page - list of volumes\", \"url\": \"https://raw.githubusercontent.com/docker/volumes-backup-extension/main/docs/images/1-table.png\"}, \
+        {\"alt\": \"Import data into a new volume\", \"url\": \"https://raw.githubusercontent.com/docker/volumes-backup-extension/main/docs/images/2-import-new.png\"}, \
+        {\"alt\": \"Export volume dialog\", \"url\": \"https://raw.githubusercontent.com/docker/volumes-backup-extension/main/docs/images/3-export.png\"}, \
+        {\"alt\": \"Transfer volume to another host\", \"url\": \"https://raw.githubusercontent.com/docker/volumes-backup-extension/main/docs/images/4-transfer.png\"}, \
+        {\"alt\": \"Clone volume dialog\", \"url\": \"https://raw.githubusercontent.com/docker/volumes-backup-extension/main/docs/images/5-clone.png\"}, \
+        {\"alt\": \"Delete volume dialog\", \"url\": \"https://raw.githubusercontent.com/docker/volumes-backup-extension/main/docs/images/6-delete.png\"} \
     ]" \
     com.docker.extension.detailed-description="<p>With Volumes Backup & Share you can easily create copies of your volumes and also share them with others through SSH or pushing them to a registry.</p> \
     <h2 id="-features">✨ What can you do with this extension?</h2> \
@@ -64,9 +64,9 @@ LABEL org.opencontainers.image.title="Volumes Backup & Share" \
     "\
     com.docker.extension.publisher-url="https://www.docker.com/" \
     com.docker.extension.additional-urls="[ \
-        {\"title\":\"Support\", \"url\":\"https://github.com/docker/vackup-docker-extension/issues\"} \
+        {\"title\":\"Support\", \"url\":\"https://github.com/docker/volumes-backup-extension/issues\"} \
     ]" \
-    com.docker.desktop.extension.icon="https://raw.githubusercontent.com/docker/vackup-docker-extension/main/icon.svg" \
+    com.docker.desktop.extension.icon="https://raw.githubusercontent.com/docker/volumes-backup-extension/main/icon.svg" \
     com.docker.extension.changelog="" 
 
 WORKDIR /

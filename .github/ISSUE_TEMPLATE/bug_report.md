@@ -47,12 +47,12 @@ If relevant, you can add console logs that might include some trace related to t
 
 <!--
 you can get console logs from the extension by running the following command in a terminal:
-`docker extension dev debug docker/vackup-docker-extension`
+`docker extension dev debug docker/volumes-backup-extension`
 
 When you navigate to the extension, it should now also open chrome dev tools on the side, and you can see console messages.
 
 Eventually, you can stop opening chrome dev tools by running:
-`docker extension dev reset docker/vackup-docker-extension`
+`docker extension dev reset docker/volumes-backup-extension`
 -->
 
 **Additional context**
