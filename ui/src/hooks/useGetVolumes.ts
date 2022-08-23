@@ -1,5 +1,6 @@
 import { createDockerDesktopClient } from "@docker/extension-api-client";
 import { useEffect, useState } from "react";
+import { useNotificationContext } from "../NotificationContext";
 
 const ddClient = createDockerDesktopClient();
 
@@ -21,6 +22,7 @@ export interface IVolumeRow {
 export const useGetVolumes = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [data, setData] = useState<IVolumeRow[]>();
+  const { sendNotification } = useNotificationContext();
 
   useEffect(() => {
     listVolumes();
@@ -57,7 +59,7 @@ export const useGetVolumes = () => {
         });
     } catch (error) {
       setIsLoading(false);
-      ddClient.desktopUI.toast.error(`Failed to list volumes: ${error.stderr}`);
+      sendNotification(`Failed to list volumes: ${error.stderr}`, [], "error");
     }
   };
 

@@ -16,6 +16,7 @@ import { createDockerDesktopClient } from "@docker/extension-api-client";
 
 import { MyContext } from "../index";
 import { isError } from "../common/isError";
+import { useNotificationContext } from "../NotificationContext";
 
 const client = createDockerDesktopClient();
 
@@ -26,6 +27,7 @@ function useDockerDesktopClient() {
 export default function CloneDialog({ ...props }) {
   const ddClient = useDockerDesktopClient();
   const context = useContext(MyContext);
+  const { sendNotification } = useNotificationContext();
 
   const [volumeName, setVolumeName] = React.useState<string>(
     `${context.store.volume.volumeName}-cloned`
@@ -35,7 +37,7 @@ export default function CloneDialog({ ...props }) {
 
   const cloneVolume = async () => {
     setActionInProgress(true);
-    let actionSuccessfullyCompleted = false
+    let actionSuccessfullyCompleted = false;
 
     try {
       // TODO: check if destination volume already exists
@@ -44,7 +46,7 @@ export default function CloneDialog({ ...props }) {
         volumeName,
       ]);
       if (createVolumeOutput.stderr !== "") {
-        ddClient.desktopUI.toast.error(createVolumeOutput.stderr);
+        sendNotification(createVolumeOutput.stderr);
         return;
       }
 
@@ -58,27 +60,36 @@ export default function CloneDialog({ ...props }) {
         '"cd /from ; cp -av . /to"',
       ]);
       if (isError(cloneOutput.stderr)) {
-        ddClient.desktopUI.toast.error(cloneOutput.stderr);
+        sendNotification(cloneOutput.stderr, [], "error");
         return;
       }
 
-      ddClient.desktopUI.toast.success(
-        `Volume ${context.store.volume.volumeName} cloned to destination volume ${volumeName}`
+      sendNotification(
+        `Volume ${context.store.volume.volumeName} cloned to destination volume ${volumeName}`,
+        [
+          {
+            name: "See volume",
+            onClick: () =>
+              ddClient.desktopUI.navigate.viewVolume(
+                context.store.volume.volumeName
+              ),
+          },
+        ]
       );
 
-      actionSuccessfullyCompleted = true
+      actionSuccessfullyCompleted = true;
     } catch (error) {
-      ddClient.desktopUI.toast.error(
-        `Failed to clone volume ${context.store.volume.volumeName} to destinaton volume ${volumeName}: ${error.stderr} Exit code: ${error.code}`
+      sendNotification(
+        `Failed to clone volume ${context.store.volume.volumeName} to destinaton volume ${volumeName}: ${error.stderr} Exit code: ${error.code}`, [], "error"
       );
     } finally {
       setActionInProgress(false);
-      props.onClose(actionSuccessfullyCompleted)
+      props.onClose(actionSuccessfullyCompleted);
     }
   };
 
   return (
-    <Dialog open={props.open} onClose={props.onClose}>
+    <Dialog fullWidth maxWidth="sm" open={props.open} onClose={props.onClose}>
       <DialogTitle>Clone a volume</DialogTitle>
       <DialogContent>
         <Backdrop
@@ -118,8 +129,14 @@ export default function CloneDialog({ ...props }) {
         </Grid>
       </DialogContent>
       <DialogActions>
-        <Button variant="outlined" onClick={() => props.onClose(false)}>Cancel</Button>
-        <Button variant="contained" onClick={cloneVolume} disabled={volumeName === ""}>
+        <Button variant="outlined" onClick={() => props.onClose(false)}>
+          Cancel
+        </Button>
+        <Button
+          variant="contained"
+          onClick={cloneVolume}
+          disabled={volumeName === ""}
+        >
           Clone
         </Button>
       </DialogActions>

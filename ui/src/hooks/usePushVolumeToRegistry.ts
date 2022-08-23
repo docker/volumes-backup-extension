@@ -1,12 +1,14 @@
 import { createDockerDesktopClient } from "@docker/extension-api-client";
 import { useContext, useState } from "react";
 import { MyContext } from "..";
+import { useNotificationContext } from "../NotificationContext";
 
 const ddClient = createDockerDesktopClient();
 
 export const usePushVolumeToRegistry = () => {
   const [isLoading, setIsLoading] = useState(false);
   const context = useContext(MyContext);
+  const { sendNotification } = useNotificationContext();
 
   const pushVolumeToRegistry = ({ imageName }: { imageName: string }) => {
     setIsLoading(true);
@@ -20,14 +22,29 @@ export const usePushVolumeToRegistry = () => {
         context.store.volume.volumeName,
       ])
       .then((result) => {
-        ddClient.desktopUI.toast.success(
+        sendNotification(
           `Volume ${context.store.volume.volumeName} pushed as ${imageName} to registry`
         );
       })
       .catch((error) => {
-        ddClient.desktopUI.toast.error(
-          `Failed to push volume ${context.store.volume.volumeName} as ${imageName} to registry: ${error.message}. HTTP status code: ${error.statusCode}`
-        );
+        if (
+          error?.stderr.includes(
+            "denied: requested access to the resource is denied"
+          )
+        ) {
+          sendNotification(
+            `Access denied when trying to push to ${imageName}.
+            Are you logged in? If so, check your permissions.`,
+            [],
+            "error"
+          );
+        } else {
+          sendNotification(
+            `Failed to push volume ${context.store.volume.volumeName} as ${imageName} to registry: ${error.message}. HTTP status code: ${error.statusCode}`,
+            [],
+            "error"
+          );
+        }
       })
       .finally(() => {
         setIsLoading(false);

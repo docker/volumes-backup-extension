@@ -8,6 +8,7 @@ import DialogTitle from "@mui/material/DialogTitle";
 import {createDockerDesktopClient} from "@docker/extension-api-client";
 
 import {MyContext} from "../index";
+import { useNotificationContext } from "../NotificationContext";
 
 const client = createDockerDesktopClient();
 
@@ -16,9 +17,8 @@ function useDockerDesktopClient() {
 }
 
 export default function LoadDialog({...props}) {
-    console.log("LoadDialog component rendered.");
     const ddClient = useDockerDesktopClient();
-
+    const { sendNotification } = useNotificationContext();
     const context = useContext(MyContext);
 
     const [imageName, setImageName] = React.useState<string>("");
@@ -33,15 +33,22 @@ export default function LoadDialog({...props}) {
             .get(`/volumes/${context.store.volume.volumeName}/load?image=${imageName}`)
             .then((_: any) => {
                 actionSuccessfullyCompleted = true
-                ddClient.desktopUI.toast.success(
-                    `Copied /volume-data from image ${imageName} into volume ${context.store.volume.volumeName}`
+                sendNotification(
+                    `Copied /volume-data from image ${imageName} into volume ${context.store.volume.volumeName}`,
+                    [{
+                        name: "See volume",
+                        onClick: () =>
+                          ddClient.desktopUI.navigate.viewVolume(
+                            context.store.volume.volumeName
+                          ),
+                    }]
                 );
             })
             .catch((error) => {
                 console.log(error)
                 actionSuccessfullyCompleted = false
-                ddClient.desktopUI.toast.error(
-                    `Failed to copy /volume-data from image ${imageName} to into volume ${context.store.volume.volumeName}: ${error.message}. HTTP status code: ${error.statusCode}`
+                sendNotification(
+                    `Failed to copy /volume-data from image ${imageName} to into volume ${context.store.volume.volumeName}: ${error.message}. HTTP status code: ${error.statusCode}`, [], "error"
                 );
             })
             .finally(() => {
