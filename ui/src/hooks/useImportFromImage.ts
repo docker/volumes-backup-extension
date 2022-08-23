@@ -18,7 +18,7 @@ export const useImportFromImage = () => {
       .get(`/volumes/${volumeName}/load?image=${imageName}`)
       .then((_: any) => {
         setIsInProgress(false);
-        sendNotification(
+        sendNotification.info(
           `Copied /volume-data from image ${imageName} into volume ${volumeName}`,
           [
             {
@@ -30,10 +30,8 @@ export const useImportFromImage = () => {
       })
       .catch((error) => {
         setIsInProgress(false);
-        sendNotification(
-          `Failed to copy /volume-data from image ${imageName} to into volume ${volumeName}: ${error.message}. HTTP status code: ${error.statusCode}`,
-          [],
-          "error"
+        sendNotification.error(
+          `Failed to copy /volume-data from image ${imageName} to into volume ${volumeName}: ${error.message}. HTTP status code: ${error.statusCode}`
         );
       });
   };

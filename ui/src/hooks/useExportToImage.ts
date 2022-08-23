@@ -15,7 +15,7 @@ export const useExportToImage = () => {
     ddClient.desktopUI.navigate
       .viewImage(imageId, tag || "latest")
       .catch(() => {
-        sendNotification(`Couldn't navigate to image ${imageName}`, [
+        sendNotification.error(`Couldn't navigate to image ${imageName}`, [
           {
             name: "Try again",
             onClick: () => navigateToImage(imageName, imageId, tag),
@@ -35,7 +35,7 @@ export const useExportToImage = () => {
         `/volumes/${context.store.volume.volumeName}/save?image=${imageName}`
       )
       .then((_: any) => {
-        sendNotification(
+        sendNotification.info(
           `Volume ${selectedVolumeName} exported to ${imageName}. The new image will be available in a few seconds.`,
           [
             {
@@ -55,10 +55,8 @@ export const useExportToImage = () => {
         );
       })
       .catch((error) => {
-        sendNotification(
-          `Failed to backup volume ${selectedVolumeName} to ${imageName}: ${error.message}. HTTP status code: ${error.statusCode}`,
-          [],
-          "error"
+        sendNotification.error(
+          `Failed to backup volume ${selectedVolumeName} to ${imageName}: ${error.message}. HTTP status code: ${error.statusCode}`
         );
       })
       .finally(() => {

@@ -40,7 +40,7 @@ export const usePullFromRegistry = () => {
         ddClient.extension.vm.service
           .request(requestConfig)
           .then((result) => {
-            sendNotification(
+            sendNotification.info(
               `Volume ${
                 volumeId || context.store.volume.volumeName
               } pulled as ${imageName} from registry`,
@@ -57,27 +57,23 @@ export const usePullFromRegistry = () => {
           })
           .catch((error) => {
             console.error(error);
-            sendNotification(
+            sendNotification.error(
               `Failed to pull volume ${
                 volumeId || context.store.volume.volumeName
               } as ${imageName} from registry: ${
                 error.message
-              }. HTTP status code: ${error.statusCode}`,
-              [],
-              "error"
+              }. HTTP status code: ${error.statusCode}`
             );
           });
       })
       .catch((error) => {
         console.error(error);
-        sendNotification(
+        sendNotification.error(
           `Failed to get Docker credentials when pulling volume ${
             volumeId || context.store.volume.volumeName
           } as ${imageName} from registry: ${
             error.message
-          }. HTTP status code: ${error.statusCode}`,
-          [],
-          "error"
+          }. HTTP status code: ${error.statusCode}`
         );
       })
       .finally(() => {

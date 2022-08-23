@@ -76,12 +76,12 @@ export default function TransferDialog({ ...props }) {
       ]);
 
       if (listVolumesOutput.stderr !== "") {
-        sendNotification(listVolumesOutput.stderr);
+        sendNotification.error(listVolumesOutput.stderr);
         return;
       }
       return listVolumesOutput.lines();
     } catch (error) {
-      sendNotification(
+      sendNotification.error(
         `Unable to list volumes for docker host ${destHost}: ${error.stderr} Exit code: ${error.code}`
       );
       return [];
@@ -111,18 +111,16 @@ export default function TransferDialog({ ...props }) {
         `"cd /from ; tar -czf - . " | ssh ${destHost} "docker run --rm -i -v "${volumeName}":/to alpine ash -c 'cd /to ; tar -xpvzf - '"`,
       ]);
       if (isError(transferredOutput.stderr)) {
-        sendNotification(transferredOutput.stderr, [], "error");
+        sendNotification.error(transferredOutput.stderr);
         return;
       }
 
-      sendNotification(
+      sendNotification.info(
         `Volume ${context.store.volume.volumeName} transferred to destination volume ${volumeName} in host ${destHost}`
       );
     } catch (error) {
-      sendNotification(
-        `Failed to clone volume ${context.store.volume.volumeName} to destinaton volume ${volumeName}: ${error.stderr} Exit code: ${error.code}`,
-        [],
-        "error"
+      sendNotification.error(
+        `Failed to clone volume ${context.store.volume.volumeName} to destinaton volume ${volumeName}: ${error.stderr} Exit code: ${error.code}`
       );
     } finally {
       setActionInProgress(false);

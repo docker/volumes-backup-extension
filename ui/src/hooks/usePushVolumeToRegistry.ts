@@ -34,7 +34,7 @@ export const usePushVolumeToRegistry = () => {
         ddClient.extension.vm.service
           .request(requestConfig)
           .then((result) => {
-            sendNotification(
+            sendNotification.info(
               `Volume ${context.store.volume.volumeName} pushed as ${imageName} to registry`
             );
           })
@@ -45,27 +45,21 @@ export const usePushVolumeToRegistry = () => {
                 "denied: requested access to the resource is denied"
               )
             ) {
-              sendNotification(
+              sendNotification.error(
                 `Access denied when trying to push to ${imageName}.
-                          Are you logged in? If so, check your permissions.`,
-                [],
-                "error"
+                          Are you logged in? If so, check your permissions.`
               );
             } else {
-              sendNotification(
-                `Failed to push volume ${context.store.volume.volumeName} as ${imageName} to registry: ${error.message}. HTTP status code: ${error.statusCode}`,
-                [],
-                "error"
+              sendNotification.error(
+                `Failed to push volume ${context.store.volume.volumeName} as ${imageName} to registry: ${error.message}. HTTP status code: ${error.statusCode}`
               );
             }
           });
       })
       .catch((error) => {
         console.error(error);
-        sendNotification(
-          `Failed to get Docker credentials when pushing volume ${context.store.volume.volumeName} as ${imageName} to registry: ${error.message}. HTTP status code: ${error.statusCode}`,
-          [],
-          "error"
+        sendNotification.error(
+          `Failed to get Docker credentials when pushing volume ${context.store.volume.volumeName} as ${imageName} to registry: ${error.message}. HTTP status code: ${error.statusCode}`
         );
       })
       .finally(() => {

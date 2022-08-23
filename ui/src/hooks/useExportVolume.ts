@@ -25,13 +25,11 @@ export const useExportVolume = () => {
         `/volumes/${selectedVolumeName}/export?path=${path}&fileName=${fileName}`
       )
       .then((_: any) => {
-        sendNotification(`Volume ${selectedVolumeName} exported to ${path}`);
+        sendNotification.info(`Volume ${selectedVolumeName} exported to ${path}`);
       })
       .catch((error) => {
-        sendNotification(
-          `Failed to backup volume ${selectedVolumeName} to ${path}: ${error.message}. HTTP status code: ${error.statusCode}`,
-          [],
-          "error"
+        sendNotification.error(
+          `Failed to backup volume ${selectedVolumeName} to ${path}: ${error.message}. HTTP status code: ${error.statusCode}`
         );
       })
       .finally(() => {
