@@ -34,10 +34,8 @@ export const useGetImages = () => {
         return images;
       })
       .catch((error) => {
-        sendNotification(
-          `Failed to get images: ${error.stderr} Exit code: ${error.code}`,
-          [],
-          "error"
+        sendNotification.error(
+          `Failed to get images: ${error.stderr} Exit code: ${error.code}`
         );
       });
   };

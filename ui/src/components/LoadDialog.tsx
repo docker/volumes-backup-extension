@@ -33,7 +33,7 @@ export default function LoadDialog({...props}) {
             .get(`/volumes/${context.store.volume.volumeName}/load?image=${imageName}`)
             .then((_: any) => {
                 actionSuccessfullyCompleted = true
-                sendNotification(
+                sendNotification.info(
                     `Copied /volume-data from image ${imageName} into volume ${context.store.volume.volumeName}`,
                     [{
                         name: "See volume",
@@ -47,8 +47,8 @@ export default function LoadDialog({...props}) {
             .catch((error) => {
                 console.log(error)
                 actionSuccessfullyCompleted = false
-                sendNotification(
-                    `Failed to copy /volume-data from image ${imageName} to into volume ${context.store.volume.volumeName}: ${error.message}. HTTP status code: ${error.statusCode}`, [], "error"
+                sendNotification.error(
+                    `Failed to copy /volume-data from image ${imageName} to into volume ${context.store.volume.volumeName}: ${error.message}. HTTP status code: ${error.statusCode}`
                 );
             })
             .finally(() => {

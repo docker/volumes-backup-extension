@@ -19,19 +19,20 @@ export const useImportFromPath = () => {
       .get(`/volumes/${volumeName}/import?path=${path}`)
       .then((_: any) => {
         setIsInProgress(false);
-        sendNotification(`File ${path} imported into volume ${volumeName}`, [
-          {
-            name: "See volume",
-            onClick: () => ddClient.desktopUI.navigate.viewVolume(volumeName),
-          },
-        ]);
+        sendNotification.info(
+          `File ${path} imported into volume ${volumeName}`,
+          [
+            {
+              name: "See volume",
+              onClick: () => ddClient.desktopUI.navigate.viewVolume(volumeName),
+            },
+          ]
+        );
       })
       .catch((error) => {
         setIsInProgress(false);
-        sendNotification(
-          `Failed to import file ${path} into volume ${volumeName}: ${error.message}. HTTP status code: ${error.statusCode}`,
-          [],
-          "error"
+        sendNotification.error(
+          `Failed to import file ${path} into volume ${volumeName}: ${error.message}. HTTP status code: ${error.statusCode}`
         );
       });
   };

@@ -59,7 +59,7 @@ export const useGetVolumes = () => {
         });
     } catch (error) {
       setIsLoading(false);
-      sendNotification(`Failed to list volumes: ${error.stderr}`, [], "error");
+      sendNotification.error(`Failed to list volumes: ${error.stderr}`);
     }
   };
 

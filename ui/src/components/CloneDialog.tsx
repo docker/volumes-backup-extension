@@ -46,7 +46,7 @@ export default function CloneDialog({ ...props }) {
         volumeName,
       ]);
       if (createVolumeOutput.stderr !== "") {
-        sendNotification(createVolumeOutput.stderr);
+        sendNotification.error(createVolumeOutput.stderr);
         return;
       }
 
@@ -60,11 +60,11 @@ export default function CloneDialog({ ...props }) {
         '"cd /from ; cp -av . /to"',
       ]);
       if (isError(cloneOutput.stderr)) {
-        sendNotification(cloneOutput.stderr, [], "error");
+        sendNotification.error(cloneOutput.stderr);
         return;
       }
 
-      sendNotification(
+      sendNotification.info(
         `Volume ${context.store.volume.volumeName} cloned to destination volume ${volumeName}`,
         [
           {
@@ -79,8 +79,8 @@ export default function CloneDialog({ ...props }) {
 
       actionSuccessfullyCompleted = true;
     } catch (error) {
-      sendNotification(
-        `Failed to clone volume ${context.store.volume.volumeName} to destinaton volume ${volumeName}: ${error.stderr} Exit code: ${error.code}`, [], "error"
+      sendNotification.error(
+        `Failed to clone volume ${context.store.volume.volumeName} to destinaton volume ${volumeName}: ${error.stderr} Exit code: ${error.code}`
       );
     } finally {
       setActionInProgress(false);

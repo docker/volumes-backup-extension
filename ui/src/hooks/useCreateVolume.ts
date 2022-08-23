@@ -13,16 +13,14 @@ export const useCreateVolume = () => {
       .exec("volume", ["create", volumeName])
       .then((createVolumeOutput) => {
         if (createVolumeOutput.stderr !== "") {
-          sendNotification(createVolumeOutput.stderr);
+          sendNotification.error(createVolumeOutput.stderr);
         }
         setIsInProgress(false);
         return createVolumeOutput.lines();
       })
       .catch((error) => {
-        sendNotification(
-          `Failed to create volume ${volumeName}: ${error.stderr} Exit code: ${error.code}`,
-          [],
-          "error"
+        sendNotification.error(
+          `Failed to create volume ${volumeName}: ${error.stderr} Exit code: ${error.code}`
         );
       });
   };

@@ -268,15 +268,15 @@ export function App() {
                 '"rm -rf /vackup-volume/..?* /vackup-volume/.[!.]* /vackup-volume/*"', // hidden and not-hidden files and folders: .[!.]* matches all dot files except . and files whose name begins with .., and ..?* matches all dot-dot files except ..
             ]);
             if (isError(output.stderr)) {
-                sendNotification(output.stderr, [], "error");
+                sendNotification.error(output.stderr);
                 return;
             }
-            sendNotification(
+            sendNotification.info(
                 `The content of volume ${volumeName} has been removed`
             );
         } catch (error) {
-            sendNotification(
-                `Failed to empty volume ${volumeName}: ${error.stderr} Exit code: ${error.code}`, [], "error"
+            sendNotification.error(
+                `Failed to empty volume ${volumeName}: ${error.stderr} Exit code: ${error.code}`
             );
         } finally {
             setActionInProgress(false);
@@ -345,8 +345,8 @@ export function App() {
                     setVolumesSizeLoadingMap(volumesSizeLoadingMapCopy);
                 });
         } catch (error) {
-            sendNotification(
-                `Failed to recalculate volume size: ${error.stderr}`, [], "error"
+            sendNotification.error(
+                `Failed to recalculate volume size: ${error.stderr}`
             );
         }
     };

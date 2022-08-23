@@ -4,7 +4,7 @@ import SnackbarContent from "@mui/material/SnackbarContent/SnackbarContent";
 import Button from "@mui/material/Button/Button";
 import { Stack } from "@mui/material";
 
-interface IValues {
+interface INotification {
   message: string;
   type?: "info" | "error";
   actions?: Array<{
@@ -12,35 +12,46 @@ interface IValues {
     onClick?(): void;
   }>;
 }
+
+interface ISendNotification {
+  info(message: string, actions?: INotification["actions"]): void;
+  error(message: string, actions?: INotification["actions"]): void;
+}
+
 interface INotificationContext {
-  sendNotification(
-    message: string,
-    action?: IValues["actions"],
-    type?: "info" | "error"
-  ): void;
+  sendNotification: ISendNotification;
 }
 const NotificationContext = createContext<INotificationContext>({
-  sendNotification: () => null,
+  sendNotification: {
+    info: () => null,
+    error: () => null,
+  },
 });
 
 export const NotificationProvider: FC<{}> = ({ children }) => {
   const [open, setOpen] = useState(false);
-  const [values, setValues] = useState<IValues>({ message: "", type: "info" });
-  const sendNotification = (
-    message: string,
-    actions?: IValues["actions"],
-    type?: "info" | "error"
-  ) => {
-    setValues({ message, type, actions });
-    setOpen(true);
-  };
+  const [values, setValues] = useState<INotification>({
+    message: "",
+    type: "info",
+  });
 
-  const DEFAULT_ACTION: IValues["actions"][0] = {
+  const sendNotification: ISendNotification = {
+    info: (message, actions) => {
+      setValues({message, type: 'info', actions});
+      setOpen(true);
+    },
+    error: (message, actions) => {
+      setValues({message, type: 'error', actions});
+      setOpen(true);
+    },
+  }
+
+  const DEFAULT_ACTION: INotification["actions"][0] = {
     name: "Dismiss",
     onClick: () => setOpen(false),
   };
 
-  const buildActions = (actions: IValues["actions"] = []) => {
+  const buildActions = (actions: INotification["actions"] = []) => {
     return (
       <Stack spacing={1}>
         {actions.map((action) => (
