@@ -8,7 +8,10 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/felipecruz91/vackup-docker-extension/internal/log"
+	"io"
+	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 )
@@ -19,6 +22,18 @@ type VolumeSize struct {
 }
 
 func GetVolumesSize(ctx context.Context, cli *client.Client, volumeName string) map[string]VolumeSize {
+	// Ensure the image is present before creating the container
+	reader, err := cli.ImagePull(ctx, "docker.io/justincormack/nsenter1", types.ImagePullOptions{
+		Platform: "linux/" + runtime.GOARCH,
+	})
+	if err != nil {
+		log.Error(err)
+	}
+	_, err = io.Copy(os.Stdout, reader)
+	if err != nil {
+		log.Error(err)
+	}
+
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
 		Tty:   true,
 		Cmd:   []string{"/bin/sh", "-c", "du -d 0 /var/lib/docker/volumes/" + volumeName},

@@ -74,7 +74,6 @@ func TestPushVolume(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	_, err = io.Copy(os.Stdout, reader)
 	if err != nil {
 		t.Fatal(err)
@@ -95,9 +94,13 @@ func TestPushVolume(t *testing.T) {
 	containerID = resp.ID
 
 	// Run a local registry
-	_, err = cli.ImagePull(c.Request().Context(), "docker.io/library/registry:2", types.ImagePullOptions{
+	reader, err = cli.ImagePull(context.Background(), "docker.io/library/registry:2", types.ImagePullOptions{
 		Platform: "linux/" + runtime.GOARCH,
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = io.Copy(os.Stdout, reader)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -210,7 +213,6 @@ func TestPushVolumeUsingCorrectAuth(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	_, err = io.Copy(os.Stdout, reader)
 	if err != nil {
 		t.Fatal(err)
@@ -236,9 +238,13 @@ func TestPushVolumeUsingCorrectAuth(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = cli.ImagePull(c.Request().Context(), "docker.io/library/registry:2", types.ImagePullOptions{
+	reader, err = cli.ImagePull(context.Background(), "docker.io/library/registry:2", types.ImagePullOptions{
 		Platform: "linux/" + runtime.GOARCH,
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = io.Copy(os.Stdout, reader)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -371,7 +377,6 @@ func TestPushVolumeUsingWrongAuthShouldFail(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	_, err = io.Copy(os.Stdout, reader)
 	if err != nil {
 		t.Fatal(err)
@@ -397,13 +402,17 @@ func TestPushVolumeUsingWrongAuthShouldFail(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = cli.ImagePull(c.Request().Context(), "docker.io/library/registry:2", types.ImagePullOptions{
+	reader, err = cli.ImagePull(c.Request().Context(), "docker.io/library/registry:2", types.ImagePullOptions{
 		Platform: "linux/" + runtime.GOARCH,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	
+	_, err = io.Copy(os.Stdout, reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	resp2, err := cli.ContainerCreate(c.Request().Context(), &container.Config{
 		Image: "docker.io/library/registry:2",
 		ExposedPorts: map[nat.Port]struct{}{
