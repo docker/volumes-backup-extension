@@ -81,13 +81,13 @@ export default function ExportDialog({ open, onClose }: Props) {
 
   const handleExport = async () => {
     if (fromRadioValue === "directory") {
-      await exportVolume({ path, fileName });
+      exportVolume({ path, fileName });
     } else if (fromRadioValue === "new-image") {
-      await exportToImage({ imageName: newImage });
+      exportToImage({ imageName: newImage });
     } else if (fromRadioValue === "local-image") {
-      await exportToImage({ imageName: image });
+      exportToImage({ imageName: image });
     } else if (fromRadioValue === "push-registry") {
-      await pushVolumeToRegistry({ imageName: registryImage });
+      pushVolumeToRegistry({ imageName: registryImage });
     }
     onClose(true);
   };
@@ -226,15 +226,15 @@ export default function ExportDialog({ open, onClose }: Props) {
     <Dialog open={open} onClose={() => onClose(false)}>
       <DialogTitle>Export content</DialogTitle>
       <DialogContent>
-        <Backdrop
-          sx={{
-            backgroundColor: "rgba(245,244,244,0.4)",
-            zIndex: (theme) => theme.zIndex.drawer + 1,
-          }}
-          open={isExportingToFile || isExportingToImage || isPushingToRegistry}
-        >
-          <CircularProgress color="info" />
-        </Backdrop>
+        {/*<Backdrop*/}
+        {/*  sx={{*/}
+        {/*    backgroundColor: "rgba(245,244,244,0.4)",*/}
+        {/*    zIndex: (theme) => theme.zIndex.drawer + 1,*/}
+        {/*  }}*/}
+        {/*  open={isExportingToFile || isExportingToImage || isPushingToRegistry}*/}
+        {/*>*/}
+        {/*  <CircularProgress color="info" />*/}
+        {/*</Backdrop>*/}
         <FormControl>
           <FormLabel id="from-label">
             <Typography variant="h3" my={1}>

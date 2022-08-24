@@ -78,6 +78,16 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 		AttachStderr: true,
 		Cmd:          []string{"/bin/sh", "-c", cmdJoined},
 		User:         "root",
+		Labels: map[string]string{
+			"com.docker.desktop.extension":                    "true",
+			"com.docker.desktop.extension.name":               "Volumes Backup & Share",
+			"com.docker.compose.project":                      "docker_volumes-backup-extension-desktop-extension",
+			"com.volumes-backup-extension.trigger-ui-refresh": "true",
+			"com.volumes-backup-extension.action":             "export",
+			"com.volumes-backup-extension.volume":             volumeName,
+			"com.volumes-backup-extension.path":               path,
+			"com.volumes-backup-extension.fileName":           fileName,
+		},
 	}, &container.HostConfig{
 		Binds: binds,
 	}, nil, nil, "")

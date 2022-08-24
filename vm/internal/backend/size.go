@@ -38,6 +38,14 @@ func GetVolumesSize(ctx context.Context, cli *client.Client, volumeName string) 
 		Tty:   true,
 		Cmd:   []string{"/bin/sh", "-c", "du -d 0 /var/lib/docker/volumes/" + volumeName},
 		Image: "docker.io/justincormack/nsenter1",
+		Labels: map[string]string{
+			"com.docker.desktop.extension":                    "true",
+			"com.docker.desktop.extension.name":               "Volumes Backup & Share",
+			"com.docker.compose.project":                      "docker_volumes-backup-extension-desktop-extension",
+			"com.volumes-backup-extension.trigger-ui-refresh": "false",
+			"com.volumes-backup-extension.action":             "get-volumes-size",
+			"com.volumes-backup-extension.volume":             volumeName,
+		},
 	}, &container.HostConfig{
 		PidMode:    "host",
 		Privileged: true,

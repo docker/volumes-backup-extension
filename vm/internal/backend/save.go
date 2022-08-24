@@ -17,11 +17,20 @@ func Save(ctx context.Context, client *client.Client, volumeName, image string) 
 		AttachStdout: true,
 		AttachStderr: true,
 		Cmd:          []string{"/bin/sh", "-c", "cp -Rp -v /mount-volume/. /volume-data/;"},
+		Labels: map[string]string{
+			"com.docker.desktop.extension":                    "true",
+			"com.docker.desktop.extension.name":               "Volumes Backup & Share",
+			"com.docker.compose.project":                      "docker_volumes-backup-extension-desktop-extension",
+			"com.volumes-backup-extension.trigger-ui-refresh": "true",
+			"com.volumes-backup-extension.action":             "save",
+			"com.volumes-backup-extension.image":              image,
+			"com.volumes-backup-extension.volume":             volumeName,
+		},
 	}, &container.HostConfig{
 		Binds: []string{
 			volumeName + ":" + "/mount-volume",
 		},
-	}, nil, nil, "save-volume")
+	}, nil, nil, "")
 	if err != nil {
 		return err
 	}

@@ -57,6 +57,7 @@ func main() {
 
 	h = handler.New(context.Background(), cli)
 
+	router.GET("/progress", h.ActionsInProgress)
 	router.GET("/volumes", h.Volumes)
 	router.GET("/volumes/:volume/size", h.VolumeSize)
 	router.GET("/volumes/:volume/export", h.ExportVolume)
