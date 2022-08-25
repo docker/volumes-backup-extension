@@ -6,6 +6,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
+	"github.com/felipecruz91/vackup-docker-extension/internal"
 	"github.com/felipecruz91/vackup-docker-extension/internal/log"
 	"golang.org/x/sync/errgroup"
 	"io"
@@ -90,11 +91,14 @@ func StartContainersAttachedToVolume(ctx context.Context, cli *client.Client, co
 	return g.Wait()
 }
 
+// TriggerUIRefresh starts a container to notify the extension UI to reload the progress actions from the cache.
+// The container uses the label "com.volumes-backup-extension.trigger-ui-refresh=true" for that purpose and is auto-removed when exited.
+// The extension UI is listening for container events with that label. Once an event is received, the extension UI makes a request to the `/progress` endpoint
+// to load the actions in progress from the cache.
 func TriggerUIRefresh(ctx context.Context, cli *client.Client) error {
-
 	// Ensure the image is present before creating the container
-	if _, _, err := cli.ImageInspectWithRaw(ctx, "docker.io/library/busybox"); err != nil {
-		reader, err := cli.ImagePull(ctx, "docker.io/library/busybox", types.ImagePullOptions{
+	if _, _, err := cli.ImageInspectWithRaw(ctx, internal.BusyboxImage); err != nil {
+		reader, err := cli.ImagePull(ctx, internal.BusyboxImage, types.ImagePullOptions{
 			Platform: "linux/" + runtime.GOARCH,
 		})
 		if err != nil {
@@ -107,7 +111,7 @@ func TriggerUIRefresh(ctx context.Context, cli *client.Client) error {
 	}
 
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
-		Image:        "docker.io/library/busybox",
+		Image:        internal.BusyboxImage,
 		AttachStdout: true,
 		AttachStderr: true,
 		Labels: map[string]string{

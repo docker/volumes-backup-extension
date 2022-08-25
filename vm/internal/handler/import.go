@@ -5,6 +5,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/pkg/stdcopy"
+	"github.com/felipecruz91/vackup-docker-extension/internal"
 	"github.com/felipecruz91/vackup-docker-extension/internal/backend"
 	"github.com/felipecruz91/vackup-docker-extension/internal/log"
 	"github.com/labstack/echo"
@@ -60,7 +61,7 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 	log.Infof("binds: %+v", binds)
 
 	// Ensure the image is present before creating the container
-	reader, err := h.DockerClient.ImagePull(ctx.Request().Context(), "docker.io/library/busybox", types.ImagePullOptions{
+	reader, err := h.DockerClient.ImagePull(ctx.Request().Context(), internal.BusyboxImage, types.ImagePullOptions{
 		Platform: "linux/" + runtime.GOARCH,
 	})
 	if err != nil {
@@ -72,7 +73,7 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 	}
 
 	resp, err := h.DockerClient.ContainerCreate(ctx.Request().Context(), &container.Config{
-		Image:        "docker.io/library/busybox",
+		Image:        internal.BusyboxImage,
 		AttachStdout: true,
 		AttachStderr: true,
 		// remove hidden and not-hidden files and folders:

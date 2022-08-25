@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"github.com/docker/docker/pkg/stdcopy"
+	"github.com/felipecruz91/vackup-docker-extension/internal"
 	"io"
 	"net/http"
 	"os"
@@ -78,7 +79,7 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 	log.Infof("binds: %+v", binds)
 
 	// Ensure the image is present before creating the container
-	reader, err := h.DockerClient.ImagePull(ctx.Request().Context(), "docker.io/library/busybox", types.ImagePullOptions{
+	reader, err := h.DockerClient.ImagePull(ctx.Request().Context(), internal.BusyboxImage, types.ImagePullOptions{
 		Platform: "linux/" + runtime.GOARCH,
 	})
 	if err != nil {
@@ -90,16 +91,15 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 	}
 
 	resp, err := h.DockerClient.ContainerCreate(ctx.Request().Context(), &container.Config{
-		Image:        "docker.io/library/busybox",
+		Image:        internal.BusyboxImage,
 		AttachStdout: true,
 		AttachStderr: true,
 		Cmd:          []string{"/bin/sh", "-c", cmdJoined},
 		User:         "root",
 		Labels: map[string]string{
-			"com.docker.desktop.extension":      "true",
-			"com.docker.desktop.extension.name": "Volumes Backup & Share",
-			"com.docker.compose.project":        "docker_volumes-backup-extension-desktop-extension",
-			//"com.volumes-backup-extension.trigger-ui-refresh": "true",
+			"com.docker.desktop.extension":          "true",
+			"com.docker.desktop.extension.name":     "Volumes Backup & Share",
+			"com.docker.compose.project":            "docker_volumes-backup-extension-desktop-extension",
 			"com.volumes-backup-extension.action":   "export",
 			"com.volumes-backup-extension.volume":   volumeName,
 			"com.volumes-backup-extension.path":     path,

@@ -21,10 +21,9 @@ func Load(ctx context.Context, client *client.Client, volumeName, image string) 
 		// .[!.]* matches all dot files except '.' and files whose name begins with '..'
 		Cmd: []string{"/bin/sh", "-c", "rm -rf /mount-volume/..?* /mount-volume/.[!.]* /mount-volume/* && cp -Rp /volume-data/. /mount-volume/;"},
 		Labels: map[string]string{
-			"com.docker.desktop.extension":      "true",
-			"com.docker.desktop.extension.name": "Volumes Backup & Share",
-			"com.docker.compose.project":        "docker_volumes-backup-extension-desktop-extension",
-			//"com.volumes-backup-extension.trigger-ui-refresh": "true",
+			"com.docker.desktop.extension":        "true",
+			"com.docker.desktop.extension.name":   "Volumes Backup & Share",
+			"com.docker.compose.project":          "docker_volumes-backup-extension-desktop-extension",
 			"com.volumes-backup-extension.action": "load",
 			"com.volumes-backup-extension.image":  image,
 			"com.volumes-backup-extension.volume": volumeName,
