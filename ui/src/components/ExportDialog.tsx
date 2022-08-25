@@ -34,9 +34,10 @@ const ddClient = createDockerDesktopClient();
 interface Props {
   open: boolean;
   onClose(v: boolean): void;
+  onFinish(): void;
 }
 
-export default function ExportDialog({ open, onClose }: Props) {
+export default function ExportDialog({ open, onClose, onFinish }: Props) {
   const context = useContext(MyContext);
 
   const [fromRadioValue, setFromRadioValue] = useState<
@@ -55,7 +56,7 @@ export default function ExportDialog({ open, onClose }: Props) {
   const { isLoading: isExportingToFile, exportVolume } = useExportVolume();
   const { isLoading: isExportingToImage, exportToImage } = useExportToImage();
   const { isLoading: isPushingToRegistry, pushVolumeToRegistry } =
-    usePushVolumeToRegistry();
+    usePushVolumeToRegistry({onFinish});
   const selectExportDirectory = () => {
     ddClient.desktopUI.dialog
       .showOpenDialog({
@@ -80,16 +81,20 @@ export default function ExportDialog({ open, onClose }: Props) {
   };
 
   const handleExport = async () => {
-    if (fromRadioValue === "directory") {
-      exportVolume({ path, fileName });
-    } else if (fromRadioValue === "new-image") {
-      exportToImage({ imageName: newImage });
-    } else if (fromRadioValue === "local-image") {
-      exportToImage({ imageName: image });
-    } else if (fromRadioValue === "push-registry") {
-      pushVolumeToRegistry({ imageName: registryImage });
-    }
+    console.log("handleExport")
+
     onClose(true);
+
+    if (fromRadioValue === "directory") {
+      await exportVolume({ path, fileName });
+    } else if (fromRadioValue === "new-image") {
+      await exportToImage({ imageName: newImage });
+    } else if (fromRadioValue === "local-image") {
+      await exportToImage({ imageName: image });
+    } else if (fromRadioValue === "push-registry") {
+      console.log("await pushVolumeToRegistry")
+      await pushVolumeToRegistry({ imageName: registryImage });
+    }
   };
 
   const renderDirectoryRadioButton = () => {

@@ -12,7 +12,8 @@ import (
 )
 
 type Handler struct {
-	DockerClient *client.Client
+	DockerClient  *client.Client
+	ProgressCache *ProgressCache
 }
 
 func New(ctx context.Context, cli *client.Client) *Handler {
@@ -20,6 +21,9 @@ func New(ctx context.Context, cli *client.Client) *Handler {
 
 	return &Handler{
 		DockerClient: cli,
+		ProgressCache: &ProgressCache{
+			m: make(map[string]string),
+		},
 	}
 }
 

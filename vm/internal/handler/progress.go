@@ -9,7 +9,7 @@ import (
 	"sync"
 )
 
-type ActionsInProgress struct {
+type ProgressCache struct {
 	sync.RWMutex
 	m map[string]string // map of volumes and actions, e.g. m["vol-1"] = "export"
 }
@@ -27,10 +27,6 @@ func (h *Handler) ActionsInProgress(ctx echo.Context) error {
 	if err != nil {
 		log.Error(err)
 		return ctx.String(http.StatusInternalServerError, err.Error())
-	}
-
-	aip := &ActionsInProgress{
-		m: make(map[string]string),
 	}
 
 	// TODO: go routines
@@ -51,10 +47,12 @@ func (h *Handler) ActionsInProgress(ctx echo.Context) error {
 			}
 		}
 
-		aip.Lock()
-		aip.m[volume] = action
-		aip.Unlock()
+		h.ProgressCache.Lock()
+		h.ProgressCache.m[volume] = action
+		h.ProgressCache.Unlock()
 	}
 
-	return ctx.JSON(http.StatusOK, aip.m)
+	log.Infof("progress cache: %+v", h.ProgressCache.m)
+
+	return ctx.JSON(http.StatusOK, h.ProgressCache.m)
 }

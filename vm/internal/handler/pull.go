@@ -31,6 +31,16 @@ func (h *Handler) PullVolume(ctx echo.Context) error {
 	log.Infof("reference: %s", request.Reference)
 	logrus.Infof("received pull request for volume %s\n", volumeName)
 
+	defer func() {
+		h.ProgressCache.Lock()
+		delete(h.ProgressCache.m, volumeName)
+		h.ProgressCache.Unlock()
+	}()
+
+	h.ProgressCache.Lock()
+	h.ProgressCache.m[volumeName] = "pull"
+	h.ProgressCache.Unlock()
+
 	// To provide backwards compatibility with older versions of Docker Desktop,
 	// we're passing the encoded auth in the body of the request instead of in the headers.
 	// encodedAuth := ctx.Request().Header.Get("X-Registry-Auth")
