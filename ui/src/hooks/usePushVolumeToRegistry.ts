@@ -59,7 +59,7 @@ export const usePushVolumeToRegistry = ({onFinish}: Props) => {
                             );
                         }
                     }).finally(() => {
-                    console.log("************ onFinish !!!!!!!!!!")
+                    console.log("************ onFinish from PUSH !!!!!!!!!!")
                     onFinish();
                 });
             })

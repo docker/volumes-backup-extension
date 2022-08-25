@@ -51,7 +51,7 @@ export default function ExportDialog({ open, onClose, onFinish }: Props) {
   const [registryImage, setRegistryImage] = useState("");
   const [registryImageError, setRegistryImageError] = useState("");
 
-  const { isLoading: isExportingToFile, exportVolume } = useExportVolume();
+  const { isLoading: isExportingToFile, exportVolume } = useExportVolume({onFinish});
   const { isLoading: isExportingToImage, exportToImage } = useExportToImage();
   const { isLoading: isPushingToRegistry, pushVolumeToRegistry } =
     usePushVolumeToRegistry({onFinish});
