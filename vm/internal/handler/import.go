@@ -28,6 +28,16 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 	log.Infof("volumeName: %s", volumeName)
 	log.Infof("path: %s", path)
 
+	defer func() {
+		h.ProgressCache.Lock()
+		delete(h.ProgressCache.m, volumeName)
+		h.ProgressCache.Unlock()
+	}()
+
+	h.ProgressCache.Lock()
+	h.ProgressCache.m[volumeName] = "import"
+	h.ProgressCache.Unlock()
+
 	// Stop container(s)
 	stoppedContainers, err := backend.StopContainersAttachedToVolume(ctx.Request().Context(), h.DockerClient, volumeName)
 	if err != nil {

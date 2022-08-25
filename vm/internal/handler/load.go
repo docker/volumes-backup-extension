@@ -21,6 +21,16 @@ func (h *Handler) LoadImage(ctx echo.Context) error {
 	log.Infof("volumeName: %s", volumeName)
 	log.Infof("image: %s", image)
 
+	defer func() {
+		h.ProgressCache.Lock()
+		delete(h.ProgressCache.m, volumeName)
+		h.ProgressCache.Unlock()
+	}()
+
+	h.ProgressCache.Lock()
+	h.ProgressCache.m[volumeName] = "load"
+	h.ProgressCache.Unlock()
+
 	stoppedContainers, err := backend.StopContainersAttachedToVolume(ctx.Request().Context(), h.DockerClient, volumeName)
 	if err != nil {
 		log.Error(err)

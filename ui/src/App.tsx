@@ -298,12 +298,9 @@ export function App() {
     }, []);
 
     const getActionsInProgress = async () => {
-        console.log("getting actions in progress...")
-
         ddClient.extension.vm.service
             .get("/progress")
             .then((result: any) => {
-                console.log(result);
                 setActionsInProgress(result)
             })
             .catch((error) => {
@@ -314,13 +311,6 @@ export function App() {
     useEffect(() => {
         getActionsInProgress()
     }, [])
-
-    // useEffect(() => {
-    //     const interval = setInterval(() => {
-    //         getActionsInProgress()
-    //     }, 1000);
-    //     return () => clearInterval(interval);
-    // }, []);
 
     useEffect(() => {
         const extensionContainersEvents = async () => {

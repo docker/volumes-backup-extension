@@ -36,6 +36,16 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 	log.Infof("path: %s", path)
 	log.Infof("fileName: %s", fileName)
 
+	defer func() {
+		h.ProgressCache.Lock()
+		delete(h.ProgressCache.m, volumeName)
+		h.ProgressCache.Unlock()
+	}()
+
+	h.ProgressCache.Lock()
+	h.ProgressCache.m[volumeName] = "export"
+	h.ProgressCache.Unlock()
+
 	// Stop container(s)
 	stoppedContainers, err := backend.StopContainersAttachedToVolume(ctx.Request().Context(), h.DockerClient, volumeName)
 	if err != nil {

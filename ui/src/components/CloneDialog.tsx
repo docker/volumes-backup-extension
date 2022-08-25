@@ -54,8 +54,8 @@ export default function CloneDialog({ ...props }) {
         "--rm",
         `-v=${context.store.volume.volumeName}:/from`,
         `-v=${volumeName}:/to`,
-        "alpine",
-        "ash",
+        "docker.io/library/busybox",
+        "/bin/sh",
         "-c",
         '"cd /from ; cp -av . /to"',
       ]);
