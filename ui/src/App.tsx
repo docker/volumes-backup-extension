@@ -224,6 +224,7 @@ export function App() {
                         }
                         label="Delete volume"
                         onClick={handleDelete(params.row)}
+                        disabled={params.row.volumeContainers?.length > 0} // do not allow to delete volumes in use
                         showInMenu
                     />,
                 ]

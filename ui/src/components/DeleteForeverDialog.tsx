@@ -33,7 +33,6 @@ export default function DeleteForeverDialog({ ...props }) {
     let actionSuccessfullyCompleted = false
 
     try {
-      // TODO: check if volume already exists
       const output = await ddClient.docker.cli.exec("volume", [
         "rm",
         context.store.volume.volumeName,
