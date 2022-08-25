@@ -80,7 +80,7 @@ export default function CloneDialog({ ...props }) {
       actionSuccessfullyCompleted = true;
     } catch (error) {
       sendNotification.error(
-        `Failed to clone volume ${context.store.volume.volumeName} to destinaton volume ${volumeName}: ${error.stderr} Exit code: ${error.code}`
+        `Failed to clone volume ${context.store.volume.volumeName} to destination volume ${volumeName}: ${error.stderr} Exit code: ${error.code}`
       );
     } finally {
       setActionInProgress(false);
