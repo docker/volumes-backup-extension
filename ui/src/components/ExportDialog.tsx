@@ -1,9 +1,7 @@
 import React, { useContext, useState } from "react";
 import {
   Alert,
-  Backdrop,
   Button,
-  CircularProgress,
   FormControl,
   FormControlLabel,
   FormLabel,
@@ -81,8 +79,6 @@ export default function ExportDialog({ open, onClose, onFinish }: Props) {
   };
 
   const handleExport = async () => {
-    console.log("handleExport")
-
     onClose(true);
 
     if (fromRadioValue === "directory") {
@@ -92,7 +88,6 @@ export default function ExportDialog({ open, onClose, onFinish }: Props) {
     } else if (fromRadioValue === "local-image") {
       await exportToImage({ imageName: image });
     } else if (fromRadioValue === "push-registry") {
-      console.log("await pushVolumeToRegistry")
       await pushVolumeToRegistry({ imageName: registryImage });
     }
   };
@@ -231,15 +226,6 @@ export default function ExportDialog({ open, onClose, onFinish }: Props) {
     <Dialog open={open} onClose={() => onClose(false)}>
       <DialogTitle>Export content</DialogTitle>
       <DialogContent>
-        {/*<Backdrop*/}
-        {/*  sx={{*/}
-        {/*    backgroundColor: "rgba(245,244,244,0.4)",*/}
-        {/*    zIndex: (theme) => theme.zIndex.drawer + 1,*/}
-        {/*  }}*/}
-        {/*  open={isExportingToFile || isExportingToImage || isPushingToRegistry}*/}
-        {/*>*/}
-        {/*  <CircularProgress color="info" />*/}
-        {/*</Backdrop>*/}
         <FormControl>
           <FormLabel id="from-label">
             <Typography variant="h3" my={1}>
