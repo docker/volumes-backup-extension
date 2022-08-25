@@ -299,9 +299,11 @@ export function App() {
     }, []);
 
     const getActionsInProgress = async () => {
+        console.log("getActionsInProgress")
         ddClient.extension.vm.service
             .get("/progress")
             .then((result: any) => {
+                console.log(result);
                 setActionsInProgress(result)
             })
             .catch((error) => {
@@ -314,32 +316,42 @@ export function App() {
     }, [])
 
     useEffect(() => {
-        const extensionContainersEvents = async () => {
-            console.log("listening to extension's container events...");
-            await ddClient.docker.cli.exec(
-                "events",
-                [
-                    "--format", `"{{ json . }}"`,
-                    "--filter", "type=container",
-                    "--filter", "label=com.docker.compose.project=docker_volumes-backup-extension-desktop-extension",
-                    "--filter", "label=com.volumes-backup-extension.trigger-ui-refresh=true"],
-                {
-                    stream: {
-                        async onOutput(data) {
-                            await getActionsInProgress()
-                        },
-                        onClose(exitCode) {
-                            console.log("onClose with exit code " + exitCode);
-                        },
-                        splitOutputLines: true,
-                    },
-                }
-            );
-        };
-
-        extensionContainersEvents();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        const interval = setInterval(() => {
+            getActionsInProgress()
+        }, 1000);
+        return () => clearInterval(interval);
     }, []);
+
+    //
+    // useEffect(() => {
+    //     const extensionContainersEvents = async () => {
+    //         console.log("listening to extension's container events...");
+    //         await ddClient.docker.cli.exec(
+    //             "events",
+    //             [
+    //                 "--format", `"{{ json . }}"`,
+    //                 "--filter", "type=container",
+    //                 "--filter", "label=com.docker.compose.project=docker_volumes-backup-extension-desktop-extension",
+    //                 "--filter", "label=com.volumes-backup-extension.trigger-ui-refresh=true"],
+    //             {
+    //                 stream: {
+    //                     async onOutput(data) {
+    //                         console.log("[3] calling getActionsInProgress from container events");
+    //                         await getActionsInProgress()
+    //                         console.log("[4] done");
+    //                     },
+    //                     onClose(exitCode) {
+    //                         console.log("onClose with exit code " + exitCode);
+    //                     },
+    //                     splitOutputLines: true,
+    //                 },
+    //             }
+    //         );
+    //     };
+    //
+    //     extensionContainersEvents();
+    //     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // }, []);
 
     const emptyVolume = async (volumeName: string) => {
         setActionInProgress(true);
@@ -492,7 +504,11 @@ export function App() {
                         <ExportDialog
                             open={openExportDialog}
                             onClose={handleExportDialogClose}
-                            onFinish={getActionsInProgress}
+                            onFinish={async () => {
+                                console.log("[1] calling getActionsInProgress from ExportDialog (onFinish)");
+                                await getActionsInProgress();
+                                console.log("[2] done");
+                            }}
                         />
                     )}
 

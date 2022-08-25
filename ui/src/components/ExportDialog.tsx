@@ -52,7 +52,7 @@ export default function ExportDialog({ open, onClose, onFinish }: Props) {
   const [registryImageError, setRegistryImageError] = useState("");
 
   const { isLoading: isExportingToFile, exportVolume } = useExportVolume({onFinish});
-  const { isLoading: isExportingToImage, exportToImage } = useExportToImage();
+  const { isLoading: isExportingToImage, exportToImage } = useExportToImage({onFinish});
   const { isLoading: isPushingToRegistry, pushVolumeToRegistry } =
     usePushVolumeToRegistry({onFinish});
   const selectExportDirectory = () => {
