@@ -26,11 +26,18 @@ func (h *Handler) SaveVolume(ctx echo.Context) error {
 		h.ProgressCache.Lock()
 		delete(h.ProgressCache.m, volumeName)
 		h.ProgressCache.Unlock()
+		_ = backend.TriggerUIRefresh(ctxReq, h.DockerClient)
 	}()
 
 	h.ProgressCache.Lock()
 	h.ProgressCache.m[volumeName] = "save"
 	h.ProgressCache.Unlock()
+
+	err := backend.TriggerUIRefresh(ctxReq, h.DockerClient)
+	if err != nil {
+		log.Error(err)
+		return ctx.String(http.StatusInternalServerError, err.Error())
+	}
 
 	// Stop container(s)
 	stoppedContainers, err := backend.StopContainersAttachedToVolume(ctxReq, h.DockerClient, volumeName)

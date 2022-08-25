@@ -91,16 +91,19 @@ func StartContainersAttachedToVolume(ctx context.Context, cli *client.Client, co
 }
 
 func TriggerUIRefresh(ctx context.Context, cli *client.Client) error {
+
 	// Ensure the image is present before creating the container
-	reader, err := cli.ImagePull(ctx, "docker.io/library/busybox", types.ImagePullOptions{
-		Platform: "linux/" + runtime.GOARCH,
-	})
-	if err != nil {
-		return err
-	}
-	_, err = io.Copy(os.Stdout, reader)
-	if err != nil {
-		return err
+	if _, _, err := cli.ImageInspectWithRaw(ctx, "docker.io/library/busybox"); err != nil {
+		reader, err := cli.ImagePull(ctx, "docker.io/library/busybox", types.ImagePullOptions{
+			Platform: "linux/" + runtime.GOARCH,
+		})
+		if err != nil {
+			return err
+		}
+		_, err = io.Copy(os.Stdout, reader)
+		if err != nil {
+			return err
+		}
 	}
 
 	resp, err := cli.ContainerCreate(ctx, &container.Config{

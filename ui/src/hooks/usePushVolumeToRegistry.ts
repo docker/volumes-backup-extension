@@ -5,11 +5,7 @@ import {useNotificationContext} from "../NotificationContext";
 
 const ddClient = createDockerDesktopClient();
 
-interface Props {
-    onFinish(): void;
-}
-
-export const usePushVolumeToRegistry = ({onFinish}: Props) => {
+export const usePushVolumeToRegistry = () => {
     const [isLoading, setIsLoading] = useState(false);
     const context = useContext(MyContext);
     const {sendNotification} = useNotificationContext();
@@ -58,10 +54,7 @@ export const usePushVolumeToRegistry = ({onFinish}: Props) => {
                                 `Failed to push volume ${context.store.volume.volumeName} as ${imageName} to registry: ${error.message}. HTTP status code: ${error.statusCode}`
                             );
                         }
-                    }).finally(() => {
-                    console.log("************ onFinish from PUSH !!!!!!!!!!")
-                    onFinish();
-                });
+                    });
             })
             .catch((error) => {
                 console.error(error);

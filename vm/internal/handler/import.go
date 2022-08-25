@@ -32,11 +32,18 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 		h.ProgressCache.Lock()
 		delete(h.ProgressCache.m, volumeName)
 		h.ProgressCache.Unlock()
+		_ = backend.TriggerUIRefresh(ctx.Request().Context(), h.DockerClient)
 	}()
 
 	h.ProgressCache.Lock()
 	h.ProgressCache.m[volumeName] = "import"
 	h.ProgressCache.Unlock()
+
+	err := backend.TriggerUIRefresh(ctx.Request().Context(), h.DockerClient)
+	if err != nil {
+		log.Error(err)
+		return ctx.String(http.StatusInternalServerError, err.Error())
+	}
 
 	// Stop container(s)
 	stoppedContainers, err := backend.StopContainersAttachedToVolume(ctx.Request().Context(), h.DockerClient, volumeName)
@@ -73,10 +80,9 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 		// .[!.]* matches all dot files except '.' and files whose name begins with '..'
 		Cmd: []string{"/bin/sh", "-c", "rm -rf /vackup-volume/..?* /vackup-volume/.[!.]* /vackup-volume/* && tar -xvzf /vackup"},
 		Labels: map[string]string{
-			"com.docker.desktop.extension":      "true",
-			"com.docker.desktop.extension.name": "Volumes Backup & Share",
-			"com.docker.compose.project":        "docker_volumes-backup-extension-desktop-extension",
-			//"com.volumes-backup-extension.trigger-ui-refresh": "true",
+			"com.docker.desktop.extension":        "true",
+			"com.docker.desktop.extension.name":   "Volumes Backup & Share",
+			"com.docker.compose.project":          "docker_volumes-backup-extension-desktop-extension",
 			"com.volumes-backup-extension.action": "import",
 			"com.volumes-backup-extension.volume": volumeName,
 			"com.volumes-backup-extension.path":   path,

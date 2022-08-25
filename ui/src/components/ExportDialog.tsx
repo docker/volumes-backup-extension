@@ -32,10 +32,9 @@ const ddClient = createDockerDesktopClient();
 interface Props {
   open: boolean;
   onClose(v: boolean): void;
-  onFinish(): void;
 }
 
-export default function ExportDialog({ open, onClose, onFinish }: Props) {
+export default function ExportDialog({ open, onClose }: Props) {
   const context = useContext(MyContext);
 
   const [fromRadioValue, setFromRadioValue] = useState<
@@ -51,10 +50,10 @@ export default function ExportDialog({ open, onClose, onFinish }: Props) {
   const [registryImage, setRegistryImage] = useState("");
   const [registryImageError, setRegistryImageError] = useState("");
 
-  const { isLoading: isExportingToFile, exportVolume } = useExportVolume({onFinish});
-  const { isLoading: isExportingToImage, exportToImage } = useExportToImage({onFinish});
+  const { isLoading: isExportingToFile, exportVolume } = useExportVolume();
+  const { isLoading: isExportingToImage, exportToImage } = useExportToImage();
   const { isLoading: isPushingToRegistry, pushVolumeToRegistry } =
-    usePushVolumeToRegistry({onFinish});
+    usePushVolumeToRegistry();
   const selectExportDirectory = () => {
     ddClient.desktopUI.dialog
       .showOpenDialog({

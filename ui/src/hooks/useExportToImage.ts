@@ -5,11 +5,7 @@ import { useNotificationContext } from "../NotificationContext";
 
 const ddClient = createDockerDesktopClient();
 
-interface Props {
-  onFinish(): void;
-}
-
-export const useExportToImage = ({onFinish}: Props) => {
+export const useExportToImage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { sendNotification } = useNotificationContext();
   const context = useContext(MyContext);
@@ -65,7 +61,6 @@ export const useExportToImage = ({onFinish}: Props) => {
       })
       .finally(() => {
         setIsLoading(false);
-        onFinish()
       });
   };
 

@@ -247,7 +247,7 @@ export default function ImportDialog({ volumes, open, onClose }: Props) {
             onClose(false);
           }}
         >
-          Back
+          Cancel
         </Button>
         <Button
           variant="contained"
