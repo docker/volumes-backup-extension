@@ -40,11 +40,18 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 		h.ProgressCache.Lock()
 		delete(h.ProgressCache.m, volumeName)
 		h.ProgressCache.Unlock()
+		_ = backend.TriggerUIRefresh(ctx.Request().Context(), h.DockerClient)
 	}()
 
 	h.ProgressCache.Lock()
 	h.ProgressCache.m[volumeName] = "export"
 	h.ProgressCache.Unlock()
+
+	err := backend.TriggerUIRefresh(ctx.Request().Context(), h.DockerClient)
+	if err != nil {
+		log.Error(err)
+		return ctx.String(http.StatusInternalServerError, err.Error())
+	}
 
 	// Stop container(s)
 	stoppedContainers, err := backend.StopContainersAttachedToVolume(ctx.Request().Context(), h.DockerClient, volumeName)
@@ -89,14 +96,14 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 		Cmd:          []string{"/bin/sh", "-c", cmdJoined},
 		User:         "root",
 		Labels: map[string]string{
-			"com.docker.desktop.extension":                    "true",
-			"com.docker.desktop.extension.name":               "Volumes Backup & Share",
-			"com.docker.compose.project":                      "docker_volumes-backup-extension-desktop-extension",
-			"com.volumes-backup-extension.trigger-ui-refresh": "true",
-			"com.volumes-backup-extension.action":             "export",
-			"com.volumes-backup-extension.volume":             volumeName,
-			"com.volumes-backup-extension.path":               path,
-			"com.volumes-backup-extension.fileName":           fileName,
+			"com.docker.desktop.extension":      "true",
+			"com.docker.desktop.extension.name": "Volumes Backup & Share",
+			"com.docker.compose.project":        "docker_volumes-backup-extension-desktop-extension",
+			//"com.volumes-backup-extension.trigger-ui-refresh": "true",
+			"com.volumes-backup-extension.action":   "export",
+			"com.volumes-backup-extension.volume":   volumeName,
+			"com.volumes-backup-extension.path":     path,
+			"com.volumes-backup-extension.fileName": fileName,
 		},
 	}, &container.HostConfig{
 		Binds: binds,

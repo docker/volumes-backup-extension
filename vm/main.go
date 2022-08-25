@@ -14,7 +14,6 @@ import (
 	"github.com/felipecruz91/vackup-docker-extension/internal/log"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
-	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -82,6 +81,6 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := router.Shutdown(ctx); err != nil {
-		logrus.Fatal(err)
+		log.Fatal(err)
 	}
 }

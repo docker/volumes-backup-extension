@@ -73,13 +73,13 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 		// .[!.]* matches all dot files except '.' and files whose name begins with '..'
 		Cmd: []string{"/bin/sh", "-c", "rm -rf /vackup-volume/..?* /vackup-volume/.[!.]* /vackup-volume/* && tar -xvzf /vackup"},
 		Labels: map[string]string{
-			"com.docker.desktop.extension":                    "true",
-			"com.docker.desktop.extension.name":               "Volumes Backup & Share",
-			"com.docker.compose.project":                      "docker_volumes-backup-extension-desktop-extension",
-			"com.volumes-backup-extension.trigger-ui-refresh": "true",
-			"com.volumes-backup-extension.action":             "import",
-			"com.volumes-backup-extension.volume":             volumeName,
-			"com.volumes-backup-extension.path":               path,
+			"com.docker.desktop.extension":      "true",
+			"com.docker.desktop.extension.name": "Volumes Backup & Share",
+			"com.docker.compose.project":        "docker_volumes-backup-extension-desktop-extension",
+			//"com.volumes-backup-extension.trigger-ui-refresh": "true",
+			"com.volumes-backup-extension.action": "import",
+			"com.volumes-backup-extension.volume": volumeName,
+			"com.volumes-backup-extension.path":   path,
 		},
 	}, &container.HostConfig{
 		Binds: binds,
