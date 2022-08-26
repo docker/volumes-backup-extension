@@ -60,7 +60,7 @@ func main() {
 	router.GET("/volumes", h.Volumes)
 	router.GET("/volumes/:volume/size", h.VolumeSize)
 	router.POST("/volumes/:volume/clone", h.CloneVolume)
-	//router.POST("/volumes/:volume/delete", h.DeleteVolume)
+	router.POST("/volumes/:volume/delete", h.DeleteVolume)
 	router.GET("/volumes/:volume/export", h.ExportVolume)
 	router.GET("/volumes/:volume/import", h.ImportTarGzFile)
 	router.GET("/volumes/:volume/save", h.SaveVolume)
