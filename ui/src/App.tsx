@@ -1,17 +1,35 @@
 import React, {useContext, useEffect} from "react";
-import {DataGrid, GridActionsCellItem, GridCellParams, GridToolbarColumnsButton, GridToolbarContainer, GridToolbarDensitySelector, GridToolbarFilterButton,} from "@mui/x-data-grid";
+import {
+    DataGrid,
+    GridActionsCellItem,
+    GridCellParams,
+    GridToolbarColumnsButton,
+    GridToolbarContainer,
+    GridToolbarDensitySelector,
+    GridToolbarFilterButton,
+} from "@mui/x-data-grid";
 import {createDockerDesktopClient} from "@docker/extension-api-client";
-import {Backdrop, Box, Button, CircularProgress, Grid, LinearProgress, Stack, Tooltip, Typography,} from "@mui/material";
+import {
+    Backdrop,
+    Box,
+    Button,
+    CircularProgress,
+    Grid,
+    LinearProgress,
+    Stack,
+    Tooltip,
+    Typography,
+} from "@mui/material";
 import {
     CopyAll as CopyAllIcon,
     Delete as DeleteIcon,
     DeleteForever as DeleteForeverIcon,
     DesktopWindows as DesktopWindowsIcon,
     Download as DownloadIcon,
-    Visibility as VisibilityIcon,
     Upload as UploadIcon,
+    Visibility as VisibilityIcon,
 } from "@mui/icons-material";
-import { useNotificationContext } from "./NotificationContext";
+import {useNotificationContext} from "./NotificationContext";
 import ExportDialog from "./components/ExportDialog";
 import CloneDialog from "./components/CloneDialog";
 import TransferDialog from "./components/TransferDialog";
@@ -19,32 +37,33 @@ import DeleteForeverDialog from "./components/DeleteForeverDialog";
 import {MyContext} from ".";
 import {isError} from "./common/isError";
 import ImportDialog from "./components/ImportDialog";
-import { useGetVolumes } from "./hooks/useGetVolumes";
-import { Header } from "./components/Header";
+import {useGetVolumes} from "./hooks/useGetVolumes";
+import {Header} from "./components/Header";
 
 const ddClient = createDockerDesktopClient();
 
 function CustomToolbar({openDialog}) {
     return (
-      <GridToolbarContainer>
-        <Grid container justifyContent="space-between">
-            <Grid item>
-                <GridToolbarColumnsButton />
-                <GridToolbarFilterButton />
-                <GridToolbarDensitySelector />
+        <GridToolbarContainer>
+            <Grid container justifyContent="space-between">
+                <Grid item>
+                    <GridToolbarColumnsButton/>
+                    <GridToolbarFilterButton/>
+                    <GridToolbarDensitySelector/>
+                </Grid>
+                <Grid item>
+                    <Button variant="contained" onClick={openDialog} endIcon={<UploadIcon/>}>Import into new
+                        volume</Button>
+                </Grid>
             </Grid>
-            <Grid item>
-                <Button variant="contained" onClick={openDialog} endIcon={<UploadIcon />}>Import into new volume</Button>
-            </Grid>
-        </Grid>
-      </GridToolbarContainer>
+        </GridToolbarContainer>
     );
 }
-  
+
 
 export function App() {
     const context = useContext(MyContext);
-    const { sendNotification } = useNotificationContext();
+    const {sendNotification} = useNotificationContext();
     const [volumesSizeLoadingMap, setVolumesSizeLoadingMap] = React.useState<Record<string, boolean>>({});
 
     const [actionInProgress, setActionInProgress] =
@@ -58,6 +77,8 @@ export function App() {
         React.useState<boolean>(false);
     const [openDeleteForeverDialog, setOpenDeleteForeverDialog] =
         React.useState<boolean>(false);
+
+    const [actionsInProgress, setActionsInProgress] = React.useState({})
 
     const columns = [
         {field: "id", headerName: "ID", width: 70, hide: true},
@@ -105,87 +126,109 @@ export function App() {
             minWidth: 220,
             sortable: false,
             flex: 1,
-            getActions: (params) => [
-                <GridActionsCellItem
-                    key={"action_view_volume_" + params.row.id}
-                    icon={
-                        <Tooltip title="View volume">
-                            <VisibilityIcon>View volume</VisibilityIcon>
-                        </Tooltip>
-                    }
-                    label="View volume"
-                    onClick={handleNavigate(params.row)}
-                    disabled={actionInProgress}
-                    showInMenu
-                />,
-                <GridActionsCellItem
-                    showInMenu
-                    key={"action_clone_volume_" + params.row.id}
-                    icon={
-                        <Tooltip title="Clone volume">
-                            <CopyAllIcon>Clone volume</CopyAllIcon>
-                        </Tooltip>
-                    }
-                    label="Clone volume"
-                    onClick={handleClone(params.row)}
-                    disabled={actionInProgress}
-                />,
-                <GridActionsCellItem
-                    key={"action_export_" + params.row.id}
-                    icon={
-                        <Tooltip title="Export volume">
-                            <DownloadIcon>Export volume</DownloadIcon>
-                        </Tooltip>
-                    }
-                    label="Export volume"
-                    onClick={handleExport(params.row)}
-                    disabled={params.row.volumeSize === "0 B"}
-                />,
-                <GridActionsCellItem
-                    key={"action_import_" + params.row.id}
-                    icon={
-                        <Tooltip title="Import">
-                            <UploadIcon>Import</UploadIcon>
-                        </Tooltip>
-                    }
-                    label="Import"
-                    onClick={handleImport(params.row)}
-                />,
-                <GridActionsCellItem
-                    key={"action_transfer_" + params.row.id}
-                    icon={
-                        <Tooltip title="Transfer to host">
-                            <DesktopWindowsIcon>Transfer to host</DesktopWindowsIcon>
-                        </Tooltip>
-                    }
-                    label="Transfer to host"
-                    onClick={handleTransfer(params.row)}
-                    disabled={params.row.volumeSize === "0 B"}
-                />,
-                <GridActionsCellItem
-                    key={"action_empty_" + params.row.id}
-                    icon={
-                        <Tooltip title="Empty volume">
-                            <DeleteIcon>Empty volume</DeleteIcon>
-                        </Tooltip>
-                    }
-                    label="Empty volume"
-                    onClick={handleEmpty(params.row)}
-                    showInMenu
-                    disabled={params.row.volumeSize === "0 B"}
-                />,
-                <GridActionsCellItem
-                    key={"action_delete_" + params.row.id}
-                    icon={
-                        <Tooltip title="Delete volume">
-                            <DeleteForeverIcon>Delete volume</DeleteForeverIcon>
-                        </Tooltip>
-                    }
-                    label="Delete volume"
-                    onClick={handleDelete(params.row)}
-                    showInMenu
-                />,
-            ],
+            getActions: (params) => {
+                if (params.row.volumeName in actionsInProgress) {
+                    const action = actionsInProgress[params.row.volumeName];
+                    return [
+                        <GridActionsCellItem
+                            className="circular-progress"
+                            key={"loading_" + params.row.id}
+                            icon={
+                                <>
+                                    <CircularProgress size={20}/>
+                                    <Typography ml={2}>
+                                        {action.charAt(0).toUpperCase() + action.slice(1)} in progress...
+                                    </Typography>
+                                </>
+                            }
+                            label="Loading"
+                            showInMenu={false}
+                        />,]
+                }
+
+                return [
+                    <GridActionsCellItem
+                        key={"action_view_volume_" + params.row.id}
+                        icon={
+                            <Tooltip title="View volume">
+                                <VisibilityIcon>View volume</VisibilityIcon>
+                            </Tooltip>
+                        }
+                        label="View volume"
+                        onClick={handleNavigate(params.row)}
+                        disabled={actionInProgress}
+                        showInMenu
+                    />,
+                    <GridActionsCellItem
+                        showInMenu
+                        key={"action_clone_volume_" + params.row.id}
+                        icon={
+                            <Tooltip title="Clone volume">
+                                <CopyAllIcon>Clone volume</CopyAllIcon>
+                            </Tooltip>
+                        }
+                        label="Clone volume"
+                        onClick={handleClone(params.row)}
+                        disabled={actionInProgress}
+                    />,
+                    <GridActionsCellItem
+                        key={"action_export_" + params.row.id}
+                        icon={
+                            <Tooltip title="Export volume">
+                                <DownloadIcon>Export volume</DownloadIcon>
+                            </Tooltip>
+                        }
+                        label="Export volume"
+                        onClick={handleExport(params.row)}
+                        disabled={params.row.volumeSize === "0 B"}
+                    />,
+                    <GridActionsCellItem
+                        key={"action_import_" + params.row.id}
+                        icon={
+                            <Tooltip title="Import">
+                                <UploadIcon>Import</UploadIcon>
+                            </Tooltip>
+                        }
+                        label="Import"
+                        onClick={handleImport(params.row)}
+                    />,
+                    <GridActionsCellItem
+                        key={"action_transfer_" + params.row.id}
+                        icon={
+                            <Tooltip title="Transfer to host">
+                                <DesktopWindowsIcon>Transfer to host</DesktopWindowsIcon>
+                            </Tooltip>
+                        }
+                        label="Transfer to host"
+                        onClick={handleTransfer(params.row)}
+                        disabled={params.row.volumeSize === "0 B"}
+                    />,
+                    <GridActionsCellItem
+                        key={"action_empty_" + params.row.id}
+                        icon={
+                            <Tooltip title="Empty volume">
+                                <DeleteIcon>Empty volume</DeleteIcon>
+                            </Tooltip>
+                        }
+                        label="Empty volume"
+                        onClick={handleEmpty(params.row)}
+                        showInMenu
+                        disabled={params.row.volumeSize === "0 B"}
+                    />,
+                    <GridActionsCellItem
+                        key={"action_delete_" + params.row.id}
+                        icon={
+                            <Tooltip title="Delete volume">
+                                <DeleteForeverIcon>Delete volume</DeleteForeverIcon>
+                            </Tooltip>
+                        }
+                        label="Delete volume"
+                        onClick={handleDelete(params.row)}
+                        disabled={params.row.volumeContainers?.length > 0} // do not allow to delete volumes in use
+                        showInMenu
+                    />,
+                ]
+            },
         },
     ];
 
@@ -252,21 +295,65 @@ export function App() {
         };
 
         volumeEvents();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const emptyVolume = async (volumeName: string) => {
-        setActionInProgress(true);
+    const getActionsInProgress = async () => {
+        ddClient.extension.vm.service
+            .get("/progress")
+            .then((result: any) => {
+                setActionsInProgress(result)
+            })
+            .catch((error) => {
+                console.error(error)
+            });
+    }
 
-        try {
-            const output = await ddClient.docker.cli.exec("run", [
-                "--rm",
-                `-v=${volumeName}:/vackup-volume `,
-                "busybox",
-                "/bin/sh",
-                "-c",
-                '"rm -rf /vackup-volume/..?* /vackup-volume/.[!.]* /vackup-volume/*"', // hidden and not-hidden files and folders: .[!.]* matches all dot files except . and files whose name begins with .., and ..?* matches all dot-dot files except ..
-            ]);
+    useEffect(() => {
+        getActionsInProgress()
+    }, [])
+
+    useEffect(() => {
+        const extensionContainersEvents = async () => {
+            console.log("listening to extension's container events...");
+            await ddClient.docker.cli.exec(
+                "events",
+                [
+                    "--format", `"{{ json . }}"`,
+                    "--filter", "type=container",
+                    "--filter", "event=create",
+                    "--filter", "event=destroy",
+                    "--filter", "label=com.docker.compose.project=docker_volumes-backup-extension-desktop-extension",
+                    "--filter", "label=com.volumes-backup-extension.trigger-ui-refresh=true"],
+                {
+                    stream: {
+                        async onOutput(data) {
+                            await getActionsInProgress()
+                        },
+                        onClose(exitCode) {
+                            console.log("onClose with exit code " + exitCode);
+                        },
+                        splitOutputLines: true,
+                    },
+                }
+            );
+        };
+
+        extensionContainersEvents();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const emptyVolume = (volumeName: string) => {
+        return ddClient.docker.cli.exec("run", [
+            "--rm",
+            "--label com.volumes-backup-extension.trigger-ui-refresh=true",
+            "--label com.docker.compose.project=docker_volumes-backup-extension-desktop-extension",
+            `-v=${volumeName}:/vackup-volume `,
+            "busybox",
+            "/bin/sh",
+            "-c",
+            '"rm -rf /vackup-volume/..?* /vackup-volume/.[!.]* /vackup-volume/*"', // hidden and not-hidden files and folders: .[!.]* matches all dot files except . and files whose name begins with .., and ..?* matches all dot-dot files except ..
+        ]).then(output => {
             if (isError(output.stderr)) {
                 sendNotification.error(output.stderr);
                 return;
@@ -274,19 +361,20 @@ export function App() {
             sendNotification.info(
                 `The content of volume ${volumeName} has been removed`
             );
-        } catch (error) {
+            
+        }).catch(error => {
             sendNotification.error(
                 `Failed to empty volume ${volumeName}: ${error.stderr} Exit code: ${error.code}`
             );
-        } finally {
-            setActionInProgress(false);
-        }
+        });
     };
 
-    const handleExportDialogClose = () => {
+    const handleExportDialogClose = (actionSuccessfullyCompleted: boolean) => {
         setOpenExportDialog(false);
-        listVolumes();
         context.actions.setVolume(null);
+        if (actionSuccessfullyCompleted) {
+            listVolumes();
+        }
     };
 
     const handleImportIntoNewDialogClose = (actionSuccessfullyCompleted: boolean) => {
@@ -353,7 +441,7 @@ export function App() {
 
     return (
         <>
-            <Header />
+            <Header/>
             <Stack direction="column" alignItems="start" spacing={2} sx={{mt: 4}}>
                 <Grid container>
                     <Grid item flex={1}>
@@ -370,7 +458,7 @@ export function App() {
                             loading={isLoading}
                             components={{
                                 LoadingOverlay: LinearProgress,
-                                Toolbar: () => <CustomToolbar openDialog={() => setOpenImportIntoNewDialog(true)} />,
+                                Toolbar: () => <CustomToolbar openDialog={() => setOpenImportIntoNewDialog(true)}/>,
                             }}
                             rows={rows || []}
                             columns={columns}
@@ -390,6 +478,14 @@ export function App() {
                                 },
                                 "&.MuiDataGrid-root--densityComfortable .MuiDataGrid-cell": {
                                     py: 2,
+                                },
+                                '& .MuiDataGrid-cell': {
+                                    '& .MuiIconButton-root.circular-progress': {
+                                        '&:hover': {
+                                            backgroundColor: "transparent"
+                                        },
+                                            backgroundColor: "transparent"
+                                    },
                                 },
                             }}
                         />

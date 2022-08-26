@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"github.com/docker/docker/pkg/stdcopy"
+	"github.com/felipecruz91/vackup-docker-extension/internal"
 	"io"
 	"net/http"
 	"os"
@@ -36,6 +37,23 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 	log.Infof("path: %s", path)
 	log.Infof("fileName: %s", fileName)
 
+	defer func() {
+		h.ProgressCache.Lock()
+		delete(h.ProgressCache.m, volumeName)
+		h.ProgressCache.Unlock()
+		_ = backend.TriggerUIRefresh(ctx.Request().Context(), h.DockerClient)
+	}()
+
+	h.ProgressCache.Lock()
+	h.ProgressCache.m[volumeName] = "export"
+	h.ProgressCache.Unlock()
+
+	err := backend.TriggerUIRefresh(ctx.Request().Context(), h.DockerClient)
+	if err != nil {
+		log.Error(err)
+		return ctx.String(http.StatusInternalServerError, err.Error())
+	}
+
 	// Stop container(s)
 	stoppedContainers, err := backend.StopContainersAttachedToVolume(ctx.Request().Context(), h.DockerClient, volumeName)
 	if err != nil {
@@ -61,7 +79,7 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 	log.Infof("binds: %+v", binds)
 
 	// Ensure the image is present before creating the container
-	reader, err := h.DockerClient.ImagePull(ctx.Request().Context(), "docker.io/library/busybox", types.ImagePullOptions{
+	reader, err := h.DockerClient.ImagePull(ctx.Request().Context(), internal.BusyboxImage, types.ImagePullOptions{
 		Platform: "linux/" + runtime.GOARCH,
 	})
 	if err != nil {
@@ -73,11 +91,20 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 	}
 
 	resp, err := h.DockerClient.ContainerCreate(ctx.Request().Context(), &container.Config{
-		Image:        "docker.io/library/busybox",
+		Image:        internal.BusyboxImage,
 		AttachStdout: true,
 		AttachStderr: true,
 		Cmd:          []string{"/bin/sh", "-c", cmdJoined},
 		User:         "root",
+		Labels: map[string]string{
+			"com.docker.desktop.extension":          "true",
+			"com.docker.desktop.extension.name":     "Volumes Backup & Share",
+			"com.docker.compose.project":            "docker_volumes-backup-extension-desktop-extension",
+			"com.volumes-backup-extension.action":   "export",
+			"com.volumes-backup-extension.volume":   volumeName,
+			"com.volumes-backup-extension.path":     path,
+			"com.volumes-backup-extension.fileName": fileName,
+		},
 	}, &container.HostConfig{
 		Binds: binds,
 	}, nil, nil, "")

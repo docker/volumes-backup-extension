@@ -40,6 +40,23 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 	log.Infof("reference: %s", request.Reference)
 	log.Infof("received push request for volume %s\n", volumeName)
 
+	defer func() {
+		h.ProgressCache.Lock()
+		delete(h.ProgressCache.m, volumeName)
+		h.ProgressCache.Unlock()
+		_ = backend.TriggerUIRefresh(ctxReq, h.DockerClient)
+	}()
+
+	h.ProgressCache.Lock()
+	h.ProgressCache.m[volumeName] = "push"
+	h.ProgressCache.Unlock()
+
+	err := backend.TriggerUIRefresh(ctxReq, h.DockerClient)
+	if err != nil {
+		log.Error(err)
+		return ctx.String(http.StatusInternalServerError, err.Error())
+	}
+
 	// To provide backwards compatibility with older versions of Docker Desktop,
 	// we're passing the encoded auth in the body of the request instead of in the headers.
 	// encodedAuth := ctx.Request().Header.Get("X-Registry-Auth")

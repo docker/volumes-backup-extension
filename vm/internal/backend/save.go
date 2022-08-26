@@ -7,21 +7,30 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
+	"github.com/felipecruz91/vackup-docker-extension/internal"
 	"github.com/felipecruz91/vackup-docker-extension/internal/log"
 	"os"
 )
 
 func Save(ctx context.Context, client *client.Client, volumeName, image string) error {
 	resp, err := client.ContainerCreate(ctx, &container.Config{
-		Image:        "docker.io/library/busybox",
+		Image:        internal.BusyboxImage,
 		AttachStdout: true,
 		AttachStderr: true,
 		Cmd:          []string{"/bin/sh", "-c", "cp -Rp -v /mount-volume/. /volume-data/;"},
+		Labels: map[string]string{
+			"com.docker.desktop.extension":        "true",
+			"com.docker.desktop.extension.name":   "Volumes Backup & Share",
+			"com.docker.compose.project":          "docker_volumes-backup-extension-desktop-extension",
+			"com.volumes-backup-extension.action": "save",
+			"com.volumes-backup-extension.image":  image,
+			"com.volumes-backup-extension.volume": volumeName,
+		},
 	}, &container.HostConfig{
 		Binds: []string{
 			volumeName + ":" + "/mount-volume",
 		},
-	}, nil, nil, "save-volume")
+	}, nil, nil, "")
 	if err != nil {
 		return err
 	}

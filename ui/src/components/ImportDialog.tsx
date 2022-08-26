@@ -1,7 +1,6 @@
 import React, { useContext, useState } from "react";
 import {
   Alert,
-  Backdrop,
   Button,
   CircularProgress,
   FormControl,
@@ -81,25 +80,24 @@ export default function ImportDialog({ volumes, open, onClose }: Props) {
 
   const createAndImport = async () => {
     const volumeId = await handleCreateVolume();
+
     if (fromRadioValue === "file") {
-      await importVolume({
+      importVolume({
         volumeName: volumeId?.[0] || selectedVolumeName,
         path,
       });
-      onClose(true);
     } else if (fromRadioValue === "image") {
-      await loadImage({
+      loadImage({
         volumeName: volumeId?.[0] || selectedVolumeName,
         imageName: image,
       });
-      onClose(true);
     } else {
-      await pullFromRegistry({
+      pullFromRegistry({
         imageName: registryImage,
         volumeId: volumeId?.[0],
       });
-      onClose(true);
     }
+    onClose(true);
   };
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -197,20 +195,6 @@ export default function ImportDialog({ volumes, open, onClose }: Props) {
         {selectedVolumeName ? "Import content" : "Import into a new volume"}
       </DialogTitle>
       <DialogContent>
-        <Backdrop
-          sx={{
-            backgroundColor: "rgba(245,244,244,0.4)",
-            zIndex: (theme) => theme.zIndex.drawer + 1,
-          }}
-          open={
-            isCreating ||
-            isImportingFromPath ||
-            isImportingFromImage ||
-            isPulling
-          }
-        >
-          <CircularProgress color="info" />
-        </Backdrop>
         <Stack>
           {selectedVolumeName && (
             <Alert
@@ -263,7 +247,7 @@ export default function ImportDialog({ volumes, open, onClose }: Props) {
             onClose(false);
           }}
         >
-          Back
+          Cancel
         </Button>
         <Button
           variant="contained"

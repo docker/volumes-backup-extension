@@ -3,10 +3,15 @@ package backend
 import (
 	"context"
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
+	"github.com/felipecruz91/vackup-docker-extension/internal"
 	"github.com/felipecruz91/vackup-docker-extension/internal/log"
 	"golang.org/x/sync/errgroup"
+	"io"
+	"os"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -84,4 +89,43 @@ func StartContainersAttachedToVolume(ctx context.Context, cli *client.Client, co
 	}
 
 	return g.Wait()
+}
+
+// TriggerUIRefresh starts a container to notify the extension UI to reload the progress actions from the cache.
+// The container uses the label "com.volumes-backup-extension.trigger-ui-refresh=true" for that purpose and is auto-removed when exited.
+// The extension UI is listening for container events with that label. Once an event is received, the extension UI makes a request to the `/progress` endpoint
+// to load the actions in progress from the cache.
+func TriggerUIRefresh(ctx context.Context, cli *client.Client) error {
+	// Ensure the image is present before creating the container
+	if _, _, err := cli.ImageInspectWithRaw(ctx, internal.BusyboxImage); err != nil {
+		reader, err := cli.ImagePull(ctx, internal.BusyboxImage, types.ImagePullOptions{
+			Platform: "linux/" + runtime.GOARCH,
+		})
+		if err != nil {
+			return err
+		}
+		_, err = io.Copy(os.Stdout, reader)
+		if err != nil {
+			return err
+		}
+	}
+
+	resp, err := cli.ContainerCreate(ctx, &container.Config{
+		Image:        internal.BusyboxImage,
+		AttachStdout: true,
+		AttachStderr: true,
+		Labels: map[string]string{
+			"com.docker.desktop.extension":                    "true",
+			"com.docker.desktop.extension.name":               "Volumes Backup & Share",
+			"com.docker.compose.project":                      "docker_volumes-backup-extension-desktop-extension",
+			"com.volumes-backup-extension.trigger-ui-refresh": "true",
+		},
+	}, &container.HostConfig{
+		AutoRemove: true,
+	}, nil, nil, "")
+	if err != nil {
+		return err
+	}
+
+	return cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{})
 }

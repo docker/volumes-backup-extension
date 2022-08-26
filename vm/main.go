@@ -14,7 +14,6 @@ import (
 	"github.com/felipecruz91/vackup-docker-extension/internal/log"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
-	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -57,8 +56,11 @@ func main() {
 
 	h = handler.New(context.Background(), cli)
 
+	router.GET("/progress", h.ActionsInProgress)
 	router.GET("/volumes", h.Volumes)
 	router.GET("/volumes/:volume/size", h.VolumeSize)
+	router.POST("/volumes/:volume/clone", h.CloneVolume)
+	router.POST("/volumes/:volume/delete", h.DeleteVolume)
 	router.GET("/volumes/:volume/export", h.ExportVolume)
 	router.GET("/volumes/:volume/import", h.ImportTarGzFile)
 	router.GET("/volumes/:volume/save", h.SaveVolume)
@@ -81,6 +83,6 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := router.Shutdown(ctx); err != nil {
-		logrus.Fatal(err)
+		log.Fatal(err)
 	}
 }

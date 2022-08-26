@@ -7,6 +7,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
+	"github.com/felipecruz91/vackup-docker-extension/internal"
 	"github.com/felipecruz91/vackup-docker-extension/internal/log"
 	"io"
 	"os"
@@ -23,7 +24,7 @@ type VolumeSize struct {
 
 func GetVolumesSize(ctx context.Context, cli *client.Client, volumeName string) map[string]VolumeSize {
 	// Ensure the image is present before creating the container
-	reader, err := cli.ImagePull(ctx, "docker.io/justincormack/nsenter1", types.ImagePullOptions{
+	reader, err := cli.ImagePull(ctx, internal.NsenterImage, types.ImagePullOptions{
 		Platform: "linux/" + runtime.GOARCH,
 	})
 	if err != nil {
@@ -37,7 +38,14 @@ func GetVolumesSize(ctx context.Context, cli *client.Client, volumeName string) 
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
 		Tty:   true,
 		Cmd:   []string{"/bin/sh", "-c", "du -d 0 /var/lib/docker/volumes/" + volumeName},
-		Image: "docker.io/justincormack/nsenter1",
+		Image: internal.NsenterImage,
+		Labels: map[string]string{
+			"com.docker.desktop.extension":        "true",
+			"com.docker.desktop.extension.name":   "Volumes Backup & Share",
+			"com.docker.compose.project":          "docker_volumes-backup-extension-desktop-extension",
+			"com.volumes-backup-extension.action": "get-volumes-size",
+			"com.volumes-backup-extension.volume": volumeName,
+		},
 	}, &container.HostConfig{
 		PidMode:    "host",
 		Privileged: true,

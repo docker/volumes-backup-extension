@@ -15,19 +15,19 @@ import (
 	"runtime"
 )
 
-func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
+func (h *Handler) CloneVolume(ctx echo.Context) error {
 	volumeName := ctx.Param("volume")
-	path := ctx.QueryParam("path")
+	destVolume := ctx.QueryParam("destVolume")
 
 	if volumeName == "" {
 		return ctx.String(http.StatusBadRequest, "volume is required")
 	}
-	if path == "" {
-		return ctx.String(http.StatusBadRequest, "path is required")
+	if destVolume == "" {
+		return ctx.String(http.StatusBadRequest, "destVolume is required")
 	}
 
 	log.Infof("volumeName: %s", volumeName)
-	log.Infof("path: %s", path)
+	log.Infof("destVolume: %s", destVolume)
 
 	defer func() {
 		h.ProgressCache.Lock()
@@ -37,7 +37,7 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 	}()
 
 	h.ProgressCache.Lock()
-	h.ProgressCache.m[volumeName] = "import"
+	h.ProgressCache.m[volumeName] = "clone"
 	h.ProgressCache.Unlock()
 
 	err := backend.TriggerUIRefresh(ctx.Request().Context(), h.DockerClient)
@@ -53,13 +53,6 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
-	// Import
-	binds := []string{
-		volumeName + ":" + "/vackup-volume",
-		path + ":" + "/vackup",
-	}
-	log.Infof("binds: %+v", binds)
-
 	// Ensure the image is present before creating the container
 	reader, err := h.DockerClient.ImagePull(ctx.Request().Context(), internal.BusyboxImage, types.ImagePullOptions{
 		Platform: "linux/" + runtime.GOARCH,
@@ -72,24 +65,26 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 		return err
 	}
 
+	// Clone
 	resp, err := h.DockerClient.ContainerCreate(ctx.Request().Context(), &container.Config{
 		Image:        internal.BusyboxImage,
 		AttachStdout: true,
 		AttachStderr: true,
-		// remove hidden and not-hidden files and folders:
-		// ..?* matches all dot-dot files except '..'
-		// .[!.]* matches all dot files except '.' and files whose name begins with '..'
-		Cmd: []string{"/bin/sh", "-c", "rm -rf /vackup-volume/..?* /vackup-volume/.[!.]* /vackup-volume/* && tar -xvzf /vackup"},
+		Cmd:          []string{"/bin/sh", "-c", "cd /from ; cp -av . /to"},
+		User:         "root",
 		Labels: map[string]string{
-			"com.docker.desktop.extension":        "true",
-			"com.docker.desktop.extension.name":   "Volumes Backup & Share",
-			"com.docker.compose.project":          "docker_volumes-backup-extension-desktop-extension",
-			"com.volumes-backup-extension.action": "import",
-			"com.volumes-backup-extension.volume": volumeName,
-			"com.volumes-backup-extension.path":   path,
+			"com.docker.desktop.extension":                    "true",
+			"com.docker.desktop.extension.name":               "Volumes Backup & Share",
+			"com.docker.compose.project":                      "docker_volumes-backup-extension-desktop-extension",
+			"com.volumes-backup-extension.action":             "clone",
+			"com.volumes-backup-extension.volume":             volumeName,
+			"com.volumes-backup-extension.destination-volume": destVolume,
 		},
 	}, &container.HostConfig{
-		Binds: binds,
+		Binds: []string{
+			volumeName + ":" + "/from",
+			destVolume + ":" + "/to",
+		},
 	}, nil, nil, "")
 	if err != nil {
 		log.Error(err)
@@ -114,7 +109,7 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 		exitCode = status.StatusCode
 	}
 
-	out, err := h.DockerClient.ContainerLogs(ctx.Request().Context(), resp.ID, types.ContainerLogsOptions{ShowStdout: true})
+	out, err := h.DockerClient.ContainerLogs(ctx.Request().Context(), resp.ID, types.ContainerLogsOptions{ShowStdout: true, ShowStderr: true})
 	if err != nil {
 		log.Error(err)
 		return ctx.String(http.StatusInternalServerError, err.Error())
@@ -143,5 +138,5 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
-	return ctx.String(http.StatusOK, "")
+	return ctx.String(http.StatusCreated, "")
 }

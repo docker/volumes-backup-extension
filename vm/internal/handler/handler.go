@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
+	"github.com/felipecruz91/vackup-docker-extension/internal"
 	"github.com/felipecruz91/vackup-docker-extension/internal/log"
 	"golang.org/x/sync/errgroup"
 	"io"
@@ -12,7 +13,8 @@ import (
 )
 
 type Handler struct {
-	DockerClient *client.Client
+	DockerClient  *client.Client
+	ProgressCache *ProgressCache
 }
 
 func New(ctx context.Context, cli *client.Client) *Handler {
@@ -20,6 +22,9 @@ func New(ctx context.Context, cli *client.Client) *Handler {
 
 	return &Handler{
 		DockerClient: cli,
+		ProgressCache: &ProgressCache{
+			m: make(map[string]string),
+		},
 	}
 }
 
@@ -27,8 +32,8 @@ func pullImagesIfNotPresent(ctx context.Context, cli *client.Client) {
 	g, ctx := errgroup.WithContext(ctx)
 
 	images := []string{
-		"docker.io/library/busybox",
-		"docker.io/justincormack/nsenter1",
+		internal.BusyboxImage,
+		internal.NsenterImage,
 	}
 
 	for _, image := range images {
