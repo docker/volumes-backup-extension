@@ -347,6 +347,7 @@ export function App() {
         return ddClient.docker.cli.exec("run", [
             "--rm",
             "--label com.volumes-backup-extension.trigger-ui-refresh=true",
+            "--label com.docker.compose.project=docker_volumes-backup-extension-desktop-extension",
             `-v=${volumeName}:/vackup-volume `,
             "busybox",
             "/bin/sh",

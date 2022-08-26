@@ -104,6 +104,8 @@ export default function TransferDialog({ ...props }) {
 
       const transferredOutput = await ddClient.docker.cli.exec("run", [
         "--rm",
+        "--label com.volumes-backup-extension.trigger-ui-refresh=true",
+        "--label com.docker.compose.project=docker_volumes-backup-extension-desktop-extension",
         `-v=${context.store.volume.volumeName}:/from`,
         "alpine",
         "ash",
