@@ -486,6 +486,7 @@ export function App() {
                                         '&:hover': {
                                             backgroundColor: "transparent"
                                         },
+                                            backgroundColor: "transparent"
                                     },
                                 },
                             }}

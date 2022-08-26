@@ -80,24 +80,24 @@ export default function ImportDialog({ volumes, open, onClose }: Props) {
 
   const createAndImport = async () => {
     const volumeId = await handleCreateVolume();
-    onClose(true);
 
     if (fromRadioValue === "file") {
-      await importVolume({
+      importVolume({
         volumeName: volumeId?.[0] || selectedVolumeName,
         path,
       });
     } else if (fromRadioValue === "image") {
-      await loadImage({
+      loadImage({
         volumeName: volumeId?.[0] || selectedVolumeName,
         imageName: image,
       });
     } else {
-      await pullFromRegistry({
+      pullFromRegistry({
         imageName: registryImage,
         volumeId: volumeId?.[0],
       });
     }
+    onClose(true);
   };
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {

@@ -77,18 +77,18 @@ export default function ExportDialog({ open, onClose }: Props) {
     );
   };
 
-  const handleExport = async () => {
-    onClose(true);
+  const handleExport = () => {
 
     if (fromRadioValue === "directory") {
-      await exportVolume({ path, fileName });
+      exportVolume({ path, fileName });
     } else if (fromRadioValue === "new-image") {
-      await exportToImage({ imageName: newImage });
+      exportToImage({ imageName: newImage });
     } else if (fromRadioValue === "local-image") {
-      await exportToImage({ imageName: image });
+      exportToImage({ imageName: image });
     } else if (fromRadioValue === "push-registry") {
-      await pushVolumeToRegistry({ imageName: registryImage });
+      pushVolumeToRegistry({ imageName: registryImage });
     }
+    onClose(true);
   };
 
   const renderDirectoryRadioButton = () => {
