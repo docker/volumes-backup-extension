@@ -44,7 +44,7 @@ export const useGetVolumes = () => {
               id: index,
               volumeDriver: value.Driver,
               volumeName: key,
-              volumeContainers: value.Containers.length
+              volumeContainers: value.Containers?.length
                 ? value.Containers
                 : null,
               volumeSize: value.SizeHuman,

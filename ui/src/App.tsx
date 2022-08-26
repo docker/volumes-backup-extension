@@ -343,18 +343,16 @@ export function App() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const emptyVolume = async (volumeName: string) => {
-        setActionInProgress(true);
-
-        try {
-            const output = await ddClient.docker.cli.exec("run", [
-                "--rm",
-                `-v=${volumeName}:/vackup-volume `,
-                "busybox",
-                "/bin/sh",
-                "-c",
-                '"rm -rf /vackup-volume/..?* /vackup-volume/.[!.]* /vackup-volume/*"', // hidden and not-hidden files and folders: .[!.]* matches all dot files except . and files whose name begins with .., and ..?* matches all dot-dot files except ..
-            ]);
+    const emptyVolume = (volumeName: string) => {
+        return ddClient.docker.cli.exec("run", [
+            "--rm",
+            "--label com.volumes-backup-extension.trigger-ui-refresh=true",
+            `-v=${volumeName}:/vackup-volume `,
+            "busybox",
+            "/bin/sh",
+            "-c",
+            '"rm -rf /vackup-volume/..?* /vackup-volume/.[!.]* /vackup-volume/*"', // hidden and not-hidden files and folders: .[!.]* matches all dot files except . and files whose name begins with .., and ..?* matches all dot-dot files except ..
+        ]).then(output => {
             if (isError(output.stderr)) {
                 sendNotification.error(output.stderr);
                 return;
@@ -362,13 +360,12 @@ export function App() {
             sendNotification.info(
                 `The content of volume ${volumeName} has been removed`
             );
-        } catch (error) {
+            
+        }).catch(error => {
             sendNotification.error(
                 `Failed to empty volume ${volumeName}: ${error.stderr} Exit code: ${error.code}`
             );
-        } finally {
-            setActionInProgress(false);
-        }
+        });
     };
 
     const handleExportDialogClose = (actionSuccessfullyCompleted: boolean) => {
