@@ -32,7 +32,7 @@ export const usePullFromRegistry = () => {
 
         const requestConfig = {
           method: "POST",
-          url: `/volumes/${context.store.volume.volumeName}/pull`,
+          url: `/volumes/${volumeId || context.store.volume.volumeName}/pull`,
           headers: {},
           data: data,
         };
