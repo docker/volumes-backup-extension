@@ -33,9 +33,7 @@ export default function CloneDialog({ ...props }) {
             {
               name: "See volume",
               onClick: () =>
-                ddClient.desktopUI.navigate.viewVolume(
-                  context.store.volume.volumeName
-                ),
+                ddClient.desktopUI.navigate.viewVolume(volumeName),
             },
           ]
         );
