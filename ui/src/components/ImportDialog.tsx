@@ -27,6 +27,7 @@ import { MyContext } from "..";
 import { VolumeOrInput } from "./VolumeOrInput";
 import { RegistryImageInput } from "./RegistryImageInput";
 import { usePullFromRegistry } from "../hooks/usePullFromRegistry";
+import { track } from "../common/track";
 
 const ddClient = createDockerDesktopClient();
 
@@ -79,6 +80,7 @@ export default function ImportDialog({ volumes, open, onClose }: Props) {
   };
 
   const createAndImport = async () => {
+    track({ action: "ImportVolume" });
     const volumeId = await handleCreateVolume();
 
     if (fromRadioValue === "file") {
@@ -243,6 +245,7 @@ export default function ImportDialog({ volumes, open, onClose }: Props) {
         <Button
           variant="outlined"
           onClick={() => {
+            track({ action: "ImportVolumeCancel" });
             setPath("");
             onClose(false);
           }}

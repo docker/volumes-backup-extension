@@ -9,6 +9,7 @@ import { createDockerDesktopClient } from "@docker/extension-api-client";
 
 import { MyContext } from "../index";
 import { useNotificationContext } from "../NotificationContext";
+import { track } from "../common/track";
 
 const ddClient = createDockerDesktopClient();
 
@@ -21,6 +22,8 @@ export default function CloneDialog({ ...props }) {
   );
 
   const cloneVolume = () => {
+    track({ action: "CloneVolume" });
+
     ddClient.extension.vm.service
       .post(
         `/volumes/${context.store.volume.volumeName}/clone?destVolume=${volumeName}`,
@@ -80,7 +83,13 @@ export default function CloneDialog({ ...props }) {
         </Grid>
       </DialogContent>
       <DialogActions>
-        <Button variant="outlined" onClick={() => props.onClose(false)}>
+        <Button
+          variant="outlined"
+          onClick={() => {
+            track({ action: "CloneVolumeCancel" });
+            props.onClose(false);
+          }}
+        >
           Cancel
         </Button>
         <Button

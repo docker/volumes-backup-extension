@@ -26,6 +26,7 @@ import { useExportToImage } from "../hooks/useExportToImage";
 import { NewImageInput } from "./NewImageInput";
 import { usePushVolumeToRegistry } from "../hooks/usePushVolumeToRegistry";
 import { RegistryImageInput } from "./RegistryImageInput";
+import { track } from "../common/track";
 
 const ddClient = createDockerDesktopClient();
 
@@ -78,7 +79,7 @@ export default function ExportDialog({ open, onClose }: Props) {
   };
 
   const handleExport = () => {
-
+    track({ action: "ExportVolume" });
     if (fromRadioValue === "directory") {
       exportVolume({ path, fileName });
     } else if (fromRadioValue === "new-image") {
@@ -262,7 +263,13 @@ export default function ExportDialog({ open, onClose }: Props) {
         </FormControl>
       </DialogContent>
       <DialogActions>
-        <Button variant="outlined" onClick={() => onClose(false)}>
+        <Button
+          variant="outlined"
+          onClick={() => {
+            track({ action: "ExportVolumeCancel" });
+            onClose(false);
+          }}
+        >
           Cancel
         </Button>
         <Button
