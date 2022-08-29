@@ -79,7 +79,10 @@ export default function ExportDialog({ open, onClose }: Props) {
   };
 
   const handleExport = () => {
-    track({ action: "ExportVolume" });
+    track({
+      action: "ExportVolume",
+      volumeSize: context.store.volume.volumeBytes,
+    });
     if (fromRadioValue === "directory") {
       exportVolume({ path, fileName });
     } else if (fromRadioValue === "new-image") {
