@@ -210,6 +210,7 @@ export default function ExportDialog({ open, onClose }: Props) {
           </Typography>
           {fromRadioValue === "push-registry" && (
             <RegistryImageInput
+              volumeSize={context.store.volume.volumeBytes}
               error={registryImageError}
               value={registryImage}
               setValue={setRegistryImage}

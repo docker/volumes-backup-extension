@@ -17,6 +17,7 @@ export interface IVolumeRow {
   volumeName: string;
   volumeContainers: unknown[] | null;
   volumeSize: string;
+  volumeBytes: number;
 }
 
 export const useGetVolumes = () => {
@@ -48,6 +49,7 @@ export const useGetVolumes = () => {
                 ? value.Containers
                 : null,
               volumeSize: value.SizeHuman,
+              volumeBytes: value.Size,
             });
             index++;
           }
