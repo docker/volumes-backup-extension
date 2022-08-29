@@ -52,7 +52,7 @@ function CustomToolbar({openDialog}) {
                     <GridToolbarDensitySelector/>
                 </Grid>
                 <Grid item>
-                    <Button variant="contained" onClick={openDialog} endIcon={<UploadIcon/>}>Import into new
+                    <Button variant="contained" onClick={openDialog} endIcon={<DownloadIcon/>}>Import into new
                         volume</Button>
                 </Grid>
             </Grid>
@@ -175,7 +175,7 @@ export function App() {
                         key={"action_export_" + params.row.id}
                         icon={
                             <Tooltip title="Export volume">
-                                <DownloadIcon>Export volume</DownloadIcon>
+                                <UploadIcon>Export volume</UploadIcon>
                             </Tooltip>
                         }
                         label="Export volume"
@@ -186,7 +186,7 @@ export function App() {
                         key={"action_import_" + params.row.id}
                         icon={
                             <Tooltip title="Import">
-                                <UploadIcon>Import</UploadIcon>
+                                <DownloadIcon>Import</DownloadIcon>
                             </Tooltip>
                         }
                         label="Import"
