@@ -81,7 +81,6 @@ export function App() {
     const [actionsInProgress, setActionsInProgress] = React.useState({})
 
     const columns = [
-        {field: "id", headerName: "ID", width: 70, hide: true},
         {field: "volumeDriver", headerName: "Driver", hide: true},
         {
             field: "volumeName",
