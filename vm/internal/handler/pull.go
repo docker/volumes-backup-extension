@@ -91,9 +91,23 @@ func (h *Handler) PullVolume(ctx echo.Context) error {
 		log.Info(line)
 	}
 
+	// Stop container(s)
+	stoppedContainers, err := backend.StopContainersAttachedToVolume(ctxReq, h.DockerClient, volumeName)
+	if err != nil {
+		log.Error(err)
+		return ctx.String(http.StatusInternalServerError, err.Error())
+	}
+
 	// Load the image into the volume
 	log.Infof("Loading image %s into volume %s...", parsedRef.String(), volumeName)
 	if err := backend.Load(ctxReq, h.DockerClient, volumeName, parsedRef.String()); err != nil {
+		log.Error(err)
+		return ctx.String(http.StatusInternalServerError, err.Error())
+	}
+
+	// Start container(s)
+	err = backend.StartContainersAttachedToVolume(ctxReq, h.DockerClient, stoppedContainers)
+	if err != nil {
 		log.Error(err)
 		return ctx.String(http.StatusInternalServerError, err.Error())
 	}

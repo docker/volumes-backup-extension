@@ -74,6 +74,13 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 	}
 	log.Infof("parsedRef.String(): %s", parsedRef.String())
 
+	// Stop container(s)
+	stoppedContainers, err := backend.StopContainersAttachedToVolume(ctxReq, h.DockerClient, volumeName)
+	if err != nil {
+		log.Error(err)
+		return ctx.String(http.StatusInternalServerError, err.Error())
+	}
+
 	// Save the content of the volume into an image
 	if err := backend.Save(ctxReq, h.DockerClient, volumeName, parsedRef.String()); err != nil {
 		log.Error(err)
@@ -112,6 +119,13 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 				return ctx.String(http.StatusInternalServerError, pel.Error)
 			}
 		}
+	}
+
+	// Start container(s)
+	err = backend.StartContainersAttachedToVolume(ctxReq, h.DockerClient, stoppedContainers)
+	if err != nil {
+		log.Error(err)
+		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
 	return ctx.String(http.StatusCreated, "")
