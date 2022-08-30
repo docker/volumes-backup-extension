@@ -22,6 +22,7 @@ import { MyContext } from "../index";
 import { isError } from "../common/isError";
 import { VolumeOrInput } from "./VolumeOrInput";
 import { useNotificationContext } from "../NotificationContext";
+import { track } from "../common/track";
 
 const ddClient = createDockerDesktopClient();
 
@@ -89,6 +90,7 @@ export default function TransferDialog({ ...props }) {
   };
 
   const transferVolume = async () => {
+    track({ action: "TransferVolume" });
     setActionInProgress(true);
 
     try {
@@ -220,7 +222,13 @@ export default function TransferDialog({ ...props }) {
         </FormControl>
       </DialogContent>
       <DialogActions>
-        <Button variant="outlined" onClick={props.onClose}>
+        <Button
+          variant="outlined"
+          onClick={() => {
+            track({ action: "TransferVolumeCancel" });
+            props.onClose();
+          }}
+        >
           Cancel
         </Button>
         <Button

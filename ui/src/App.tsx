@@ -39,6 +39,7 @@ import {isError} from "./common/isError";
 import ImportDialog from "./components/ImportDialog";
 import {useGetVolumes} from "./hooks/useGetVolumes";
 import {Header} from "./components/Header";
+import { track } from "./common/track";
 
 const ddClient = createDockerDesktopClient();
 
@@ -52,7 +53,11 @@ function CustomToolbar({openDialog}) {
                     <GridToolbarDensitySelector/>
                 </Grid>
                 <Grid item>
-                    <Button variant="contained" onClick={openDialog} endIcon={<DownloadIcon/>}>Import into new
+                    <Button variant="contained" onClick={ () => {
+                        track({ action: "ImportNewVolumePopup" });
+                        openDialog();
+                    }}
+                    endIcon={<DownloadIcon/>}>Import into new
                         volume</Button>
                 </Grid>
             </Grid>
@@ -232,41 +237,49 @@ export function App() {
     ];
 
     const handleNavigate = (row) => async () => {
+        track({ action: "ViewVolumeDetails" });
         ddClient.desktopUI.navigate.viewVolume(row.volumeName);
     };
 
     const handleClone = (row) => () => {
+        track({ action: "CloneVolumePopup" });
         setOpenCloneDialog(true);
         context.actions.setVolume(row);
     };
 
     const handleExport = (row) => () => {
+        track({ action: "ExportVolumePopup" });
         setOpenExportDialog(true);
         context.actions.setVolume(row);
     };
 
     const handleImport = (row) => () => {
+        track({ action: "ImportVolumePopup" });
         context.actions.setVolume(row);
         setOpenImportIntoNewDialog(true);
     };
 
     const handleTransfer = (row) => async () => {
+        track({ action: "TransferVolumePopup" });
         setOpenTransferDialog(true);
         context.actions.setVolume(row);
     };
 
     const handleEmpty = (row) => async () => {
+        track({ action: "EmptyVolume" });
         await emptyVolume(row.volumeName);
         await calculateVolumeSize(row.volumeName);
     };
 
     const handleDelete = (row) => async () => {
+        track({ action: "DeleteVolumePopup" });
         setOpenDeleteForeverDialog(true);
         context.actions.setVolume(row);
     };
 
     const handleCellClick = (params: GridCellParams) => {
         if (params.colDef.field === "volumeName") {
+            track({ action: "NavigateToVolumeDetails" });
             ddClient.desktopUI.navigate.viewVolume(params.row.volumeName);
         }
     };

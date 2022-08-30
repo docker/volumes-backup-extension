@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import { useContext } from "react";
 import { Button } from "@mui/material";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -9,6 +9,7 @@ import { createDockerDesktopClient } from "@docker/extension-api-client";
 
 import { MyContext } from "../index";
 import { useNotificationContext } from "../NotificationContext";
+import { track } from "../common/track";
 
 const ddClient = createDockerDesktopClient();
 
@@ -17,6 +18,7 @@ export default function DeleteForeverDialog({ ...props }) {
   const { sendNotification } = useNotificationContext();
 
   const deleteVolume = () => {
+    track({ action: "DeleteVolume" });
     ddClient.extension.vm.service
       .post(`/volumes/${context.store.volume.volumeName}/delete`, {})
       .then(() => {
@@ -42,7 +44,13 @@ export default function DeleteForeverDialog({ ...props }) {
         </DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button variant="outlined" onClick={() => props.onClose(false)}>
+        <Button
+          variant="outlined"
+          onClick={() => {
+            track({ action: "DeleteVolumeCancel" });
+            props.onClose(false);
+          }}
+        >
           Cancel
         </Button>
         <Button variant="contained" onClick={deleteVolume}>
