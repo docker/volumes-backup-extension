@@ -4,13 +4,14 @@ import { useContext } from "react";
 import { VolumeIcon } from "./VolumeIcon";
 import { VolumeInput } from "./VolumeInput";
 import { MyContext } from "..";
+import { IVolumeRow } from "../hooks/useGetVolumes";
 
 interface Props {
   value?: string;
   hasError?: boolean;
   setHasError?(v: boolean): void;
   onChange?(v: string): void;
-  volumes?: unknown[];
+  volumes?: IVolumeRow[];
 }
 
 export const VolumeOrInput = ({

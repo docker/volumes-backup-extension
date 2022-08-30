@@ -22,7 +22,7 @@ export const usePullFromRegistry = () => {
     return ddClient.extension.host.cli
       .exec("docker-credentials-client", ["get-creds", imageName])
       .then((result) => {
-        let data = { reference: imageName, base64EncodedAuth: "" };
+        const data = { reference: imageName, base64EncodedAuth: "" };
 
         const base64EncodedAuth = result.stdout;
         // If the decoded base64 string is "e30=", it means is an empty JSON "{}"
@@ -39,7 +39,7 @@ export const usePullFromRegistry = () => {
 
         ddClient.extension.vm.service
           .request(requestConfig)
-          .then((result) => {
+          .then(() => {
             sendNotification.info(
               `Volume ${
                 volumeId || context.store.volume.volumeName

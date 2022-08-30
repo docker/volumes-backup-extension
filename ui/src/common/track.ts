@@ -4,7 +4,7 @@ const analyticsEvent = "eventVolumeBackupExtension";
 
 const ddClient = createDockerDesktopClient();
 
-export const track = (props: any) => {
-  // @ts-ignore
+export const track = (props: unknown) => {
+  // @ts-expect-error not there?
   ddClient.analytics?.track(analyticsEvent, props);
 };

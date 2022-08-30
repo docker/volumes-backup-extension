@@ -24,8 +24,10 @@ export const useExportVolume = () => {
       .get(
         `/volumes/${selectedVolumeName}/export?path=${path}&fileName=${fileName}`
       )
-      .then((_: any) => {
-        sendNotification.info(`Volume ${selectedVolumeName} exported to ${path}`);
+      .then(() => {
+        sendNotification.info(
+          `Volume ${selectedVolumeName} exported to ${path}`
+        );
       })
       .catch((error) => {
         sendNotification.error(

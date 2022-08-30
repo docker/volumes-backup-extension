@@ -18,8 +18,8 @@ export const RegistryImageInput = ({
     if (!newVal) setError(null);
     // If volume exceeds 10GB, we prevent users from pushing it to DockerHub
     if(isDockerRegistry && sizeExceededMessage){
-      setError("Pushing volumes larger than 10GB are not supported at the moment through this extension.")
-      return
+      setError("Pushing volumes larger than 10GB are not supported at the moment through this extension.");
+      return;
     }
     if (!new RegExp(/(?:.*\/)([^:]+)(?::.+)?/gm).test(newVal)) {
       setError("Please specify at least <user>/<repo-name>:<tag>.");

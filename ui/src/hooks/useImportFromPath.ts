@@ -17,7 +17,7 @@ export const useImportFromPath = () => {
     setIsInProgress(true);
     return ddClient.extension.vm.service
       .get(`/volumes/${volumeName}/import?path=${path}`)
-      .then((_: any) => {
+      .then(() => {
         setIsInProgress(false);
         sendNotification.info(
           `File ${path} imported into volume ${volumeName}`,

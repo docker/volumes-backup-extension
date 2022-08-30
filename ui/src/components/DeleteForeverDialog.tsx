@@ -13,7 +13,12 @@ import { track } from "../common/track";
 
 const ddClient = createDockerDesktopClient();
 
-export default function DeleteForeverDialog({ ...props }) {
+interface Props {
+  open: boolean;
+  onClose(v?: boolean): void;
+}
+
+export default function DeleteForeverDialog({ ...props }: Props) {
   const context = useContext(MyContext);
   const { sendNotification } = useNotificationContext();
 

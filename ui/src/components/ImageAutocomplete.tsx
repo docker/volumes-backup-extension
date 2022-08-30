@@ -10,9 +10,9 @@ interface Props {
 export const ImageAutocomplete = ({ value, onChange }: Props) => {
   const { data: images } = useGetImages();
   const imageNames = (images || []).reduce((acc, image) => {
-    acc = acc.concat(image.RepoTags || [])
+    acc = acc.concat(image.RepoTags || []);
     return acc;
-  }, []).filter(name => !name.includes('none'));
+  }, []).filter(name => !name.includes("none"));
 
   return (
     <Autocomplete

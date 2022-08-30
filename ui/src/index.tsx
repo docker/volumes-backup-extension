@@ -18,7 +18,7 @@ interface IAppContext {
 
 export const MyContext = React.createContext<IAppContext>(null);
 
-const AppProvider = (props) => {
+const AppProvider: React.FC = (props) => {
   const [store, setStore] = useState({
     volume: null,
   });

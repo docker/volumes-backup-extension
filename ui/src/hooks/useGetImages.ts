@@ -9,7 +9,7 @@ interface Image {
   Id: string;
   Labels: Record<string, string>;
   ParentId: string;
-  RepoDigests: any;
+  RepoDigests: unknown;
   RepoTags: string[];
   SharedSize: number;
   Size: number;
@@ -23,6 +23,7 @@ export const useGetImages = () => {
 
   useEffect(() => {
     getImages().then(setData);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const getImages = async () => {

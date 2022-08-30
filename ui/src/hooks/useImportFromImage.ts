@@ -16,7 +16,7 @@ export const useImportFromImage = () => {
 
     return ddClient.extension.vm.service
       .get(`/volumes/${volumeName}/load?image=${imageName}`)
-      .then((_: any) => {
+      .then(() => {
         setIsInProgress(false);
         sendNotification.info(
           `Copied /volume-data from image ${imageName} into volume ${volumeName}`,

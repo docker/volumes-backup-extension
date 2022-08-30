@@ -34,7 +34,7 @@ export const useExportToImage = () => {
       .get(
         `/volumes/${context.store.volume.volumeName}/save?image=${imageName}`
       )
-      .then((_: any) => {
+      .then(() => {
         sendNotification.info(
           `Volume ${selectedVolumeName} exported to ${imageName}. The new image will be available in a few seconds.`,
           [
