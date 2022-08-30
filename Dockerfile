@@ -59,6 +59,11 @@ LABEL org.opencontainers.image.title="Volumes Backup & Share" \
     <li>Transfer a volume via SSH to another host that runs Docker Desktop or Docker engine.</li> \
     <li>Clone, empty or delete a volume</li> \
     </ul> \
+    <h2>Acknowledgements</h2> \
+    <ul> \
+    <li><a href=\"https://github.com/BretFisher/docker-vackup\">Vackup project by Bret Fisher</a></li> \
+    <li><a href=\"https://www.youtube.com/watch?v=BHKp7Sc3VVc\">Building Vackup - LiveStream on YouTube</a></li> \
+    <ul> \
     "\
     com.docker.extension.publisher-url="https://www.docker.com/" \
     com.docker.extension.additional-urls="[ \
