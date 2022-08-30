@@ -78,18 +78,23 @@ export default function ExportDialog({ open, onClose }: Props) {
     );
   };
 
+  const metrics = {
+    action: "ExportVolume",
+    volumeSize: context.store.volume.volumeBytes,
+  };
+
   const handleExport = () => {
-    track({
-      action: "ExportVolume",
-      volumeSize: context.store.volume.volumeBytes,
-    });
     if (fromRadioValue === "directory") {
+      track({ ...metrics, exportType: "toLocalFile" });
       exportVolume({ path, fileName });
     } else if (fromRadioValue === "new-image") {
+      track({ ...metrics, exportType: "toNewImage" });
       exportToImage({ imageName: newImage });
     } else if (fromRadioValue === "local-image") {
+      track({ ...metrics, exportType: "toLocalImage" });
       exportToImage({ imageName: image });
     } else if (fromRadioValue === "push-registry") {
+      track({ ...metrics, exportType: "toRegistry" });
       pushVolumeToRegistry({ imageName: registryImage });
     }
     onClose(true);
