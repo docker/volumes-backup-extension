@@ -3,12 +3,12 @@
 [![Build, Scan and Push](https://github.com/docker/volumes-backup-extension/actions/workflows/build-scan-push.yaml/badge.svg)](https://github.com/docker/volumes-backup-extension/actions/workflows/build-scan-push.yaml)
 [![Lint Dockerfile](https://github.com/docker/volumes-backup-extension/actions/workflows/hadolint.yaml/badge.svg)](https://github.com/docker/volumes-backup-extension/actions/workflows/hadolint.yaml)
 
-
 ![Extension Screenshot](./docs/images/1-table.png)
 
 🚀 This extension was originally created by [Felipe Cruz](https://github.com/felipecruz91/)
 
 ## Features
+
 - Export a volume:
   - To a compressed file in your local filesystem
   - To an existing local image
@@ -22,6 +22,7 @@
 - Clone a volume
 - Empty a volume
 - Delete a volume
+
 ## Installation
 
 Install Docker Extension with the [Extensions CLI](https://docs.docker.com/desktop/extensions-sdk/#prerequisites).
@@ -88,7 +89,3 @@ Each subsequent click on the extension tab will also open Chrome Dev Tools. To s
 
 - [Vackup project by Bret Fisher](https://github.com/BretFisher/docker-vackup)
 - [Building Vackup - LiveStream on YouTube](https://www.youtube.com/watch?v=BHKp7Sc3VVc)
-
-## License
-
-[MIT](https://choosealicense.com/licenses/mit/)
