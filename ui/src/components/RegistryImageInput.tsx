@@ -17,8 +17,10 @@ export const RegistryImageInput = ({
   const handleRegistryImageValidation = (newVal: string) => {
     if (!newVal) setError(null);
     // If volume exceeds 10GB, we prevent users from pushing it to DockerHub
-    if(isDockerRegistry && sizeExceededMessage){
-      setError("Pushing volumes larger than 10GB are not supported at the moment through this extension.");
+    if (isDockerRegistry && sizeExceededMessage) {
+      setError(
+        "Pushing volumes larger than 10GB are not supported at the moment through this extension."
+      );
       return;
     }
     if (!new RegExp(/(?:.*\/)([^:]+)(?::.+)?/gm).test(newVal)) {
@@ -28,7 +30,8 @@ export const RegistryImageInput = ({
     }
   };
 
-  const isDockerRegistry = (value.split("/")[0].startsWith("docker.io") || value.split("/").length == 2);
+  const isDockerRegistry =
+    value.split("/")[0].startsWith("docker.io") || value.split("/").length == 2;
   const sizeExceededMessage = volumeSize > 10 * 1000 * 1000 * 1000;
 
   return (
