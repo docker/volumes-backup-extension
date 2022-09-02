@@ -13,7 +13,12 @@ import { track } from "../common/track";
 
 const ddClient = createDockerDesktopClient();
 
-export default function CloneDialog({ ...props }) {
+interface Props {
+  open: boolean;
+  onClose(v?: boolean): void;
+}
+
+export default function CloneDialog({ ...props }: Props) {
   const context = useContext(MyContext);
   const { sendNotification } = useNotificationContext();
 
@@ -35,8 +40,7 @@ export default function CloneDialog({ ...props }) {
           [
             {
               name: "See volume",
-              onClick: () =>
-                ddClient.desktopUI.navigate.viewVolume(volumeName),
+              onClick: () => ddClient.desktopUI.navigate.viewVolume(volumeName),
             },
           ]
         );

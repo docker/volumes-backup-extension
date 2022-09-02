@@ -27,6 +27,7 @@ export const useGetVolumes = () => {
 
   useEffect(() => {
     listVolumes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const listVolumes = async () => {
@@ -37,7 +38,7 @@ export const useGetVolumes = () => {
       ddClient.extension.vm.service
         .get("/volumes")
         .then((results: Record<string, VolumeData>) => {
-          let rows: IVolumeRow[] = [];
+          const rows: IVolumeRow[] = [];
           let index = 0;
           for (const key in results) {
             const value = results[key];

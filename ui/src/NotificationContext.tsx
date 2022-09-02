@@ -28,7 +28,7 @@ const NotificationContext = createContext<INotificationContext>({
   },
 });
 
-export const NotificationProvider: FC<{}> = ({ children }) => {
+export const NotificationProvider: FC = ({ children }) => {
   const [open, setOpen] = useState(false);
   const [values, setValues] = useState<INotification>({
     message: "",
@@ -37,14 +37,14 @@ export const NotificationProvider: FC<{}> = ({ children }) => {
 
   const sendNotification: ISendNotification = {
     info: (message, actions) => {
-      setValues({message, type: 'info', actions});
+      setValues({ message, type: "info", actions });
       setOpen(true);
     },
     error: (message, actions) => {
-      setValues({message, type: 'error', actions});
+      setValues({ message, type: "error", actions });
       setOpen(true);
     },
-  }
+  };
 
   const DEFAULT_ACTION: INotification["actions"][0] = {
     name: "Dismiss",
@@ -85,10 +85,8 @@ export const NotificationProvider: FC<{}> = ({ children }) => {
             sx={{
               backgroundColor:
                 values.type === "error"
-                  ? // @ts-expect-error docker theme
-                    (theme) => theme.palette.docker.red[200]
-                  : // @ts-expect-error docker theme
-                    (theme) => theme.palette.docker.grey[100],
+                  ? (theme) => theme.palette.docker.red[200]
+                  : (theme) => theme.palette.docker.grey[100],
               color: (theme) => theme.palette.text.primary,
               borderRadius: "4px !important",
               ".MuiSnackbarContent-message": {

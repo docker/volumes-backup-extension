@@ -51,10 +51,9 @@ export default function ExportDialog({ open, onClose }: Props) {
   const [registryImage, setRegistryImage] = useState("");
   const [registryImageError, setRegistryImageError] = useState("");
 
-  const { isLoading: isExportingToFile, exportVolume } = useExportVolume();
-  const { isLoading: isExportingToImage, exportToImage } = useExportToImage();
-  const { isLoading: isPushingToRegistry, pushVolumeToRegistry } =
-    usePushVolumeToRegistry();
+  const { exportVolume } = useExportVolume();
+  const { exportToImage } = useExportToImage();
+  const { pushVolumeToRegistry } = usePushVolumeToRegistry();
   const selectExportDirectory = () => {
     ddClient.desktopUI.dialog
       .showOpenDialog({
@@ -169,10 +168,7 @@ export default function ExportDialog({ open, onClose }: Props) {
             directory.
           </Typography>
           {fromRadioValue === "local-image" && (
-            <ImageAutocomplete
-              value={image}
-              onChange={(v) => setImage(v as any)}
-            />
+            <ImageAutocomplete value={image} onChange={(v) => setImage(v)} />
           )}
         </Stack>
       </>

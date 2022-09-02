@@ -2,7 +2,6 @@ import React, { useContext, useState } from "react";
 import {
   Alert,
   Button,
-  CircularProgress,
   FormControl,
   FormControlLabel,
   FormLabel,
@@ -28,13 +27,14 @@ import { VolumeOrInput } from "./VolumeOrInput";
 import { RegistryImageInput } from "./RegistryImageInput";
 import { usePullFromRegistry } from "../hooks/usePullFromRegistry";
 import { track } from "../common/track";
+import { IVolumeRow } from "../hooks/useGetVolumes";
 
 const ddClient = createDockerDesktopClient();
 
 interface Props {
   open: boolean;
   onClose(v: boolean): void;
-  volumes: unknown[];
+  volumes: IVolumeRow[];
 }
 
 export default function ImportDialog({ volumes, open, onClose }: Props) {
@@ -52,12 +52,10 @@ export default function ImportDialog({ volumes, open, onClose }: Props) {
   const context = useContext(MyContext);
   const selectedVolumeName = context.store.volume?.volumeName;
 
-  const { createVolume, isInProgress: isCreating } = useCreateVolume();
-  const { importVolume, isInProgress: isImportingFromPath } =
-    useImportFromPath();
-  const { loadImage, isInProgress: isImportingFromImage } =
-    useImportFromImage();
-  const { pullFromRegistry, isLoading: isPulling } = usePullFromRegistry();
+  const { createVolume } = useCreateVolume();
+  const { importVolume } = useImportFromPath();
+  const { loadImage } = useImportFromImage();
+  const { pullFromRegistry } = usePullFromRegistry();
 
   const selectImportTarGzFile = () => {
     ddClient.desktopUI.dialog
@@ -158,10 +156,7 @@ export default function ImportDialog({ volumes, open, onClose }: Props) {
             Select an image whose content is to be imported into the new volume.
           </Typography>
           {fromRadioValue === "image" && (
-            <ImageAutocomplete
-              value={image}
-              onChange={(v) => setImage(v as any)}
-            />
+            <ImageAutocomplete value={image} onChange={(v) => setImage(v)} />
           )}
         </Stack>
       </>
