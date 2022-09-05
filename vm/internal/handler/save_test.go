@@ -2,12 +2,6 @@ package handler
 
 import (
 	"context"
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
-	volumetypes "github.com/docker/docker/api/types/volume"
-	"github.com/labstack/echo"
-	"github.com/stretchr/testify/require"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -16,6 +10,14 @@ import (
 	"runtime"
 	"strconv"
 	"testing"
+
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
+	volumetypes "github.com/docker/docker/api/types/volume"
+	"github.com/docker/docker/client"
+	"github.com/labstack/echo"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSaveVolume(t *testing.T) {
@@ -48,7 +50,7 @@ func TestSaveVolume(t *testing.T) {
 	c.SetPath("/volumes/:volume/save")
 	c.SetParamNames("volume")
 	c.SetParamValues(volume)
-	h := New(c.Request().Context(), setupDockerClient(t))
+	h := New(c.Request().Context(), func() (*client.Client, error) { return cli, nil })
 
 	// Create volume
 	_, err := cli.VolumeCreate(c.Request().Context(), volumetypes.VolumeCreateBody{

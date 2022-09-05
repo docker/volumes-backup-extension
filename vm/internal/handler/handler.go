@@ -14,15 +14,19 @@ import (
 )
 
 type Handler struct {
-	DockerClient  *client.Client
+	DockerClient  func() (*client.Client, error)
 	ProgressCache *ProgressCache
 }
 
-func New(ctx context.Context, cli *client.Client) *Handler {
+func New(ctx context.Context, cliFactory func() (*client.Client, error)) *Handler {
+	cli, err := cliFactory()
+	if err != nil {
+		log.Fatal(err)
+	}
 	pullImagesIfNotPresent(ctx, cli)
 
 	return &Handler{
-		DockerClient: cli,
+		DockerClient: cliFactory,
 		ProgressCache: &ProgressCache{
 			m: make(map[string]string),
 		},

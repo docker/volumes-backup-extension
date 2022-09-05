@@ -14,6 +14,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	volumetypes "github.com/docker/docker/api/types/volume"
+	"github.com/docker/docker/client"
 	"github.com/docker/volumes-backup-extension/internal/backend"
 	"github.com/labstack/echo"
 	"github.com/stretchr/testify/require"
@@ -57,7 +58,7 @@ func TestLoadImage(t *testing.T) {
 	c.SetPath("/volumes/:volume/load")
 	c.SetParamNames("volume")
 	c.SetParamValues(volume)
-	h := New(c.Request().Context(), setupDockerClient(t))
+	h := New(c.Request().Context(), func() (*client.Client, error) { return setupDockerClient(t), nil })
 
 	// Create volume
 	_, err = cli.VolumeCreate(c.Request().Context(), volumetypes.VolumeCreateBody{
@@ -117,7 +118,7 @@ func TestLoadImageShouldRemovePreviousVolumeData(t *testing.T) {
 	c.SetPath("/volumes/:volume/load")
 	c.SetParamNames("volume")
 	c.SetParamValues(volume)
-	h := New(c.Request().Context(), setupDockerClient(t))
+	h := New(c.Request().Context(), func() (*client.Client, error) { return setupDockerClient(t), nil })
 
 	// Create volume
 	_, err = cli.VolumeCreate(c.Request().Context(), volumetypes.VolumeCreateBody{
@@ -153,7 +154,7 @@ func TestLoadImageShouldRemovePreviousVolumeData(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := h.DockerClient.ContainerStart(context.Background(), postgresResp.ID, types.ContainerStartOptions{}); err != nil {
+	if err := cli.ContainerStart(context.Background(), postgresResp.ID, types.ContainerStartOptions{}); err != nil {
 		t.Fatal(err)
 	}
 

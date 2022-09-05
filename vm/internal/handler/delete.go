@@ -17,25 +17,30 @@ func (h *Handler) DeleteVolume(ctx echo.Context) error {
 
 	log.Infof("volumeName: %s", volumeName)
 
+	cli, err := h.DockerClient()
+	if err != nil {
+		log.Error(err)
+		return ctx.String(http.StatusInternalServerError, err.Error())
+	}
+
 	defer func() {
 		h.ProgressCache.Lock()
 		delete(h.ProgressCache.m, volumeName)
 		h.ProgressCache.Unlock()
-		_ = backend.TriggerUIRefresh(ctx.Request().Context(), h.DockerClient)
+		_ = backend.TriggerUIRefresh(ctx.Request().Context(), cli)
 	}()
 
 	h.ProgressCache.Lock()
 	h.ProgressCache.m[volumeName] = "delete"
 	h.ProgressCache.Unlock()
 
-	err := backend.TriggerUIRefresh(ctx.Request().Context(), h.DockerClient)
-	if err != nil {
+	if err := backend.TriggerUIRefresh(ctx.Request().Context(), cli); err != nil {
 		log.Error(err)
 		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
 	// Delete volume
-	err = h.DockerClient.VolumeRemove(ctx.Request().Context(), volumeName, true)
+	err = cli.VolumeRemove(ctx.Request().Context(), volumeName, true)
 	if err != nil {
 		log.Error(err)
 		return ctx.String(http.StatusInternalServerError, err.Error())

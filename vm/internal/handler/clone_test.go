@@ -14,6 +14,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	volumetypes "github.com/docker/docker/api/types/volume"
+	"github.com/docker/docker/client"
 	"github.com/docker/volumes-backup-extension/internal/backend"
 	"github.com/labstack/echo"
 	"github.com/stretchr/testify/require"
@@ -43,7 +44,7 @@ func TestCloneVolume(t *testing.T) {
 	c.SetPath("/volumes/:volume/clone")
 	c.SetParamNames("volume")
 	c.SetParamValues(volume)
-	h := New(c.Request().Context(), setupDockerClient(t))
+	h := New(c.Request().Context(), func() (*client.Client, error) { return setupDockerClient(t), nil })
 
 	// Create volume
 	_, err := cli.VolumeCreate(c.Request().Context(), volumetypes.VolumeCreateBody{
@@ -85,13 +86,17 @@ func TestCloneVolume(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, http.StatusCreated, rec.Code)
 
+	dockerClient, err := h.DockerClient()
+	if err != nil {
+		t.Fatal(err)
+	}
 	// Check volume has been cloned and contains the expected data
-	clonedVolumeResp, err := h.DockerClient.VolumeList(context.Background(), filters.NewArgs(filters.Arg("name", destVolume)))
+	clonedVolumeResp, err := dockerClient.VolumeList(context.Background(), filters.NewArgs(filters.Arg("name", destVolume)))
 	if err != nil {
 		t.Fatal(err)
 	}
 	require.Len(t, clonedVolumeResp.Volumes, 1)
-	sizes := backend.GetVolumesSize(context.Background(), h.DockerClient, destVolume)
+	sizes := backend.GetVolumesSize(context.Background(), dockerClient, destVolume)
 	require.Equal(t, int64(16000), sizes[destVolume].Bytes)
 	require.Equal(t, "16.0 kB", sizes[destVolume].Human)
 }

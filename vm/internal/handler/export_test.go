@@ -5,11 +5,6 @@ import (
 	"compress/gzip"
 	"context"
 	"fmt"
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	volumetypes "github.com/docker/docker/api/types/volume"
-	"github.com/labstack/echo"
-	"github.com/stretchr/testify/require"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -20,6 +15,13 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	volumetypes "github.com/docker/docker/api/types/volume"
+	"github.com/docker/docker/client"
+	"github.com/labstack/echo"
+	"github.com/stretchr/testify/require"
 )
 
 func TestExportVolume(t *testing.T) {
@@ -52,7 +54,7 @@ func TestExportVolume(t *testing.T) {
 	c.SetPath("/volumes/:volume/export")
 	c.SetParamNames("volume")
 	c.SetParamValues(volume)
-	h := New(c.Request().Context(), setupDockerClient(t))
+	h := New(c.Request().Context(), func() (*client.Client, error) { return setupDockerClient(t), nil })
 
 	// Create volume
 	_, err := cli.VolumeCreate(c.Request().Context(), volumetypes.VolumeCreateBody{

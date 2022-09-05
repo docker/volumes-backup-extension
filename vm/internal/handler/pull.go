@@ -32,18 +32,23 @@ func (h *Handler) PullVolume(ctx echo.Context) error {
 	log.Infof("reference: %s", request.Reference)
 	logrus.Infof("received pull request for volume %s\n", volumeName)
 
+	cli, err := h.DockerClient()
+	if err != nil {
+		log.Error(err)
+		return ctx.String(http.StatusInternalServerError, err.Error())
+	}
 	defer func() {
 		h.ProgressCache.Lock()
 		delete(h.ProgressCache.m, volumeName)
 		h.ProgressCache.Unlock()
-		_ = backend.TriggerUIRefresh(ctxReq, h.DockerClient)
+		_ = backend.TriggerUIRefresh(ctxReq, cli)
 	}()
 
 	h.ProgressCache.Lock()
 	h.ProgressCache.m[volumeName] = "pull"
 	h.ProgressCache.Unlock()
 
-	err := backend.TriggerUIRefresh(ctxReq, h.DockerClient)
+	err = backend.TriggerUIRefresh(ctxReq, cli)
 	if err != nil {
 		log.Error(err)
 		return ctx.String(http.StatusInternalServerError, err.Error())
@@ -68,7 +73,7 @@ func (h *Handler) PullVolume(ctx echo.Context) error {
 
 	// Pull the volume (image) from registry
 	log.Infof("Pulling image %s...", parsedRef.String())
-	pullResp, err := h.DockerClient.ImagePull(ctxReq, parsedRef.String(), dockertypes.ImagePullOptions{
+	pullResp, err := cli.ImagePull(ctxReq, parsedRef.String(), dockertypes.ImagePullOptions{
 		RegistryAuth: request.Base64EncodedAuth,
 	})
 
@@ -93,7 +98,7 @@ func (h *Handler) PullVolume(ctx echo.Context) error {
 	}
 
 	// Stop container(s)
-	stoppedContainers, err := backend.StopContainersAttachedToVolume(ctxReq, h.DockerClient, volumeName)
+	stoppedContainers, err := backend.StopContainersAttachedToVolume(ctxReq, cli, volumeName)
 	if err != nil {
 		log.Error(err)
 		return ctx.String(http.StatusInternalServerError, err.Error())
@@ -101,13 +106,13 @@ func (h *Handler) PullVolume(ctx echo.Context) error {
 
 	// Load the image into the volume
 	log.Infof("Loading image %s into volume %s...", parsedRef.String(), volumeName)
-	if err := backend.Load(ctxReq, h.DockerClient, volumeName, parsedRef.String()); err != nil {
+	if err := backend.Load(ctxReq, cli, volumeName, parsedRef.String()); err != nil {
 		log.Error(err)
 		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
 	// Start container(s)
-	err = backend.StartContainersAttachedToVolume(ctxReq, h.DockerClient, stoppedContainers)
+	err = backend.StartContainersAttachedToVolume(ctxReq, cli, stoppedContainers)
 	if err != nil {
 		log.Error(err)
 		return ctx.String(http.StatusInternalServerError, err.Error())
