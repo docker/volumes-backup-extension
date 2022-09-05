@@ -2,14 +2,15 @@ package handler
 
 import (
 	"context"
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/client"
-	"github.com/felipecruz91/vackup-docker-extension/internal"
-	"github.com/felipecruz91/vackup-docker-extension/internal/log"
-	"golang.org/x/sync/errgroup"
 	"io"
 	"os"
 	"runtime"
+
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
+	"github.com/docker/volumes-backup-extension/internal"
+	"github.com/docker/volumes-backup-extension/internal/log"
+	"golang.org/x/sync/errgroup"
 )
 
 type Handler struct {

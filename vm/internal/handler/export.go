@@ -2,8 +2,6 @@ package handler
 
 import (
 	"fmt"
-	"github.com/docker/docker/pkg/stdcopy"
-	"github.com/felipecruz91/vackup-docker-extension/internal"
 	"io"
 	"net/http"
 	"os"
@@ -11,10 +9,13 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/docker/docker/pkg/stdcopy"
+	"github.com/docker/volumes-backup-extension/internal"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
-	"github.com/felipecruz91/vackup-docker-extension/internal/backend"
-	"github.com/felipecruz91/vackup-docker-extension/internal/log"
+	"github.com/docker/volumes-backup-extension/internal/backend"
+	"github.com/docker/volumes-backup-extension/internal/log"
 	"github.com/labstack/echo"
 )
 

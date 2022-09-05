@@ -2,12 +2,13 @@ package handler
 
 import (
 	"context"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/felipecruz91/vackup-docker-extension/internal/backend"
-	"github.com/felipecruz91/vackup-docker-extension/internal/log"
-	"github.com/labstack/echo"
 	"net/http"
 	"sync"
+
+	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/volumes-backup-extension/internal/backend"
+	"github.com/docker/volumes-backup-extension/internal/log"
+	"github.com/labstack/echo"
 )
 
 type VolumesResponse struct {

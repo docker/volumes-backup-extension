@@ -2,13 +2,6 @@ package handler
 
 import (
 	"context"
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
-	volumetypes "github.com/docker/docker/api/types/volume"
-	"github.com/felipecruz91/vackup-docker-extension/internal/backend"
-	"github.com/labstack/echo"
-	"github.com/stretchr/testify/require"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -16,6 +9,14 @@ import (
 	"os"
 	"runtime"
 	"testing"
+
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
+	volumetypes "github.com/docker/docker/api/types/volume"
+	"github.com/docker/volumes-backup-extension/internal/backend"
+	"github.com/labstack/echo"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCloneVolume(t *testing.T) {

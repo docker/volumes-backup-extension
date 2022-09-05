@@ -2,12 +2,6 @@ package handler
 
 import (
 	"context"
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	volumetypes "github.com/docker/docker/api/types/volume"
-	"github.com/felipecruz91/vackup-docker-extension/internal/backend"
-	"github.com/labstack/echo"
-	"github.com/stretchr/testify/require"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -16,6 +10,13 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
+
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	volumetypes "github.com/docker/docker/api/types/volume"
+	"github.com/docker/volumes-backup-extension/internal/backend"
+	"github.com/labstack/echo"
+	"github.com/stretchr/testify/require"
 )
 
 func TestImportTarGzFile(t *testing.T) {

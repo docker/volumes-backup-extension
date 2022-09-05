@@ -5,14 +5,6 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"fmt"
-	"github.com/docker/docker/api/types"
-	dockertypes "github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	volumetypes "github.com/docker/docker/api/types/volume"
-	"github.com/docker/go-connections/nat"
-	"github.com/felipecruz91/vackup-docker-extension/internal/backend"
-	"github.com/labstack/echo"
-	"github.com/stretchr/testify/require"
 	"io"
 	"io/ioutil"
 	"log"
@@ -24,6 +16,15 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/docker/docker/api/types"
+	dockertypes "github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	volumetypes "github.com/docker/docker/api/types/volume"
+	"github.com/docker/go-connections/nat"
+	"github.com/docker/volumes-backup-extension/internal/backend"
+	"github.com/labstack/echo"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPullVolume(t *testing.T) {

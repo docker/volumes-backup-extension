@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/docker/docker/client"
-	"github.com/felipecruz91/vackup-docker-extension/internal/handler"
-	"github.com/felipecruz91/vackup-docker-extension/internal/log"
+	"github.com/docker/volumes-backup-extension/internal/handler"
+	"github.com/docker/volumes-backup-extension/internal/log"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 )
