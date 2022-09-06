@@ -12,6 +12,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/felipecruz91/vackup-docker-extension/internal/handler"
 	"github.com/felipecruz91/vackup-docker-extension/internal/log"
+	"github.com/felipecruz91/vackup-docker-extension/internal/setup"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 )
@@ -24,6 +25,8 @@ func main() {
 	var socketPath string
 	flag.StringVar(&socketPath, "socket", "/run/guest/ext.sock", "Unix domain socket to listen on")
 	flag.Parse()
+
+	setup.ConfigureBugsnag()
 
 	_ = os.RemoveAll(socketPath)
 
@@ -70,7 +73,12 @@ func main() {
 
 	// Start server
 	go func() {
-		if err := router.Start(""); err != nil && err != http.ErrServerClosed {
+		server := &http.Server{
+			Addr: "",
+		}
+		setup.ConfigureBugsnagHandler(server)
+
+		if err := router.StartServer(server); err != nil && err != http.ErrServerClosed {
 			log.Fatal("shutting down the server")
 		}
 	}()

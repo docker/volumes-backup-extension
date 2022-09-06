@@ -20,7 +20,12 @@ RUN --mount=type=cache,target=/usr/src/app/.npm \
     npm ci
 # install
 COPY ui /ui
-RUN npm run build
+RUN --mount=type=secret,id=BUGSNAG_API_KEY \
+    REACT_APP_BUGSNAG_API_KEY=$(cat /run/secrets/BUGSNAG_API_KEY) \
+    npm run build
+
+FROM alpine as certs
+RUN apk update && apk add ca-certificates
 
 FROM --platform=$BUILDPLATFORM golang:1.17-alpine AS docker-credentials-client-builder
 ENV CGO_ENABLED=0
@@ -79,7 +84,13 @@ COPY icon.svg .
 COPY --from=builder /backend/bin/service /
 COPY --from=client-builder /ui/build ui
 COPY --from=docker-credentials-client-builder output/dist ./host
+COPY --from=certs /etc/ssl/certs /etc/ssl/certs
 
 RUN mkdir -p /vackup
 
-CMD /service -socket /run/guest-services/ext.sock
+RUN --mount=type=secret,id=BUGSNAG_API_KEY \
+    BUGSNAG_API_KEY=$(cat /run/secrets/BUGSNAG_API_KEY); \
+    echo "$BUGSNAG_API_KEY" > /tmp/bugsnag-api-key.txt
+
+ENTRYPOINT ["/bin/sh", "-c", "BUGSNAG_API_KEY=$(cat /tmp/bugsnag-api-key.txt) /service -socket /run/guest-services/ext.sock"]
+CMD ["/bin/sh"]

@@ -77,6 +77,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64
+          secrets: |
+            BUGSNAG_API_KEY=${{ secrets.BUGSNAG_API_KEY }}
 
       - name: Run Trivy for all CVEs (non-blocking)
         uses: aquasecurity/trivy-action@master
@@ -127,6 +129,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64,linux/arm64
+          secrets: |
+            BUGSNAG_API_KEY=${{ secrets.BUGSNAG_API_KEY }}
         # If PR, put image tags in the PR comments
         # from https://github.com/marketplace/actions/create-or-update-comment
       - name: Find comment for image tags
