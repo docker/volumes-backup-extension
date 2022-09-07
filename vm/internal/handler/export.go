@@ -2,8 +2,6 @@ package handler
 
 import (
 	"fmt"
-	"github.com/docker/docker/pkg/stdcopy"
-	"github.com/felipecruz91/vackup-docker-extension/internal"
 	"io"
 	"net/http"
 	"os"
@@ -11,10 +9,13 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/docker/docker/pkg/stdcopy"
+	"github.com/docker/volumes-backup-extension/internal"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
-	"github.com/felipecruz91/vackup-docker-extension/internal/backend"
-	"github.com/felipecruz91/vackup-docker-extension/internal/log"
+	"github.com/docker/volumes-backup-extension/internal/backend"
+	"github.com/docker/volumes-backup-extension/internal/log"
 	"github.com/labstack/echo"
 )
 
@@ -37,25 +38,30 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 	log.Infof("path: %s", path)
 	log.Infof("fileName: %s", fileName)
 
+	cli, err := h.DockerClient()
+	if err != nil {
+		log.Error(err)
+		return ctx.String(http.StatusInternalServerError, err.Error())
+	}
+
 	defer func() {
 		h.ProgressCache.Lock()
 		delete(h.ProgressCache.m, volumeName)
 		h.ProgressCache.Unlock()
-		_ = backend.TriggerUIRefresh(ctx.Request().Context(), h.DockerClient)
+		_ = backend.TriggerUIRefresh(ctx.Request().Context(), cli)
 	}()
 
 	h.ProgressCache.Lock()
 	h.ProgressCache.m[volumeName] = "export"
 	h.ProgressCache.Unlock()
 
-	err := backend.TriggerUIRefresh(ctx.Request().Context(), h.DockerClient)
-	if err != nil {
+	if err := backend.TriggerUIRefresh(ctx.Request().Context(), cli); err != nil {
 		log.Error(err)
 		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
 	// Stop container(s)
-	stoppedContainers, err := backend.StopContainersAttachedToVolume(ctx.Request().Context(), h.DockerClient, volumeName)
+	stoppedContainers, err := backend.StopContainersAttachedToVolume(ctx.Request().Context(), cli, volumeName)
 	if err != nil {
 		log.Error(err)
 		return ctx.String(http.StatusInternalServerError, err.Error())
@@ -79,7 +85,7 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 	log.Infof("binds: %+v", binds)
 
 	// Ensure the image is present before creating the container
-	reader, err := h.DockerClient.ImagePull(ctx.Request().Context(), internal.BusyboxImage, types.ImagePullOptions{
+	reader, err := cli.ImagePull(ctx.Request().Context(), internal.BusyboxImage, types.ImagePullOptions{
 		Platform: "linux/" + runtime.GOARCH,
 	})
 	if err != nil {
@@ -90,7 +96,7 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 		return err
 	}
 
-	resp, err := h.DockerClient.ContainerCreate(ctx.Request().Context(), &container.Config{
+	resp, err := cli.ContainerCreate(ctx.Request().Context(), &container.Config{
 		Image:        internal.BusyboxImage,
 		AttachStdout: true,
 		AttachStderr: true,
@@ -113,13 +119,13 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
-	if err := h.DockerClient.ContainerStart(ctx.Request().Context(), resp.ID, types.ContainerStartOptions{}); err != nil {
+	if err := cli.ContainerStart(ctx.Request().Context(), resp.ID, types.ContainerStartOptions{}); err != nil {
 		log.Error(err)
 		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
 	var exitCode int64
-	statusCh, errCh := h.DockerClient.ContainerWait(ctx.Request().Context(), resp.ID, container.WaitConditionNotRunning)
+	statusCh, errCh := cli.ContainerWait(ctx.Request().Context(), resp.ID, container.WaitConditionNotRunning)
 	select {
 	case err := <-errCh:
 		if err != nil {
@@ -131,7 +137,7 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 		exitCode = status.StatusCode
 	}
 
-	out, err := h.DockerClient.ContainerLogs(ctx.Request().Context(), resp.ID, types.ContainerLogsOptions{ShowStdout: true, ShowStderr: true})
+	out, err := cli.ContainerLogs(ctx.Request().Context(), resp.ID, types.ContainerLogsOptions{ShowStdout: true, ShowStderr: true})
 	if err != nil {
 		log.Error(err)
 		return ctx.String(http.StatusInternalServerError, err.Error())
@@ -147,14 +153,14 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("container exited with status code %d\n", exitCode))
 	}
 
-	err = h.DockerClient.ContainerRemove(ctx.Request().Context(), resp.ID, types.ContainerRemoveOptions{})
+	err = cli.ContainerRemove(ctx.Request().Context(), resp.ID, types.ContainerRemoveOptions{})
 	if err != nil {
 		log.Error(err)
 		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
 	// Start container(s)
-	err = backend.StartContainersAttachedToVolume(ctx.Request().Context(), h.DockerClient, stoppedContainers)
+	err = backend.StartContainersAttachedToVolume(ctx.Request().Context(), cli, stoppedContainers)
 	if err != nil {
 		log.Error(err)
 		return ctx.String(http.StatusInternalServerError, err.Error())

@@ -3,12 +3,13 @@ package backend
 import (
 	"context"
 	"fmt"
+	"os"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
-	"github.com/felipecruz91/vackup-docker-extension/internal/log"
-	"os"
+	"github.com/docker/volumes-backup-extension/internal/log"
 )
 
 func Load(ctx context.Context, client *client.Client, volumeName, image string) error {

@@ -5,14 +5,6 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"fmt"
-	"github.com/docker/docker/api/types"
-	dockertypes "github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	volumetypes "github.com/docker/docker/api/types/volume"
-	"github.com/docker/go-connections/nat"
-	"github.com/felipecruz91/vackup-docker-extension/internal/backend"
-	"github.com/labstack/echo"
-	"github.com/stretchr/testify/require"
 	"io"
 	"io/ioutil"
 	"log"
@@ -24,6 +16,16 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/docker/docker/api/types"
+	dockertypes "github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	volumetypes "github.com/docker/docker/api/types/volume"
+	"github.com/docker/docker/client"
+	"github.com/docker/go-connections/nat"
+	"github.com/docker/volumes-backup-extension/internal/backend"
+	"github.com/labstack/echo"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPullVolume(t *testing.T) {
@@ -61,7 +63,7 @@ func TestPullVolume(t *testing.T) {
 	c.SetPath("/volumes/:volume/pull")
 	c.SetParamNames("volume")
 	c.SetParamValues(volume)
-	h := New(c.Request().Context(), setupDockerClient(t))
+	h := New(c.Request().Context(), func() (*client.Client, error) { return setupDockerClient(t), nil })
 
 	// Provision a registry with an image (which represents a volume) ready to pull:
 	// Run a local registry
@@ -173,7 +175,7 @@ func TestPullVolume(t *testing.T) {
 	require.Equal(t, http.StatusCreated, rec.Code)
 
 	// Check the content of the volume
-	m := backend.GetVolumesSize(c.Request().Context(), h.DockerClient, volume)
+	m := backend.GetVolumesSize(c.Request().Context(), cli, volume)
 	require.Equal(t, int64(16000), m[volume].Bytes)
 	require.Equal(t, "16.0 kB", m[volume].Human)
 }
@@ -216,7 +218,7 @@ func TestPullVolumeUsingCorrectAuth(t *testing.T) {
 	c.SetPath("/volumes/:volume/pull")
 	c.SetParamNames("volume")
 	c.SetParamValues(volume)
-	h := New(c.Request().Context(), setupDockerClient(t))
+	h := New(c.Request().Context(), func() (*client.Client, error) { return setupDockerClient(t), nil })
 
 	// Run a local registry with auth
 	pwd, err := os.Getwd()
@@ -340,7 +342,7 @@ func TestPullVolumeUsingCorrectAuth(t *testing.T) {
 	require.Equal(t, http.StatusCreated, rec.Code)
 
 	// Check the content of the volume
-	m := backend.GetVolumesSize(c.Request().Context(), h.DockerClient, volume)
+	m := backend.GetVolumesSize(c.Request().Context(), cli, volume)
 	require.Equal(t, int64(16000), m[volume].Bytes)
 	require.Equal(t, "16.0 kB", m[volume].Human)
 }
@@ -383,7 +385,7 @@ func TestPullVolumeUsingWrongAuthShouldFail(t *testing.T) {
 	c.SetPath("/volumes/:volume/pull")
 	c.SetParamNames("volume")
 	c.SetParamValues(volume)
-	h := New(c.Request().Context(), setupDockerClient(t))
+	h := New(c.Request().Context(), func() (*client.Client, error) { return setupDockerClient(t), nil })
 
 	// Run a local registry with auth
 	pwd, err := os.Getwd()
@@ -479,7 +481,7 @@ func TestPullVolumeUsingWrongAuthShouldFail(t *testing.T) {
 	require.Equal(t, http.StatusUnauthorized, rec.Code)
 
 	// Check the content of the volume
-	m := backend.GetVolumesSize(c.Request().Context(), h.DockerClient, volume)
+	m := backend.GetVolumesSize(c.Request().Context(), cli, volume)
 	require.Equal(t, int64(0), m[volume].Bytes)
 	require.Equal(t, "0 B", m[volume].Human)
 }

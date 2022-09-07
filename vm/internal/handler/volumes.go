@@ -2,12 +2,13 @@ package handler
 
 import (
 	"context"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/felipecruz91/vackup-docker-extension/internal/backend"
-	"github.com/felipecruz91/vackup-docker-extension/internal/log"
-	"github.com/labstack/echo"
 	"net/http"
 	"sync"
+
+	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/volumes-backup-extension/internal/backend"
+	"github.com/docker/volumes-backup-extension/internal/log"
+	"github.com/labstack/echo"
 )
 
 type VolumesResponse struct {
@@ -23,7 +24,12 @@ type VolumeData struct {
 }
 
 func (h *Handler) Volumes(ctx echo.Context) error {
-	v, err := h.DockerClient.VolumeList(ctx.Request().Context(), filters.NewArgs())
+	cli, err := h.DockerClient()
+	if err != nil {
+		log.Error(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	v, err := cli.VolumeList(ctx.Request().Context(), filters.NewArgs())
 	if err != nil {
 		log.Error(err)
 	}
@@ -36,7 +42,7 @@ func (h *Handler) Volumes(ctx echo.Context) error {
 	// Calculating the volume size by spinning a container that execs "du " **per volume** is too time-consuming.
 	// To reduce the time it takes, we get the volumes size by running only one container that execs "du"
 	// into the /var/lib/docker/volumes inside the VM.
-	volumesSize := backend.GetVolumesSize(ctx.Request().Context(), h.DockerClient, "*")
+	volumesSize := backend.GetVolumesSize(ctx.Request().Context(), cli, "*")
 	res.Lock()
 	for k, v := range volumesSize {
 		entry, ok := res.data[k]
@@ -57,7 +63,7 @@ func (h *Handler) Volumes(ctx echo.Context) error {
 		wg.Add(2)
 		go func(volumeName string) {
 			defer wg.Done()
-			driver := backend.GetVolumeDriver(context.Background(), h.DockerClient, volumeName) // TODO: use request context
+			driver := backend.GetVolumeDriver(context.Background(), cli, volumeName) // TODO: use request context
 			res.Lock()
 			defer res.Unlock()
 			entry, ok := res.data[volumeName]
@@ -73,7 +79,7 @@ func (h *Handler) Volumes(ctx echo.Context) error {
 
 		go func(volumeName string) {
 			defer wg.Done()
-			containers := backend.GetContainersForVolume(context.Background(), h.DockerClient, volumeName) // TODO: use request context
+			containers := backend.GetContainersForVolume(context.Background(), cli, volumeName) // TODO: use request context
 			res.Lock()
 			defer res.Unlock()
 			entry, ok := res.data[volumeName]
