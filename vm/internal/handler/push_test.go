@@ -5,12 +5,6 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"fmt"
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	volumetypes "github.com/docker/docker/api/types/volume"
-	"github.com/docker/go-connections/nat"
-	"github.com/labstack/echo"
-	"github.com/stretchr/testify/require"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -20,6 +14,14 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	volumetypes "github.com/docker/docker/api/types/volume"
+	"github.com/docker/docker/client"
+	"github.com/docker/go-connections/nat"
+	"github.com/labstack/echo"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPushVolume(t *testing.T) {
@@ -57,7 +59,7 @@ func TestPushVolume(t *testing.T) {
 	c.SetPath("/volumes/:volume/push")
 	c.SetParamNames("volume")
 	c.SetParamValues(volume)
-	h := New(c.Request().Context(), setupDockerClient(t))
+	h := New(c.Request().Context(), func() (*client.Client, error) { return setupDockerClient(t), nil })
 
 	// Create volume
 	_, err := cli.VolumeCreate(c.Request().Context(), volumetypes.VolumeCreateBody{
@@ -125,7 +127,7 @@ func TestPushVolume(t *testing.T) {
 
 	registryContainerID = resp2.ID
 
-	if err := h.DockerClient.ContainerStart(c.Request().Context(), registryContainerID, types.ContainerStartOptions{}); err != nil {
+	if err := cli.ContainerStart(c.Request().Context(), registryContainerID, types.ContainerStartOptions{}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -196,7 +198,7 @@ func TestPushVolumeUsingCorrectAuth(t *testing.T) {
 	c.SetPath("/volumes/:volume/push")
 	c.SetParamNames("volume")
 	c.SetParamValues(volume)
-	h := New(c.Request().Context(), setupDockerClient(t))
+	h := New(c.Request().Context(), func() (*client.Client, error) { return setupDockerClient(t), nil })
 
 	// Create volume
 	_, err := cli.VolumeCreate(c.Request().Context(), volumetypes.VolumeCreateBody{
@@ -280,7 +282,7 @@ func TestPushVolumeUsingCorrectAuth(t *testing.T) {
 
 	registryContainerID = resp2.ID
 
-	if err := h.DockerClient.ContainerStart(c.Request().Context(), registryContainerID, types.ContainerStartOptions{}); err != nil {
+	if err := cli.ContainerStart(c.Request().Context(), registryContainerID, types.ContainerStartOptions{}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -360,7 +362,7 @@ func TestPushVolumeUsingWrongAuthShouldFail(t *testing.T) {
 	c.SetPath("/volumes/:volume/push")
 	c.SetParamNames("volume")
 	c.SetParamValues(volume)
-	h := New(c.Request().Context(), setupDockerClient(t))
+	h := New(c.Request().Context(), func() (*client.Client, error) { return setupDockerClient(t), nil })
 
 	// Create volume
 	_, err := cli.VolumeCreate(c.Request().Context(), volumetypes.VolumeCreateBody{
@@ -444,7 +446,7 @@ func TestPushVolumeUsingWrongAuthShouldFail(t *testing.T) {
 
 	registryContainerID = resp2.ID
 
-	if err := h.DockerClient.ContainerStart(c.Request().Context(), registryContainerID, types.ContainerStartOptions{}); err != nil {
+	if err := cli.ContainerStart(c.Request().Context(), registryContainerID, types.ContainerStartOptions{}); err != nil {
 		t.Fatal(err)
 	}
 

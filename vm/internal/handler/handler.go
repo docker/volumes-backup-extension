@@ -2,27 +2,32 @@ package handler
 
 import (
 	"context"
-	"github.com/bugsnag/bugsnag-go/v2"
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/client"
-	"github.com/felipecruz91/vackup-docker-extension/internal"
-	"github.com/felipecruz91/vackup-docker-extension/internal/log"
-	"golang.org/x/sync/errgroup"
 	"io"
 	"os"
 	"runtime"
+
+	"github.com/bugsnag/bugsnag-go/v2"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
+	"github.com/docker/volumes-backup-extension/internal"
+	"github.com/docker/volumes-backup-extension/internal/log"
+	"golang.org/x/sync/errgroup"
 )
 
 type Handler struct {
-	DockerClient  *client.Client
+	DockerClient  func() (*client.Client, error)
 	ProgressCache *ProgressCache
 }
 
-func New(ctx context.Context, cli *client.Client) *Handler {
+func New(ctx context.Context, cliFactory func() (*client.Client, error)) *Handler {
+	cli, err := cliFactory()
+	if err != nil {
+		log.Fatal(err)
+	}
 	pullImagesIfNotPresent(ctx, cli)
 
 	return &Handler{
-		DockerClient: cli,
+		DockerClient: cliFactory,
 		ProgressCache: &ProgressCache{
 			m: make(map[string]string),
 		},

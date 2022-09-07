@@ -2,18 +2,19 @@ package handler
 
 import (
 	"fmt"
-	"github.com/bugsnag/bugsnag-go/v2"
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/pkg/stdcopy"
-	"github.com/felipecruz91/vackup-docker-extension/internal"
-	"github.com/felipecruz91/vackup-docker-extension/internal/backend"
-	"github.com/felipecruz91/vackup-docker-extension/internal/log"
-	"github.com/labstack/echo"
 	"io"
 	"net/http"
 	"os"
 	"runtime"
+
+  "github.com/bugsnag/bugsnag-go/v2"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/pkg/stdcopy"
+	"github.com/docker/volumes-backup-extension/internal"
+	"github.com/docker/volumes-backup-extension/internal/backend"
+	"github.com/docker/volumes-backup-extension/internal/log"
+	"github.com/labstack/echo"
 )
 
 func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
@@ -31,26 +32,31 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 	log.Infof("volumeName: %s", volumeName)
 	log.Infof("path: %s", path)
 
+	cli, err := h.DockerClient()
+	if err != nil {
+		log.Error(err)
+		return ctx.String(http.StatusInternalServerError, err.Error())
+	}
+
 	defer func() {
 		h.ProgressCache.Lock()
 		delete(h.ProgressCache.m, volumeName)
 		h.ProgressCache.Unlock()
-		_ = backend.TriggerUIRefresh(ctxReq, h.DockerClient)
+		_ = backend.TriggerUIRefresh(ctxReq, cli)
 	}()
 
 	h.ProgressCache.Lock()
 	h.ProgressCache.m[volumeName] = "import"
 	h.ProgressCache.Unlock()
 
-	err := backend.TriggerUIRefresh(ctxReq, h.DockerClient)
-	if err != nil {
+	if err := backend.TriggerUIRefresh(ctxReq, cli); err != nil {
 		log.Error(err)
 		_ = bugsnag.Notify(err, ctxReq)
 		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
 	// Stop container(s)
-	stoppedContainers, err := backend.StopContainersAttachedToVolume(ctxReq, h.DockerClient, volumeName)
+	stoppedContainers, err := backend.StopContainersAttachedToVolume(ctxReq, cli, volumeName)
 	if err != nil {
 		log.Error(err)
 		_ = bugsnag.Notify(err, ctxReq)
@@ -65,7 +71,7 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 	log.Infof("binds: %+v", binds)
 
 	// Ensure the image is present before creating the container
-	reader, err := h.DockerClient.ImagePull(ctxReq, internal.BusyboxImage, types.ImagePullOptions{
+	reader, err := cli.ImagePull(ctxReq, internal.BusyboxImage, types.ImagePullOptions{
 		Platform: "linux/" + runtime.GOARCH,
 	})
 	if err != nil {
@@ -78,7 +84,7 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 		return err
 	}
 
-	resp, err := h.DockerClient.ContainerCreate(ctxReq, &container.Config{
+	resp, err := cli.ContainerCreate(ctxReq, &container.Config{
 		Image:        internal.BusyboxImage,
 		AttachStdout: true,
 		AttachStderr: true,
@@ -103,14 +109,14 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
-	if err := h.DockerClient.ContainerStart(ctxReq, resp.ID, types.ContainerStartOptions{}); err != nil {
+	if err := cli.ContainerStart(ctxReq, resp.ID, types.ContainerStartOptions{}); err != nil {
 		log.Error(err)
 		_ = bugsnag.Notify(err, ctxReq)
 		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
 	var exitCode int64
-	statusCh, errCh := h.DockerClient.ContainerWait(ctxReq, resp.ID, container.WaitConditionNotRunning)
+	statusCh, errCh := cli.ContainerWait(ctxReq, resp.ID, container.WaitConditionNotRunning)
 	select {
 	case err := <-errCh:
 		if err != nil {
@@ -123,7 +129,7 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 		exitCode = status.StatusCode
 	}
 
-	out, err := h.DockerClient.ContainerLogs(ctxReq, resp.ID, types.ContainerLogsOptions{ShowStdout: true})
+	out, err := cli.ContainerLogs(ctxReq, resp.ID, types.ContainerLogsOptions{ShowStdout: true})
 	if err != nil {
 		log.Error(err)
 		_ = bugsnag.Notify(err, ctxReq)
@@ -141,7 +147,7 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("container exited with status code %d\n", exitCode))
 	}
 
-	err = h.DockerClient.ContainerRemove(ctxReq, resp.ID, types.ContainerRemoveOptions{})
+	err = cli.ContainerRemove(ctxReq, resp.ID, types.ContainerRemoveOptions{})
 	if err != nil {
 		log.Error(err)
 		_ = bugsnag.Notify(err, ctxReq)
@@ -149,7 +155,7 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 	}
 
 	// Start container(s)
-	err = backend.StartContainersAttachedToVolume(ctxReq, h.DockerClient, stoppedContainers)
+	err = backend.StartContainersAttachedToVolume(ctxReq, cli, stoppedContainers)
 	if err != nil {
 		log.Error(err)
 		_ = bugsnag.Notify(err, ctxReq)

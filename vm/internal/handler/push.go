@@ -10,8 +10,8 @@ import (
 
 	"github.com/docker/distribution/reference"
 	dockertypes "github.com/docker/docker/api/types"
-	"github.com/felipecruz91/vackup-docker-extension/internal/backend"
-	"github.com/felipecruz91/vackup-docker-extension/internal/log"
+	"github.com/docker/volumes-backup-extension/internal/backend"
+	"github.com/docker/volumes-backup-extension/internal/log"
 	"github.com/labstack/echo"
 )
 
@@ -44,18 +44,23 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 	log.Infof("reference: %s", request.Reference)
 	log.Infof("received push request for volume %s\n", volumeName)
 
+	cli, err := h.DockerClient()
+	if err != nil {
+		log.Error(err)
+		return ctx.String(http.StatusInternalServerError, err.Error())
+	}
 	defer func() {
 		h.ProgressCache.Lock()
 		delete(h.ProgressCache.m, volumeName)
 		h.ProgressCache.Unlock()
-		_ = backend.TriggerUIRefresh(ctxReq, h.DockerClient)
+		_ = backend.TriggerUIRefresh(ctxReq, cli)
 	}()
 
 	h.ProgressCache.Lock()
 	h.ProgressCache.m[volumeName] = "push"
 	h.ProgressCache.Unlock()
 
-	err := backend.TriggerUIRefresh(ctxReq, h.DockerClient)
+	err = backend.TriggerUIRefresh(ctxReq, cli)
 	if err != nil {
 		log.Error(err)
 		_ = bugsnag.Notify(err, ctxReq)
@@ -81,7 +86,7 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 	log.Infof("parsedRef.String(): %s", parsedRef.String())
 
 	// Stop container(s)
-	stoppedContainers, err := backend.StopContainersAttachedToVolume(ctxReq, h.DockerClient, volumeName)
+	stoppedContainers, err := backend.StopContainersAttachedToVolume(ctxReq, cli, volumeName)
 	if err != nil {
 		log.Error(err)
 		_ = bugsnag.Notify(err, ctxReq)
@@ -89,14 +94,14 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 	}
 
 	// Save the content of the volume into an image
-	if err := backend.Save(ctxReq, h.DockerClient, volumeName, parsedRef.String()); err != nil {
+	if err := backend.Save(ctxReq, cli, volumeName, parsedRef.String()); err != nil {
 		log.Error(err)
 		_ = bugsnag.Notify(err, ctxReq)
 		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
 	// Push the image to registry
-	pushResp, err := h.DockerClient.ImagePush(ctxReq, parsedRef.String(), dockertypes.ImagePushOptions{
+	pushResp, err := cli.ImagePush(ctxReq, parsedRef.String(), dockertypes.ImagePushOptions{
 		RegistryAuth: request.Base64EncodedAuth,
 	})
 	if err != nil {
@@ -132,7 +137,7 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 	}
 
 	// Start container(s)
-	err = backend.StartContainersAttachedToVolume(ctxReq, h.DockerClient, stoppedContainers)
+	err = backend.StartContainersAttachedToVolume(ctxReq, cli, stoppedContainers)
 	if err != nil {
 		log.Error(err)
 		_ = bugsnag.Notify(err, ctxReq)

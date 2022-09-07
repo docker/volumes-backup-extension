@@ -1,4 +1,4 @@
-module github.com/felipecruz91/vackup-docker-extension
+module github.com/docker/volumes-backup-extension
 
 go 1.17
 
