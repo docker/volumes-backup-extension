@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"github.com/bugsnag/bugsnag-go/v2"
 	"net/http"
 
 	"github.com/docker/volumes-backup-extension/internal/backend"
@@ -9,14 +10,21 @@ import (
 )
 
 func (h *Handler) VolumeSize(ctx echo.Context) error {
+	ctxReq := ctx.Request().Context()
 	volumeName := ctx.Param("volume")
 	cli, err := h.DockerClient()
 	if err != nil {
 		log.Error(err)
+		_ = bugsnag.Notify(err, ctxReq)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	m := backend.GetVolumesSize(ctx.Request().Context(), cli, volumeName)
+	m, err := backend.GetVolumesSize(ctxReq, cli, volumeName)
+	if err != nil {
+		log.Error(err)
+		_ = bugsnag.Notify(err, ctxReq)
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
 
 	return ctx.JSON(http.StatusOK, m[volumeName])
 }

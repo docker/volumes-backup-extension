@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"github.com/bugsnag/bugsnag-go/v2"
 	"net"
 	"net/http"
 	"os"
@@ -12,7 +13,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/volumes-backup-extension/internal/handler"
 	"github.com/docker/volumes-backup-extension/internal/log"
-  "github.com/docker/volumes-backup-extension/internal/setup"
+	"github.com/docker/volumes-backup-extension/internal/setup"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 )
@@ -48,15 +49,16 @@ func main() {
 	log.Infof("Starting listening on %s\n", socketPath)
 	ln, err := net.Listen("unix", socketPath)
 	if err != nil {
+		_ = bugsnag.Notify(err)
 		log.Fatal(err)
 	}
 	router.Listener = ln
 
 	cliFactory := func() (*client.Client, error) {
-
 		return client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	}
 	if err != nil {
+		_ = bugsnag.Notify(err)
 		log.Fatal(err)
 	}
 
@@ -82,6 +84,7 @@ func main() {
 		setup.ConfigureBugsnagHandler(server)
 
 		if err := router.StartServer(server); err != nil && err != http.ErrServerClosed {
+			_ = bugsnag.Notify(err)
 			log.Fatal("shutting down the server")
 		}
 	}()
@@ -94,6 +97,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := router.Shutdown(ctx); err != nil {
+		_ = bugsnag.Notify(err)
 		log.Fatal(err)
 	}
 }

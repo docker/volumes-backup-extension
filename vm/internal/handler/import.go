@@ -7,7 +7,7 @@ import (
 	"os"
 	"runtime"
 
-  "github.com/bugsnag/bugsnag-go/v2"
+	"github.com/bugsnag/bugsnag-go/v2"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/pkg/stdcopy"

@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"sync"
 
-  "github.com/bugsnag/bugsnag-go/v2"
+	"github.com/bugsnag/bugsnag-go/v2"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/volumes-backup-extension/internal/backend"
 	"github.com/docker/volumes-backup-extension/internal/log"
@@ -30,10 +30,10 @@ func (h *Handler) Volumes(ctx echo.Context) error {
 	cli, err := h.DockerClient()
 	if err != nil {
 		log.Error(err)
-    _ = bugsnag.Notify(err, ctxReq)
+		_ = bugsnag.Notify(err, ctxReq)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
-  
+
 	v, err := cli.VolumeList(ctx.Request().Context(), filters.NewArgs())
 	if err != nil {
 		log.Error(err)
@@ -48,7 +48,13 @@ func (h *Handler) Volumes(ctx echo.Context) error {
 	// Calculating the volume size by spinning a container that execs "du " **per volume** is too time-consuming.
 	// To reduce the time it takes, we get the volumes size by running only one container that execs "du"
 	// into the /var/lib/docker/volumes inside the VM.
-	volumesSize := backend.GetVolumesSize(ctxReq, cli, "*")
+	volumesSize, err := backend.GetVolumesSize(ctxReq, cli, "*")
+	if err != nil {
+		log.Error(err)
+		_ = bugsnag.Notify(err, ctxReq)
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
 	res.Lock()
 	for k, v := range volumesSize {
 		entry, ok := res.data[k]

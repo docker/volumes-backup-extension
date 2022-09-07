@@ -3,7 +3,7 @@ package handler
 import (
 	"net/http"
 
-  "github.com/bugsnag/bugsnag-go/v2"
+	"github.com/bugsnag/bugsnag-go/v2"
 	"github.com/docker/volumes-backup-extension/internal/backend"
 	"github.com/docker/volumes-backup-extension/internal/log"
 	"github.com/labstack/echo"
@@ -27,7 +27,7 @@ func (h *Handler) SaveVolume(ctx echo.Context) error {
 	cli, err := h.DockerClient()
 	if err != nil {
 		log.Error(err)
-    _ = bugsnag.Notify(err, ctxReq)
+		_ = bugsnag.Notify(err, ctxReq)
 		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 	defer func() {

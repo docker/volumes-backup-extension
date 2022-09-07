@@ -11,7 +11,6 @@ import (
 	"strconv"
 	"strings"
 
-  "github.com/bugsnag/bugsnag-go/v2"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
@@ -24,19 +23,19 @@ type VolumeSize struct {
 	Human string
 }
 
-func GetVolumesSize(ctx context.Context, cli *client.Client, volumeName string) map[string]VolumeSize {
+func GetVolumesSize(ctx context.Context, cli *client.Client, volumeName string) (map[string]VolumeSize, error) {
+	m := make(map[string]VolumeSize)
+
 	// Ensure the image is present before creating the container
 	reader, err := cli.ImagePull(ctx, internal.NsenterImage, types.ImagePullOptions{
 		Platform: "linux/" + runtime.GOARCH,
 	})
 	if err != nil {
-		log.Error(err)
-		_ = bugsnag.Notify(err, ctx)
+		return m, err
 	}
 	_, err = io.Copy(os.Stdout, reader)
 	if err != nil {
-		log.Error(err)
-		_ = bugsnag.Notify(err, ctx)
+		return m, err
 	}
 
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
@@ -55,42 +54,36 @@ func GetVolumesSize(ctx context.Context, cli *client.Client, volumeName string) 
 		Privileged: true,
 	}, nil, nil, "")
 	if err != nil {
-		log.Error(err)
-		_ = bugsnag.Notify(err, ctx)
+		return m, err
 	}
 
 	if err := cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
-		log.Error(err)
-		_ = bugsnag.Notify(err, ctx)
+		return m, err
 	}
 
 	statusCh, errCh := cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
 	select {
 	case err := <-errCh:
 		if err != nil {
-			log.Error(err)
-			_ = bugsnag.Notify(err, ctx)
+			return m, err
 		}
 	case <-statusCh:
 	}
 
 	out, err := cli.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{ShowStdout: true})
 	if err != nil {
-		log.Error(err)
-		_ = bugsnag.Notify(err, ctx)
+		return m, err
 	}
 
 	buf := new(bytes.Buffer)
 	_, err = buf.ReadFrom(out)
 	if err != nil {
-		log.Error(err)
-		_ = bugsnag.Notify(err, ctx)
+		return m, err
 	}
 
 	output := buf.String()
 
 	lines := strings.Split(strings.TrimSuffix(output, "\n"), "\n")
-	m := make(map[string]VolumeSize)
 	for _, line := range lines {
 		s := strings.Split(line, "\t") // e.g. 924	/var/lib/docker/volumes/my-volume
 		if len(s) != 2 {
@@ -126,11 +119,10 @@ func GetVolumesSize(ctx context.Context, cli *client.Client, volumeName string) 
 
 	err = cli.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{})
 	if err != nil {
-		log.Error(err)
-		_ = bugsnag.Notify(err, ctx)
+		return m, err
 	}
 
-	return m
+	return m, nil
 }
 
 // byteCountSI converts a size in bytes to a human-readable string in SI (decimal) format.
