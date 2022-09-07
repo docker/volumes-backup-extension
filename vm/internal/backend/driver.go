@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/bugsnag/bugsnag-go/v2"
 	"github.com/docker/docker/client"
-	"github.com/felipecruz91/vackup-docker-extension/internal/log"
+	"github.com/docker/volumes-backup-extension/internal/log"
 )
 
 func GetVolumeDriver(ctx context.Context, cli *client.Client, volumeName string) string {

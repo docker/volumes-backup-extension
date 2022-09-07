@@ -1,12 +1,12 @@
 package setup
 
 import (
+	"github.com/docker/volumes-backup-extension/internal/log"
 	"net/http"
 	"os"
 	"runtime"
 
 	"github.com/bugsnag/bugsnag-go/v2"
-	"github.com/felipecruz91/vackup-docker-extension/internal/log"
 )
 
 func ConfigureBugsnag() {

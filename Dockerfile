@@ -24,8 +24,10 @@ RUN --mount=type=secret,id=BUGSNAG_API_KEY \
     REACT_APP_BUGSNAG_API_KEY=$(cat /run/secrets/BUGSNAG_API_KEY) \
     npm run build
 
-FROM alpine as certs
-RUN apk update && apk add ca-certificates
+FROM alpine:3.16 as certs
+RUN apk update \
+    && apk add --no-cache ca-certificates \
+    && rm -rf /var/cache/apk/*
 
 FROM --platform=$BUILDPLATFORM golang:1.17-alpine AS docker-credentials-client-builder
 ENV CGO_ENABLED=0

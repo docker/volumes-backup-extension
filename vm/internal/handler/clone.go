@@ -42,7 +42,7 @@ func (h *Handler) CloneVolume(ctx echo.Context) error {
 		h.ProgressCache.Lock()
 		delete(h.ProgressCache.m, volumeName)
 		h.ProgressCache.Unlock()
-		_ = backend.TriggerUIRefresh(ctxReq, h.cli)
+		_ = backend.TriggerUIRefresh(ctxReq, cli)
 	}()
 
 	h.ProgressCache.Lock()
