@@ -7,7 +7,6 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/bugsnag/bugsnag-go/v2"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/pkg/stdcopy"
@@ -34,8 +33,7 @@ func (h *Handler) CloneVolume(ctx echo.Context) error {
 
 	cli, err := h.DockerClient()
 	if err != nil {
-		log.Error(err)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	defer func() {
@@ -50,17 +48,13 @@ func (h *Handler) CloneVolume(ctx echo.Context) error {
 	h.ProgressCache.Unlock()
 
 	if err := backend.TriggerUIRefresh(ctxReq, cli); err != nil {
-		log.Error(err)
-		_ = bugsnag.Notify(err, ctxReq)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	// Stop container(s)
 	stoppedContainers, err := backend.StopContainersAttachedToVolume(ctxReq, cli, volumeName)
 	if err != nil {
-		log.Error(err)
-		_ = bugsnag.Notify(err, ctxReq)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	// Ensure the image is present before creating the container
@@ -68,12 +62,10 @@ func (h *Handler) CloneVolume(ctx echo.Context) error {
 		Platform: "linux/" + runtime.GOARCH,
 	})
 	if err != nil {
-		_ = bugsnag.Notify(err, ctxReq)
 		return err
 	}
 	_, err = io.Copy(os.Stdout, reader)
 	if err != nil {
-		_ = bugsnag.Notify(err, ctxReq)
 		return err
 	}
 
@@ -99,15 +91,11 @@ func (h *Handler) CloneVolume(ctx echo.Context) error {
 		},
 	}, nil, nil, "")
 	if err != nil {
-		log.Error(err)
-		_ = bugsnag.Notify(err, ctxReq)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	if err := cli.ContainerStart(ctxReq, resp.ID, types.ContainerStartOptions{}); err != nil {
-		log.Error(err)
-		_ = bugsnag.Notify(err, ctxReq)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	var exitCode int64
@@ -115,9 +103,7 @@ func (h *Handler) CloneVolume(ctx echo.Context) error {
 	select {
 	case err := <-errCh:
 		if err != nil {
-			log.Error(err)
-			_ = bugsnag.Notify(err, ctxReq)
-			return ctx.String(http.StatusInternalServerError, err.Error())
+			return err
 		}
 	case status := <-statusCh:
 		log.Infof("status: %#+v\n", status)
@@ -126,16 +112,12 @@ func (h *Handler) CloneVolume(ctx echo.Context) error {
 
 	out, err := cli.ContainerLogs(ctxReq, resp.ID, types.ContainerLogsOptions{ShowStdout: true, ShowStderr: true})
 	if err != nil {
-		log.Error(err)
-		_ = bugsnag.Notify(err, ctxReq)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	_, err = stdcopy.StdCopy(os.Stdout, os.Stderr, out)
 	if err != nil {
-		log.Error(err)
-		_ = bugsnag.Notify(err, ctxReq)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	if exitCode != 0 {
@@ -144,17 +126,13 @@ func (h *Handler) CloneVolume(ctx echo.Context) error {
 
 	err = cli.ContainerRemove(ctxReq, resp.ID, types.ContainerRemoveOptions{})
 	if err != nil {
-		log.Error(err)
-		_ = bugsnag.Notify(err, ctxReq)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	// Start container(s)
 	err = backend.StartContainersAttachedToVolume(ctxReq, cli, stoppedContainers)
 	if err != nil {
-		log.Error(err)
-		_ = bugsnag.Notify(err, ctxReq)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	return ctx.String(http.StatusCreated, "")

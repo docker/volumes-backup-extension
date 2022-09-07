@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"github.com/bugsnag/bugsnag-go/v2"
+	"github.com/labstack/echo/middleware"
 	"net"
 	"net/http"
 	"os"
@@ -15,7 +16,6 @@ import (
 	"github.com/docker/volumes-backup-extension/internal/log"
 	"github.com/docker/volumes-backup-extension/internal/setup"
 	"github.com/labstack/echo"
-	"github.com/labstack/echo/middleware"
 )
 
 var (
@@ -36,7 +36,26 @@ func main() {
 
 	router := echo.New()
 	router.HideBanner = true
-	router.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+	router.HTTPErrorHandler = func(err error, c echo.Context) {
+		if os.Getenv("BUGSNAG_API_KEY") != "" {
+			if he, ok := err.(*echo.HTTPError); ok {
+				if he.Code == http.StatusInternalServerError {
+					// log to container logs
+					log.Error(err)
+					// log to Bugsnag
+					_ = bugsnag.Notify(err, c.Request().Context())
+				}
+			} else {
+				// log to container logs
+				log.Error(err)
+				// log to Bugsnag
+				_ = bugsnag.Notify(err, c.Request().Context())
+			}
+		}
+		router.DefaultHTTPErrorHandler(err, c)
+	}
+
+	logMiddleware := middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Skipper: middleware.DefaultSkipper,
 		Format: `{"time":"${time_rfc3339_nano}","id":"${id}",` +
 			`"host":"${host}","method":"${method}","uri":"${uri}","user_agent":"${user_agent}",` +
@@ -44,7 +63,8 @@ func main() {
 			`,"bytes_in":${bytes_in},"bytes_out":${bytes_out}}` + "\n",
 		CustomTimeFormat: "2006-01-02 15:04:05.00000",
 		Output:           os.Stdout,
-	}))
+	})
+	router.Use(logMiddleware)
 
 	log.Infof("Starting listening on %s\n", socketPath)
 	ln, err := net.Listen("unix", socketPath)

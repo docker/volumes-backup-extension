@@ -3,7 +3,6 @@ package handler
 import (
 	"net/http"
 
-	"github.com/bugsnag/bugsnag-go/v2"
 	"github.com/docker/volumes-backup-extension/internal/backend"
 	"github.com/docker/volumes-backup-extension/internal/log"
 	"github.com/labstack/echo"
@@ -21,8 +20,7 @@ func (h *Handler) DeleteVolume(ctx echo.Context) error {
 
 	cli, err := h.DockerClient()
 	if err != nil {
-		log.Error(err)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	defer func() {
@@ -37,17 +35,13 @@ func (h *Handler) DeleteVolume(ctx echo.Context) error {
 	h.ProgressCache.Unlock()
 
 	if err := backend.TriggerUIRefresh(ctxReq, cli); err != nil {
-		log.Error(err)
-		_ = bugsnag.Notify(err, ctxReq)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	// Delete volume
 	err = cli.VolumeRemove(ctxReq, volumeName, true)
 	if err != nil {
-		log.Error(err)
-		_ = bugsnag.Notify(err, ctxReq)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	return ctx.String(http.StatusNoContent, "")

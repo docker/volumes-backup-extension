@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/bugsnag/bugsnag-go/v2"
 	"github.com/docker/distribution/reference"
 	dockertypes "github.com/docker/docker/api/types"
 	"github.com/docker/volumes-backup-extension/internal/backend"
@@ -35,8 +34,7 @@ func (h *Handler) PullVolume(ctx echo.Context) error {
 
 	cli, err := h.DockerClient()
 	if err != nil {
-		log.Error(err)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 	defer func() {
 		h.ProgressCache.Lock()
@@ -51,9 +49,7 @@ func (h *Handler) PullVolume(ctx echo.Context) error {
 
 	err = backend.TriggerUIRefresh(ctxReq, cli)
 	if err != nil {
-		log.Error(err)
-		_ = bugsnag.Notify(err, ctxReq)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	// To provide backwards compatibility with older versions of Docker Desktop,
@@ -69,7 +65,6 @@ func (h *Handler) PullVolume(ctx echo.Context) error {
 
 	parsedRef, err := reference.ParseAnyReference(request.Reference)
 	if err != nil {
-		_ = bugsnag.Notify(err, ctxReq)
 		return ctx.String(http.StatusBadRequest, err.Error())
 	}
 	log.Infof("parsedRef.String(): %s", parsedRef.String())
@@ -81,21 +76,17 @@ func (h *Handler) PullVolume(ctx echo.Context) error {
 	})
 
 	if err != nil {
-		log.Error(err)
-		_ = bugsnag.Notify(err, ctxReq)
-
 		if strings.Contains(err.Error(), "unauthorized: authentication required") {
 			return ctx.String(http.StatusUnauthorized, err.Error())
 		}
 
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 	defer pullResp.Close()
 
 	pullRespBytes, err := ioutil.ReadAll(pullResp)
 	if err != nil {
-		_ = bugsnag.Notify(err, ctxReq)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	for _, line := range strings.Split(string(pullRespBytes), "\n") {
@@ -105,25 +96,19 @@ func (h *Handler) PullVolume(ctx echo.Context) error {
 	// Stop container(s)
 	stoppedContainers, err := backend.StopContainersAttachedToVolume(ctxReq, cli, volumeName)
 	if err != nil {
-		log.Error(err)
-		_ = bugsnag.Notify(err, ctxReq)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	// Load the image into the volume
 	log.Infof("Loading image %s into volume %s...", parsedRef.String(), volumeName)
 	if err := backend.Load(ctxReq, cli, volumeName, parsedRef.String()); err != nil {
-		log.Error(err)
-		_ = bugsnag.Notify(err, ctxReq)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	// Start container(s)
 	err = backend.StartContainersAttachedToVolume(ctxReq, cli, stoppedContainers)
 	if err != nil {
-		log.Error(err)
-		_ = bugsnag.Notify(err, ctxReq)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	return ctx.String(http.StatusCreated, "")

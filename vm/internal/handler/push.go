@@ -2,8 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
-	"github.com/bugsnag/bugsnag-go/v2"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -35,7 +33,6 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 
 	var request PushRequest
 	if err := ctx.Bind(&request); err != nil {
-		_ = bugsnag.Notify(err, ctxReq)
 		return err
 	}
 
@@ -46,8 +43,7 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 
 	cli, err := h.DockerClient()
 	if err != nil {
-		log.Error(err)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 	defer func() {
 		h.ProgressCache.Lock()
@@ -62,9 +58,7 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 
 	err = backend.TriggerUIRefresh(ctxReq, cli)
 	if err != nil {
-		log.Error(err)
-		_ = bugsnag.Notify(err, ctxReq)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	// To provide backwards compatibility with older versions of Docker Desktop,
@@ -80,7 +74,6 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 
 	parsedRef, err := reference.ParseAnyReference(request.Reference)
 	if err != nil {
-		_ = bugsnag.Notify(err, ctxReq)
 		return ctx.String(http.StatusBadRequest, err.Error())
 	}
 	log.Infof("parsedRef.String(): %s", parsedRef.String())
@@ -88,16 +81,12 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 	// Stop container(s)
 	stoppedContainers, err := backend.StopContainersAttachedToVolume(ctxReq, cli, volumeName)
 	if err != nil {
-		log.Error(err)
-		_ = bugsnag.Notify(err, ctxReq)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	// Save the content of the volume into an image
 	if err := backend.Save(ctxReq, cli, volumeName, parsedRef.String()); err != nil {
-		log.Error(err)
-		_ = bugsnag.Notify(err, ctxReq)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	// Push the image to registry
@@ -105,9 +94,7 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 		RegistryAuth: request.Base64EncodedAuth,
 	})
 	if err != nil {
-		log.Error(err)
-		_ = bugsnag.Notify(err, ctxReq)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 	defer pushResp.Close()
 
@@ -126,8 +113,6 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 			// {"errorDetail":{"message":"unauthorized: authentication required"},"error":"unauthorized: authentication required"}
 			// or
 			// {"errorDetail":{"message":"no basic auth credentials"},"error":"no basic auth credentials"}
-			log.Error(err)
-			_ = bugsnag.Notify(fmt.Errorf(pel.Error), ctxReq)
 			if pel.Error == "unauthorized: authentication required" || pel.Error == "no basic auth credentials" {
 				return ctx.String(http.StatusUnauthorized, pel.Error)
 			} else {
@@ -139,9 +124,7 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 	// Start container(s)
 	err = backend.StartContainersAttachedToVolume(ctxReq, cli, stoppedContainers)
 	if err != nil {
-		log.Error(err)
-		_ = bugsnag.Notify(err, ctxReq)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	return ctx.String(http.StatusCreated, "")

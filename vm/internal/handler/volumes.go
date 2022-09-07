@@ -5,10 +5,8 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/bugsnag/bugsnag-go/v2"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/volumes-backup-extension/internal/backend"
-	"github.com/docker/volumes-backup-extension/internal/log"
 	"github.com/labstack/echo"
 )
 
@@ -29,15 +27,12 @@ func (h *Handler) Volumes(ctx echo.Context) error {
 
 	cli, err := h.DockerClient()
 	if err != nil {
-		log.Error(err)
-		_ = bugsnag.Notify(err, ctxReq)
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	v, err := cli.VolumeList(ctx.Request().Context(), filters.NewArgs())
 	if err != nil {
-		log.Error(err)
-		_ = bugsnag.Notify(err, ctxReq)
+		return err
 	}
 
 	var res = VolumesResponse{
@@ -50,9 +45,7 @@ func (h *Handler) Volumes(ctx echo.Context) error {
 	// into the /var/lib/docker/volumes inside the VM.
 	volumesSize, err := backend.GetVolumesSize(ctxReq, cli, "*")
 	if err != nil {
-		log.Error(err)
-		_ = bugsnag.Notify(err, ctxReq)
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	res.Lock()

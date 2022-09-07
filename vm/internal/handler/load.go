@@ -26,8 +26,7 @@ func (h *Handler) LoadImage(ctx echo.Context) error {
 
 	cli, err := h.DockerClient()
 	if err != nil {
-		log.Error(err)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 	defer func() {
 		h.ProgressCache.Lock()
@@ -41,23 +40,18 @@ func (h *Handler) LoadImage(ctx echo.Context) error {
 	h.ProgressCache.Unlock()
 
 	if err := backend.TriggerUIRefresh(ctxReq, cli); err != nil {
-		log.Error(err)
-		_ = bugsnag.Notify(err, ctxReq)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	stoppedContainers, err := backend.StopContainersAttachedToVolume(ctxReq, cli, volumeName)
 	if err != nil {
-		log.Error(err)
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	// Load
 	err = backend.Load(ctxReq, cli, volumeName, image)
 	if err != nil {
-		log.Error(err)
-		_ = bugsnag.Notify(err, ctxReq)
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	// Start container(s)
@@ -65,7 +59,7 @@ func (h *Handler) LoadImage(ctx echo.Context) error {
 	if err != nil {
 		log.Error(err)
 		_ = bugsnag.Notify(err, ctxReq)
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	return ctx.String(http.StatusOK, "")

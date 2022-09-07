@@ -6,7 +6,6 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/bugsnag/bugsnag-go/v2"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/docker/volumes-backup-extension/internal"
@@ -52,7 +51,6 @@ func pullImagesIfNotPresent(ctx context.Context, cli *client.Client) {
 					Platform: "linux/" + runtime.GOARCH,
 				})
 				if err != nil {
-					_ = bugsnag.Notify(err)
 					return err
 				}
 				_, err = io.Copy(os.Stdout, reader)
