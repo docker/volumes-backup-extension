@@ -37,6 +37,13 @@ COPY client .
 RUN make cross
 
 FROM busybox:1.35.0
+
+ARG BUGSNAG_RELEASE_STAGE="local"
+ARG BUGSNAG_APP_VERSION="latest"
+
+ENV BUGSNAG_RELEASE_STAGE=$BUGSNAG_RELEASE_STAGE
+ENV BUGSNAG_APP_VERSION=$BUGSNAG_APP_VERSION
+
 LABEL org.opencontainers.image.title="Volumes Backup & Share" \
     org.opencontainers.image.description="Back up, clone, restore, and share Docker volumes effortlessly." \
     org.opencontainers.image.vendor="Docker Inc." \
@@ -92,5 +99,5 @@ RUN --mount=type=secret,id=BUGSNAG_API_KEY \
     BUGSNAG_API_KEY=$(cat /run/secrets/BUGSNAG_API_KEY); \
     echo "$BUGSNAG_API_KEY" > /tmp/bugsnag-api-key.txt
 
-ENTRYPOINT ["/bin/sh", "-c", "BUGSNAG_API_KEY=$(cat /tmp/bugsnag-api-key.txt) /service -socket /run/guest-services/ext.sock"]
+ENTRYPOINT ["/bin/sh", "-c", "BUGSNAG_API_KEY=$(cat /tmp/bugsnag-api-key.txt); rm -rf /tmp/bugsnag-api-key.txt; BUGSNAG_API_KEY=$BUGSNAG_API_KEY /service -socket /run/guest-services/ext.sock"]
 CMD ["/bin/sh"]

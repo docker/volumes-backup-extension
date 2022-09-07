@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"github.com/bugsnag/bugsnag-go/v2"
 	"github.com/felipecruz91/vackup-docker-extension/internal/backend"
 	"github.com/felipecruz91/vackup-docker-extension/internal/log"
 	"github.com/labstack/echo"
@@ -36,6 +37,7 @@ func (h *Handler) SaveVolume(ctx echo.Context) error {
 	err := backend.TriggerUIRefresh(ctxReq, h.DockerClient)
 	if err != nil {
 		log.Error(err)
+		_ = bugsnag.Notify(err, ctxReq)
 		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
@@ -43,12 +45,14 @@ func (h *Handler) SaveVolume(ctx echo.Context) error {
 	stoppedContainers, err := backend.StopContainersAttachedToVolume(ctxReq, h.DockerClient, volumeName)
 	if err != nil {
 		log.Error(err)
+		_ = bugsnag.Notify(err, ctxReq)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	// Save volume into an image
 	if err := backend.Save(ctxReq, h.DockerClient, volumeName, image); err != nil {
 		log.Error(err)
+		_ = bugsnag.Notify(err, ctxReq)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
@@ -56,6 +60,7 @@ func (h *Handler) SaveVolume(ctx echo.Context) error {
 	err = backend.StartContainersAttachedToVolume(ctxReq, h.DockerClient, stoppedContainers)
 	if err != nil {
 		log.Error(err)
+		_ = bugsnag.Notify(err, ctxReq)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 

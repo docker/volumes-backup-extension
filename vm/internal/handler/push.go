@@ -2,6 +2,8 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/bugsnag/bugsnag-go/v2"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -29,12 +31,14 @@ type ErrorDetail struct {
 // PushVolume pushes a volume to a registry.
 // The user must be previously authenticated to the registry with `docker login <registry>`, otherwise it returns 401 StatusUnauthorized.
 func (h *Handler) PushVolume(ctx echo.Context) error {
+	ctxReq := ctx.Request().Context()
+
 	var request PushRequest
 	if err := ctx.Bind(&request); err != nil {
+		_ = bugsnag.Notify(err, ctxReq)
 		return err
 	}
 
-	ctxReq := ctx.Request().Context()
 	volumeName := ctx.Param("volume")
 	log.Infof("volumeName: %s", volumeName)
 	log.Infof("reference: %s", request.Reference)
@@ -54,6 +58,7 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 	err := backend.TriggerUIRefresh(ctxReq, h.DockerClient)
 	if err != nil {
 		log.Error(err)
+		_ = bugsnag.Notify(err, ctxReq)
 		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
@@ -70,6 +75,7 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 
 	parsedRef, err := reference.ParseAnyReference(request.Reference)
 	if err != nil {
+		_ = bugsnag.Notify(err, ctxReq)
 		return ctx.String(http.StatusBadRequest, err.Error())
 	}
 	log.Infof("parsedRef.String(): %s", parsedRef.String())
@@ -78,12 +84,14 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 	stoppedContainers, err := backend.StopContainersAttachedToVolume(ctxReq, h.DockerClient, volumeName)
 	if err != nil {
 		log.Error(err)
+		_ = bugsnag.Notify(err, ctxReq)
 		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
 	// Save the content of the volume into an image
 	if err := backend.Save(ctxReq, h.DockerClient, volumeName, parsedRef.String()); err != nil {
 		log.Error(err)
+		_ = bugsnag.Notify(err, ctxReq)
 		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
@@ -93,6 +101,7 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 	})
 	if err != nil {
 		log.Error(err)
+		_ = bugsnag.Notify(err, ctxReq)
 		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 	defer pushResp.Close()
@@ -113,6 +122,7 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 			// or
 			// {"errorDetail":{"message":"no basic auth credentials"},"error":"no basic auth credentials"}
 			log.Error(err)
+			_ = bugsnag.Notify(fmt.Errorf(pel.Error), ctxReq)
 			if pel.Error == "unauthorized: authentication required" || pel.Error == "no basic auth credentials" {
 				return ctx.String(http.StatusUnauthorized, pel.Error)
 			} else {
@@ -125,6 +135,7 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 	err = backend.StartContainersAttachedToVolume(ctxReq, h.DockerClient, stoppedContainers)
 	if err != nil {
 		log.Error(err)
+		_ = bugsnag.Notify(err, ctxReq)
 		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 

@@ -3,6 +3,7 @@ package setup
 import (
 	"net/http"
 	"os"
+	"runtime"
 
 	"github.com/bugsnag/bugsnag-go/v2"
 	"github.com/felipecruz91/vackup-docker-extension/internal/log"
@@ -17,10 +18,15 @@ func ConfigureBugsnag() {
 
 	bugsnag.Configure(bugsnag.Configuration{
 		APIKey:       bugsnagAPIKey,
-		ReleaseStage: "production",
+		ReleaseStage: os.Getenv("BUGSNAG_RELEASE_STAGE"),
 		// The import paths for the Go packages containing your source files
 		ProjectPackages: []string{"main", "github.com/docker/volumes-backup-extension"},
-		AppVersion:      os.Getenv("EXTENSION_IMAGE_TAG"),
+		AppVersion:      os.Getenv("BUGSNAG_APP_VERSION"),
+	})
+
+	bugsnag.OnBeforeNotify(func(event *bugsnag.Event, config *bugsnag.Configuration) error {
+		event.MetaData.Add("OS", "Architecture", runtime.GOARCH)
+		return nil
 	})
 
 	log.Info("Bugsnag configuration added successfully.")

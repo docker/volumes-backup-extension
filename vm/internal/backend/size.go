@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/bugsnag/bugsnag-go/v2"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
@@ -29,10 +30,12 @@ func GetVolumesSize(ctx context.Context, cli *client.Client, volumeName string) 
 	})
 	if err != nil {
 		log.Error(err)
+		_ = bugsnag.Notify(err, ctx)
 	}
 	_, err = io.Copy(os.Stdout, reader)
 	if err != nil {
 		log.Error(err)
+		_ = bugsnag.Notify(err, ctx)
 	}
 
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
@@ -52,17 +55,20 @@ func GetVolumesSize(ctx context.Context, cli *client.Client, volumeName string) 
 	}, nil, nil, "")
 	if err != nil {
 		log.Error(err)
+		_ = bugsnag.Notify(err, ctx)
 	}
 
 	if err := cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
 		log.Error(err)
+		_ = bugsnag.Notify(err, ctx)
 	}
 
 	statusCh, errCh := cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
 	select {
 	case err := <-errCh:
 		if err != nil {
-			panic(err)
+			log.Error(err)
+			_ = bugsnag.Notify(err, ctx)
 		}
 	case <-statusCh:
 	}
@@ -70,12 +76,14 @@ func GetVolumesSize(ctx context.Context, cli *client.Client, volumeName string) 
 	out, err := cli.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{ShowStdout: true})
 	if err != nil {
 		log.Error(err)
+		_ = bugsnag.Notify(err, ctx)
 	}
 
 	buf := new(bytes.Buffer)
 	_, err = buf.ReadFrom(out)
 	if err != nil {
 		log.Error(err)
+		_ = bugsnag.Notify(err, ctx)
 	}
 
 	output := buf.String()
@@ -118,6 +126,7 @@ func GetVolumesSize(ctx context.Context, cli *client.Client, volumeName string) 
 	err = cli.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{})
 	if err != nil {
 		log.Error(err)
+		_ = bugsnag.Notify(err, ctx)
 	}
 
 	return m

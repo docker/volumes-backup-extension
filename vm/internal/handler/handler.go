@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"github.com/bugsnag/bugsnag-go/v2"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/felipecruz91/vackup-docker-extension/internal"
@@ -46,6 +47,7 @@ func pullImagesIfNotPresent(ctx context.Context, cli *client.Client) {
 					Platform: "linux/" + runtime.GOARCH,
 				})
 				if err != nil {
+					_ = bugsnag.Notify(err)
 					return err
 				}
 				_, err = io.Copy(os.Stdout, reader)

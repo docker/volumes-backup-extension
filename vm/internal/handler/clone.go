@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"github.com/bugsnag/bugsnag-go/v2"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/pkg/stdcopy"
@@ -16,6 +17,7 @@ import (
 )
 
 func (h *Handler) CloneVolume(ctx echo.Context) error {
+	ctxReq := ctx.Request().Context()
 	volumeName := ctx.Param("volume")
 	destVolume := ctx.QueryParam("destVolume")
 
@@ -33,40 +35,44 @@ func (h *Handler) CloneVolume(ctx echo.Context) error {
 		h.ProgressCache.Lock()
 		delete(h.ProgressCache.m, volumeName)
 		h.ProgressCache.Unlock()
-		_ = backend.TriggerUIRefresh(ctx.Request().Context(), h.DockerClient)
+		_ = backend.TriggerUIRefresh(ctxReq, h.DockerClient)
 	}()
 
 	h.ProgressCache.Lock()
 	h.ProgressCache.m[volumeName] = "clone"
 	h.ProgressCache.Unlock()
 
-	err := backend.TriggerUIRefresh(ctx.Request().Context(), h.DockerClient)
+	err := backend.TriggerUIRefresh(ctxReq, h.DockerClient)
 	if err != nil {
 		log.Error(err)
+		_ = bugsnag.Notify(err, ctxReq)
 		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
 	// Stop container(s)
-	stoppedContainers, err := backend.StopContainersAttachedToVolume(ctx.Request().Context(), h.DockerClient, volumeName)
+	stoppedContainers, err := backend.StopContainersAttachedToVolume(ctxReq, h.DockerClient, volumeName)
 	if err != nil {
 		log.Error(err)
+		_ = bugsnag.Notify(err, ctxReq)
 		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
 	// Ensure the image is present before creating the container
-	reader, err := h.DockerClient.ImagePull(ctx.Request().Context(), internal.BusyboxImage, types.ImagePullOptions{
+	reader, err := h.DockerClient.ImagePull(ctxReq, internal.BusyboxImage, types.ImagePullOptions{
 		Platform: "linux/" + runtime.GOARCH,
 	})
 	if err != nil {
+		_ = bugsnag.Notify(err, ctxReq)
 		return err
 	}
 	_, err = io.Copy(os.Stdout, reader)
 	if err != nil {
+		_ = bugsnag.Notify(err, ctxReq)
 		return err
 	}
 
 	// Clone
-	resp, err := h.DockerClient.ContainerCreate(ctx.Request().Context(), &container.Config{
+	resp, err := h.DockerClient.ContainerCreate(ctxReq, &container.Config{
 		Image:        internal.BusyboxImage,
 		AttachStdout: true,
 		AttachStderr: true,
@@ -88,20 +94,23 @@ func (h *Handler) CloneVolume(ctx echo.Context) error {
 	}, nil, nil, "")
 	if err != nil {
 		log.Error(err)
+		_ = bugsnag.Notify(err, ctxReq)
 		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
-	if err := h.DockerClient.ContainerStart(ctx.Request().Context(), resp.ID, types.ContainerStartOptions{}); err != nil {
+	if err := h.DockerClient.ContainerStart(ctxReq, resp.ID, types.ContainerStartOptions{}); err != nil {
 		log.Error(err)
+		_ = bugsnag.Notify(err, ctxReq)
 		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
 	var exitCode int64
-	statusCh, errCh := h.DockerClient.ContainerWait(ctx.Request().Context(), resp.ID, container.WaitConditionNotRunning)
+	statusCh, errCh := h.DockerClient.ContainerWait(ctxReq, resp.ID, container.WaitConditionNotRunning)
 	select {
 	case err := <-errCh:
 		if err != nil {
 			log.Error(err)
+			_ = bugsnag.Notify(err, ctxReq)
 			return ctx.String(http.StatusInternalServerError, err.Error())
 		}
 	case status := <-statusCh:
@@ -109,15 +118,17 @@ func (h *Handler) CloneVolume(ctx echo.Context) error {
 		exitCode = status.StatusCode
 	}
 
-	out, err := h.DockerClient.ContainerLogs(ctx.Request().Context(), resp.ID, types.ContainerLogsOptions{ShowStdout: true, ShowStderr: true})
+	out, err := h.DockerClient.ContainerLogs(ctxReq, resp.ID, types.ContainerLogsOptions{ShowStdout: true, ShowStderr: true})
 	if err != nil {
 		log.Error(err)
+		_ = bugsnag.Notify(err, ctxReq)
 		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
 	_, err = stdcopy.StdCopy(os.Stdout, os.Stderr, out)
 	if err != nil {
 		log.Error(err)
+		_ = bugsnag.Notify(err, ctxReq)
 		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
@@ -125,16 +136,18 @@ func (h *Handler) CloneVolume(ctx echo.Context) error {
 		return ctx.String(http.StatusInternalServerError, fmt.Sprintf("container exited with status code %d\n", exitCode))
 	}
 
-	err = h.DockerClient.ContainerRemove(ctx.Request().Context(), resp.ID, types.ContainerRemoveOptions{})
+	err = h.DockerClient.ContainerRemove(ctxReq, resp.ID, types.ContainerRemoveOptions{})
 	if err != nil {
 		log.Error(err)
+		_ = bugsnag.Notify(err, ctxReq)
 		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
 	// Start container(s)
-	err = backend.StartContainersAttachedToVolume(ctx.Request().Context(), h.DockerClient, stoppedContainers)
+	err = backend.StartContainersAttachedToVolume(ctxReq, h.DockerClient, stoppedContainers)
 	if err != nil {
 		log.Error(err)
+		_ = bugsnag.Notify(err, ctxReq)
 		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
 
