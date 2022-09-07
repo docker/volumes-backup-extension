@@ -125,9 +125,9 @@ jobs:
           # We have to override them with the same values as the ones defined in the Dockerfile.
           # https://github.com/docker/metadata-action#overwrite-labels
           labels: |
-            org.opencontainers.image.title="Volumes Backup & Share"
-            org.opencontainers.image.description="Back up, clone, restore, and share Docker volumes effortlessly."
-            org.opencontainers.image.vendor="Docker Inc."
+            org.opencontainers.image.title=Volumes Backup & Share
+            org.opencontainers.image.description=Back up, clone, restore, and share Docker volumes effortlessly.
+            org.opencontainers.image.vendor=Docker Inc.
 
       - name: Docker Build and Push to Docker Hub
         if: ${{ !github.event.pull_request.head.repo.fork }}
@@ -140,7 +140,7 @@ jobs:
           cache-to: type=gha,mode=max
           platforms: linux/amd64,linux/arm64
           build-args: |
-            BUGSNAG_RELEASE_STAGE="production"
+            BUGSNAG_RELEASE_STAGE=production
             BUGSNAG_APP_VERSION=${{ github.event.release.tag_name }}
           secrets: |
             BUGSNAG_API_KEY=${{ secrets.BUGSNAG_API_KEY }}
