@@ -102,4 +102,3 @@ RUN --mount=type=secret,id=BUGSNAG_API_KEY \
     echo "$BUGSNAG_API_KEY" > /tmp/bugsnag-api-key.txt
 
 ENTRYPOINT ["/bin/sh", "-c", "BUGSNAG_API_KEY=$(cat /tmp/bugsnag-api-key.txt); rm -rf /tmp/bugsnag-api-key.txt; BUGSNAG_API_KEY=$BUGSNAG_API_KEY /service -socket /run/guest-services/ext.sock"]
-CMD ["/bin/sh"]
