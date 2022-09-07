@@ -121,6 +121,13 @@ jobs:
             type=ref,event=branch
             type=ref,event=tag
             type=semver,pattern={{version}}
+          # The action will generate its own OCI labels that are not suitable for the Marketplace.
+          # We have to override them with the same values as the ones defined in the Dockerfile.
+          # https://github.com/docker/metadata-action#overwrite-labels
+          labels: |
+            org.opencontainers.image.title="Volumes Backup & Share"
+            org.opencontainers.image.description="Back up, clone, restore, and share Docker volumes effortlessly."
+            org.opencontainers.image.vendor="Docker Inc."
 
       - name: Docker Build and Push to Docker Hub
         if: ${{ !github.event.pull_request.head.repo.fork }}
