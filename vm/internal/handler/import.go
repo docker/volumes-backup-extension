@@ -85,7 +85,7 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 		// remove hidden and not-hidden files and folders:
 		// ..?* matches all dot-dot files except '..'
 		// .[!.]* matches all dot files except '.' and files whose name begins with '..'
-		Cmd: []string{"/bin/sh", "-c", "rm -rf /vackup-volume/..?* /vackup-volume/.[!.]* /vackup-volume/* && tar -xvzf /vackup"},
+		Cmd: []string{"/bin/sh", "-c", "rm -rf /vackup-volume/..?* /vackup-volume/.[!.]* /vackup-volume/* && tar -xvzf /vackup -C /vackup-volume"},
 		Labels: map[string]string{
 			"com.docker.desktop.extension":        "true",
 			"com.docker.desktop.extension.name":   "Volumes Backup & Share",
