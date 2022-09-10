@@ -103,6 +103,14 @@ export function App() {
       headerName: "Containers",
       flex: 1,
       renderCell: (params) => {
+        if (isVolumesSizeLoading) {
+          return (
+            <Box sx={{ width: "100%" }}>
+              <LinearProgress />
+            </Box>
+          );
+        }
+
         if (params.row.volumeContainers) {
           return (
             <Box display="flex" flexDirection="column">
@@ -119,7 +127,10 @@ export function App() {
       field: "volumeSize",
       headerName: "Size",
       renderCell: (params) => {
-        if (volumesSizeLoadingMap[params.row.volumeName]) {
+        if (
+          isVolumesSizeLoading ||
+          volumesSizeLoadingMap[params.row.volumeName]
+        ) {
           return (
             <Box sx={{ width: "100%" }}>
               <LinearProgress />
@@ -290,7 +301,13 @@ export function App() {
     }
   };
 
-  const { data: rows, isLoading, listVolumes, setData } = useGetVolumes();
+  const {
+    data: rows,
+    isLoading,
+    isVolumesSizeLoading,
+    listVolumes,
+    setData,
+  } = useGetVolumes();
 
   useEffect(() => {
     const volumeEvents = async () => {
