@@ -15,7 +15,8 @@ const ddClient = createDockerDesktopClient();
 
 interface Props {
   open: boolean;
-  onClose(v?: boolean): void;
+  onClose(): void;
+  onCompletion(v?: boolean): void;
 }
 
 export default function CloneDialog({ ...props }: Props) {
@@ -49,8 +50,11 @@ export default function CloneDialog({ ...props }: Props) {
         sendNotification.error(
           `Failed to clone volume ${context.store.volume.volumeName} to destination volume ${volumeName}: ${error.stderr} Exit code: ${error.code}`
         );
+      })
+      .finally(() => {
+        props.onCompletion(true);
       });
-    props.onClose(true);
+    props.onClose();
   };
 
   return (
@@ -89,7 +93,7 @@ export default function CloneDialog({ ...props }: Props) {
           variant="outlined"
           onClick={() => {
             track({ action: "CloneVolumeCancel" });
-            props.onClose(false);
+            props.onClose();
           }}
         >
           Cancel

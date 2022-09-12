@@ -16,7 +16,6 @@ func (h *Handler) VolumesContainer(ctx echo.Context) error {
 		return err
 	}
 
-	// TODO: receive volumes from body instead of recalculating it again?
 	v, err := cli.VolumeList(ctxReq, filters.NewArgs())
 	if err != nil {
 		return err

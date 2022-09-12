@@ -38,10 +38,7 @@ func (h *Handler) Volumes(ctx echo.Context) error {
 
 	for _, vol := range v.Volumes {
 		res.data[vol.Name] = VolumeData{
-			Driver:     vol.Driver,
-			Size:       -1,   // set to `-1` if the value is not available.
-			SizeHuman:  "-1", // set to `-1` if the value is not available.
-			Containers: nil,  // set to `nil` if the value is not available.
+			Driver: vol.Driver,
 		}
 	}
 

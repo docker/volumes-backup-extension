@@ -309,30 +309,6 @@ export function App() {
     setData,
   } = useGetVolumes();
 
-  useEffect(() => {
-    const volumeEvents = async () => {
-      console.log("listening to volume events...");
-      await ddClient.docker.cli.exec(
-        "events",
-        ["--format", `"{{ json . }}"`, "--filter", "type=volume"],
-        {
-          stream: {
-            onOutput() {
-              listVolumes();
-            },
-            onClose(exitCode) {
-              console.log("onClose with exit code " + exitCode);
-            },
-            splitOutputLines: true,
-          },
-        }
-      );
-    };
-
-    volumeEvents();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const getActionsInProgress = async () => {
     ddClient.extension.vm.service
       .get("/progress")
@@ -413,28 +389,33 @@ export function App() {
       });
   };
 
-  const handleExportDialogClose = (actionSuccessfullyCompleted: boolean) => {
+  const handleExportDialogClose = () => {
     setOpenExportDialog(false);
     context.actions.setVolume(null);
-    if (actionSuccessfullyCompleted) {
-      listVolumes();
-    }
   };
 
-  const handleImportIntoNewDialogClose = (
-    actionSuccessfullyCompleted: boolean
-  ) => {
+  const handleImportIntoNewDialogClose = () => {
     setOpenImportIntoNewDialog(false);
     context.actions.setVolume(null);
+  };
+
+  const handleImportIntoNewDialogCompletion = (
+    actionSuccessfullyCompleted: boolean
+  ) => {
     if (actionSuccessfullyCompleted) {
       if (context.store.volume)
         calculateVolumeSize(context.store.volume.volumeName);
     }
   };
 
-  const handleCloneDialogClose = (actionSuccessfullyCompleted: boolean) => {
+  const handleCloneDialogClose = () => {
     setOpenCloneDialog(false);
     context.actions.setVolume(null);
+  };
+
+  const handleCloneDialogOnCompletion = (
+    actionSuccessfullyCompleted: boolean
+  ) => {
     if (actionSuccessfullyCompleted) {
       listVolumes();
     }
@@ -545,6 +526,7 @@ export function App() {
               volumes={rows}
               open={openImportIntoNewDialog}
               onClose={handleImportIntoNewDialogClose}
+              onCompletion={handleImportIntoNewDialogCompletion}
             />
           )}
 
@@ -552,6 +534,7 @@ export function App() {
             <CloneDialog
               open={openCloneDialog}
               onClose={handleCloneDialogClose}
+              onCompletion={handleCloneDialogOnCompletion}
             />
           )}
 
