@@ -83,16 +83,17 @@ export const useGetVolumes = () => {
               for (const key in rows) {
                 const row = rows[key];
 
-                if (containersMap[row.volumeName] === undefined) {
-                  continue;
+                if (containersMap[row.volumeName] !== undefined) {
+                  if (containersMap[row.volumeName].Containers?.length) {
+                    row.volumeContainers =
+                      containersMap[row.volumeName].Containers;
+                  }
                 }
 
-                if (containersMap[row.volumeName].Containers?.length) {
-                  row.volumeContainers =
-                    containersMap[row.volumeName].Containers;
+                if (sizesMap[row.volumeName] !== undefined) {
+                  row.volumeSize = sizesMap[row.volumeName].Human;
+                  row.volumeBytes = sizesMap[row.volumeName].Bytes;
                 }
-                row.volumeSize = sizesMap[row.volumeName].Human;
-                row.volumeBytes = sizesMap[row.volumeName].Bytes;
 
                 updatedRows.push(row);
               }

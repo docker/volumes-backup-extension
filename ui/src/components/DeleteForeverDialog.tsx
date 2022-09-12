@@ -15,7 +15,8 @@ const ddClient = createDockerDesktopClient();
 
 interface Props {
   open: boolean;
-  onClose(v?: boolean): void;
+  onClose(): void;
+  onCompletion(v?: boolean): void;
 }
 
 export default function DeleteForeverDialog({ ...props }: Props) {
@@ -30,13 +31,15 @@ export default function DeleteForeverDialog({ ...props }: Props) {
         sendNotification.info(
           `Volume ${context.store.volume.volumeName} deleted`
         );
+        props.onCompletion(true);
       })
       .catch((error) => {
         sendNotification.error(
           `Failed to delete volume ${context.store.volume.volumeName}: ${error.stderr} Exit code: ${error.code}`
         );
+        props.onCompletion(false);
       });
-    props.onClose(true);
+    props.onClose();
   };
 
   return (
@@ -53,7 +56,7 @@ export default function DeleteForeverDialog({ ...props }: Props) {
           variant="outlined"
           onClick={() => {
             track({ action: "DeleteVolumeCancel" });
-            props.onClose(false);
+            props.onClose();
           }}
         >
           Cancel

@@ -427,11 +427,14 @@ export function App() {
     context.actions.setVolume(null);
   };
 
-  const handleDeleteForeverDialogClose = (
-    actionSuccessfullyCompleted: boolean
-  ) => {
+  const handleDeleteForeverDialogClose = () => {
     setOpenDeleteForeverDialog(false);
     context.actions.setVolume(null);
+  };
+
+  const handleDeleteForeverDialogCompletion = (
+    actionSuccessfullyCompleted: boolean
+  ) => {
     if (actionSuccessfullyCompleted) {
       listVolumes();
     }
@@ -549,9 +552,8 @@ export function App() {
           {openDeleteForeverDialog && (
             <DeleteForeverDialog
               open={openDeleteForeverDialog}
-              onClose={(e) => {
-                handleDeleteForeverDialogClose(e);
-              }}
+              onClose={handleDeleteForeverDialogClose}
+              onCompletion={handleDeleteForeverDialogCompletion}
             />
           )}
         </Grid>
