@@ -15,6 +15,7 @@ import {
   CircularProgress,
   Grid,
   LinearProgress,
+  Skeleton,
   Stack,
   Tooltip,
   Typography,
@@ -106,7 +107,7 @@ export function App() {
         if (isVolumesSizeLoading) {
           return (
             <Box sx={{ width: "100%" }}>
-              <LinearProgress />
+              <Skeleton animation="wave" />
             </Box>
           );
         }
@@ -133,7 +134,7 @@ export function App() {
         ) {
           return (
             <Box sx={{ width: "100%" }}>
-              <LinearProgress />
+              <Skeleton animation="wave" />
             </Box>
           );
         }
