@@ -102,21 +102,24 @@ func TestExportVolume(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := extractTarGz(t, r); err != nil {
-		t.Fatal(err)
-	}
+
+	dst := filepath.Join(tmpDir, "export-destination")
 	defer func() {
 		// the folder that is exported from the volume.tar.gz
-		if err = os.RemoveAll("vackup-volume"); err != nil {
+		if err = os.RemoveAll(dst); err != nil {
 			t.Fatal(err)
 		}
 	}()
+
+	if err := extractTarGz(t, dst, r); err != nil {
+		t.Fatal(err)
+	}
 
 	exportedFiles := []string{"50x.html", "index.html"}
 
 	actual := make(map[string][]byte, len(exportedFiles))
 	for _, f := range exportedFiles {
-		actual[f] = readFile(t, "vackup-volume", f)
+		actual[f] = readFile(t, dst, f)
 	}
 	require.Len(t, actual, 2)
 
@@ -128,7 +131,7 @@ func TestExportVolume(t *testing.T) {
 	}
 }
 
-func extractTarGz(t *testing.T, gzipStream io.Reader) error {
+func extractTarGz(t *testing.T, dst string, gzipStream io.Reader) error {
 	t.Helper()
 
 	uncompressedStream, err := gzip.NewReader(gzipStream)
@@ -149,13 +152,16 @@ func extractTarGz(t *testing.T, gzipStream io.Reader) error {
 			return err
 		}
 
+		// the target location where the dir/file should be created
+		target := filepath.Join(dst, header.Name)
+
 		switch header.Typeflag {
 		case tar.TypeDir:
-			if err := os.Mkdir(header.Name, 0755); err != nil {
+			if err := os.Mkdir(target, 0755); err != nil {
 				return err
 			}
 		case tar.TypeReg:
-			outFile, err := os.Create(header.Name)
+			outFile, err := os.Create(target)
 			if err != nil {
 				return err
 			}
