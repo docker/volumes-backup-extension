@@ -92,6 +92,9 @@ export function App() {
 
   const [actionsInProgress, setActionsInProgress] = React.useState({});
 
+  const [recalculateVolumeSize, setRecalculateVolumeSize] =
+    React.useState<string>(null);
+
   const columns = [
     { field: "volumeDriver", headerName: "Driver", hide: true },
     {
@@ -415,12 +418,29 @@ export function App() {
   };
 
   const handleCloneDialogOnCompletion = (
+    clonedVolumeName: string,
     actionSuccessfullyCompleted: boolean
   ) => {
     if (actionSuccessfullyCompleted) {
-      listVolumes();
+      // Push new volume into the state
+      const rowsCopy = rows.slice(); // copy the array
+      rowsCopy.push({
+        id: rows.length,
+        volumeName: clonedVolumeName,
+        volumeDriver: "local",
+      });
+
+      setData(rowsCopy);
+      setRecalculateVolumeSize(clonedVolumeName);
     }
   };
+
+  useEffect(() => {
+    if (!recalculateVolumeSize) {
+      return;
+    }
+    calculateVolumeSize(recalculateVolumeSize);
+  }, [recalculateVolumeSize]);
 
   const handleTransferDialogClose = () => {
     setOpenTransferDialog(false);
