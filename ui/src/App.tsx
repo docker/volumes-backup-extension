@@ -309,7 +309,6 @@ export function App() {
     data: rows,
     isLoading,
     isVolumesSizeLoading,
-    listVolumes,
     setData,
   } = useGetVolumes();
 
@@ -422,8 +421,7 @@ export function App() {
     actionSuccessfullyCompleted: boolean
   ) => {
     if (actionSuccessfullyCompleted) {
-      // Push new volume into the state
-      const rowsCopy = rows.slice(); // copy the array
+      const rowsCopy = rows.slice();
       rowsCopy.push({
         id: rows.length,
         volumeName: clonedVolumeName,
@@ -455,8 +453,16 @@ export function App() {
   const handleDeleteForeverDialogCompletion = (
     actionSuccessfullyCompleted: boolean
   ) => {
-    if (actionSuccessfullyCompleted) {
-      listVolumes();
+    if (actionSuccessfullyCompleted && context.store.volume) {
+      const rowsCopy = rows.slice();
+      const index = rowsCopy.findIndex(
+        (element) => element.volumeName === context.store.volume.volumeName
+      );
+      if (index > -1) {
+        rowsCopy.splice(index, 1);
+      }
+
+      setData(rowsCopy);
     }
   };
 

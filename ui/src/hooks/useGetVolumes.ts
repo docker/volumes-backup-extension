@@ -111,7 +111,6 @@ export const useGetVolumes = () => {
   };
 
   return {
-    listVolumes,
     isLoading,
     isVolumesSizeLoading,
     data,
