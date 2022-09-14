@@ -34,7 +34,7 @@ const ddClient = createDockerDesktopClient();
 interface Props {
   open: boolean;
   onClose(): void;
-  onCompletion(v: boolean): void;
+  onCompletion(v: boolean, selectedVolumeName: string): void;
   volumes: IVolumeRow[];
 }
 
@@ -94,10 +94,10 @@ export default function ImportDialog({
         path,
       })
         .then(() => {
-          onCompletion(true);
+          onCompletion(true, selectedVolumeName);
         })
         .catch(() => {
-          onCompletion(false);
+          onCompletion(false, selectedVolumeName);
         });
     } else if (fromRadioValue === "image") {
       track({ ...metrics, importType: "fromLocalImage" });
@@ -106,10 +106,10 @@ export default function ImportDialog({
         imageName: image,
       })
         .then(() => {
-          onCompletion(true);
+          onCompletion(true, selectedVolumeName);
         })
         .catch(() => {
-          onCompletion(false);
+          onCompletion(false, selectedVolumeName);
         });
     } else {
       track({ ...metrics, importType: "fromRegistry" });
@@ -118,10 +118,10 @@ export default function ImportDialog({
         volumeId: volumeId?.[0],
       })
         .then(() => {
-          onCompletion(true);
+          onCompletion(true, selectedVolumeName);
         })
         .catch(() => {
-          onCompletion(false);
+          onCompletion(false, selectedVolumeName);
         });
     }
     onClose();

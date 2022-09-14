@@ -307,6 +307,7 @@ export function App() {
 
   const {
     data: rows,
+    listVolumes,
     isLoading,
     isVolumesSizeLoading,
     setData,
@@ -403,11 +404,17 @@ export function App() {
   };
 
   const handleImportIntoNewDialogCompletion = (
-    actionSuccessfullyCompleted: boolean
+    actionSuccessfullyCompleted: boolean,
+    selectedVolumeName: string
   ) => {
     if (actionSuccessfullyCompleted) {
-      if (context.store.volume)
+      if (selectedVolumeName && context.store.volume) {
+        // the import is performed on an existing volume
         calculateVolumeSize(context.store.volume.volumeName);
+      } else {
+        // the import is performed on a new volume, so we fetch all volumes to populate the table
+        listVolumes();
+      }
     }
   };
 
