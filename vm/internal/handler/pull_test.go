@@ -175,7 +175,8 @@ func TestPullVolume(t *testing.T) {
 	require.Equal(t, http.StatusCreated, rec.Code)
 
 	// Check the content of the volume
-	m := backend.GetVolumesSize(c.Request().Context(), cli, volume)
+	m, err := backend.GetVolumesSize(c.Request().Context(), cli, volume)
+	require.NoError(t, err)
 	require.Equal(t, int64(16000), m[volume].Bytes)
 	require.Equal(t, "16.0 kB", m[volume].Human)
 }
@@ -342,7 +343,8 @@ func TestPullVolumeUsingCorrectAuth(t *testing.T) {
 	require.Equal(t, http.StatusCreated, rec.Code)
 
 	// Check the content of the volume
-	m := backend.GetVolumesSize(c.Request().Context(), cli, volume)
+	m, err := backend.GetVolumesSize(c.Request().Context(), cli, volume)
+	require.NoError(t, err)
 	require.Equal(t, int64(16000), m[volume].Bytes)
 	require.Equal(t, "16.0 kB", m[volume].Human)
 }
@@ -481,7 +483,8 @@ func TestPullVolumeUsingWrongAuthShouldFail(t *testing.T) {
 	require.Equal(t, http.StatusUnauthorized, rec.Code)
 
 	// Check the content of the volume
-	m := backend.GetVolumesSize(c.Request().Context(), cli, volume)
+	m, err := backend.GetVolumesSize(c.Request().Context(), cli, volume)
+	require.NoError(t, err)
 	require.Equal(t, int64(0), m[volume].Bytes)
 	require.Equal(t, "0 B", m[volume].Human)
 }

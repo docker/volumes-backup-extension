@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/volumes-backup-extension/internal/log"
 	"github.com/labstack/echo"
 )
 
@@ -22,14 +21,16 @@ type VolumeData struct {
 }
 
 func (h *Handler) Volumes(ctx echo.Context) error {
+	ctxReq := ctx.Request().Context()
+
 	cli, err := h.DockerClient()
 	if err != nil {
-		log.Error(err)
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return err
 	}
-	v, err := cli.VolumeList(ctx.Request().Context(), filters.NewArgs())
+
+	v, err := cli.VolumeList(ctxReq, filters.NewArgs())
 	if err != nil {
-		log.Error(err)
+		return err
 	}
 
 	var res = VolumesResponse{

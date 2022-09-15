@@ -101,7 +101,8 @@ func TestCloneVolume(t *testing.T) {
 		t.Fatal(err)
 	}
 	require.Len(t, clonedVolumeResp.Volumes, 1)
-	sizes := backend.GetVolumesSize(context.Background(), dockerClient, destVolume)
+	sizes, err := backend.GetVolumesSize(context.Background(), dockerClient, destVolume)
+	require.NoError(t, err)
 	require.Equal(t, int64(16000), sizes[destVolume].Bytes)
 	require.Equal(t, "16.0 kB", sizes[destVolume].Human)
 

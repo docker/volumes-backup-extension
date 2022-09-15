@@ -29,12 +29,13 @@ type ErrorDetail struct {
 // PushVolume pushes a volume to a registry.
 // The user must be previously authenticated to the registry with `docker login <registry>`, otherwise it returns 401 StatusUnauthorized.
 func (h *Handler) PushVolume(ctx echo.Context) error {
+	ctxReq := ctx.Request().Context()
+
 	var request PushRequest
 	if err := ctx.Bind(&request); err != nil {
 		return err
 	}
 
-	ctxReq := ctx.Request().Context()
 	volumeName := ctx.Param("volume")
 	log.Infof("volumeName: %s", volumeName)
 	log.Infof("reference: %s", request.Reference)
@@ -42,8 +43,7 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 
 	cli, err := h.DockerClient()
 	if err != nil {
-		log.Error(err)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 	defer func() {
 		h.ProgressCache.Lock()
@@ -58,8 +58,7 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 
 	err = backend.TriggerUIRefresh(ctxReq, cli)
 	if err != nil {
-		log.Error(err)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	// To provide backwards compatibility with older versions of Docker Desktop,
@@ -82,14 +81,12 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 	// Stop container(s)
 	stoppedContainers, err := backend.StopContainersAttachedToVolume(ctxReq, cli, volumeName)
 	if err != nil {
-		log.Error(err)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	// Save the content of the volume into an image
 	if err := backend.Save(ctxReq, cli, volumeName, parsedRef.String()); err != nil {
-		log.Error(err)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	// Push the image to registry
@@ -97,8 +94,7 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 		RegistryAuth: request.Base64EncodedAuth,
 	})
 	if err != nil {
-		log.Error(err)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 	defer pushResp.Close()
 
@@ -117,7 +113,6 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 			// {"errorDetail":{"message":"unauthorized: authentication required"},"error":"unauthorized: authentication required"}
 			// or
 			// {"errorDetail":{"message":"no basic auth credentials"},"error":"no basic auth credentials"}
-			log.Error(err)
 			if pel.Error == "unauthorized: authentication required" || pel.Error == "no basic auth credentials" {
 				return ctx.String(http.StatusUnauthorized, pel.Error)
 			} else {
@@ -129,8 +124,7 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 	// Start container(s)
 	err = backend.StartContainersAttachedToVolume(ctxReq, cli, stoppedContainers)
 	if err != nil {
-		log.Error(err)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	return ctx.String(http.StatusCreated, "")

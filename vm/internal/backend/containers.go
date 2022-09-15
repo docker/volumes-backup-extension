@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bugsnag/bugsnag-go/v2"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
@@ -24,6 +25,7 @@ func GetContainersForVolume(ctx context.Context, cli *client.Client, volumeName 
 	})
 	if err != nil {
 		log.Error(err)
+		_ = bugsnag.Notify(err, ctx)
 	}
 
 	containerNames := make([]string, 0, len(containers))

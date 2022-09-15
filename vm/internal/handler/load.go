@@ -3,12 +3,14 @@ package handler
 import (
 	"net/http"
 
+	"github.com/bugsnag/bugsnag-go/v2"
 	"github.com/docker/volumes-backup-extension/internal/backend"
 	"github.com/docker/volumes-backup-extension/internal/log"
 	"github.com/labstack/echo"
 )
 
 func (h *Handler) LoadImage(ctx echo.Context) error {
+	ctxReq := ctx.Request().Context()
 	volumeName := ctx.Param("volume")
 	image := ctx.QueryParam("image")
 
@@ -24,43 +26,40 @@ func (h *Handler) LoadImage(ctx echo.Context) error {
 
 	cli, err := h.DockerClient()
 	if err != nil {
-		log.Error(err)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 	defer func() {
 		h.ProgressCache.Lock()
 		delete(h.ProgressCache.m, volumeName)
 		h.ProgressCache.Unlock()
-		_ = backend.TriggerUIRefresh(ctx.Request().Context(), cli)
+		_ = backend.TriggerUIRefresh(ctxReq, cli)
 	}()
 
 	h.ProgressCache.Lock()
 	h.ProgressCache.m[volumeName] = "load"
 	h.ProgressCache.Unlock()
 
-	if err := backend.TriggerUIRefresh(ctx.Request().Context(), cli); err != nil {
-		log.Error(err)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+	if err := backend.TriggerUIRefresh(ctxReq, cli); err != nil {
+		return err
 	}
 
-	stoppedContainers, err := backend.StopContainersAttachedToVolume(ctx.Request().Context(), cli, volumeName)
+	stoppedContainers, err := backend.StopContainersAttachedToVolume(ctxReq, cli, volumeName)
 	if err != nil {
-		log.Error(err)
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	// Load
-	err = backend.Load(ctx.Request().Context(), cli, volumeName, image)
+	err = backend.Load(ctxReq, cli, volumeName, image)
 	if err != nil {
-		log.Error(err)
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	// Start container(s)
-	err = backend.StartContainersAttachedToVolume(ctx.Request().Context(), cli, stoppedContainers)
+	err = backend.StartContainersAttachedToVolume(ctxReq, cli, stoppedContainers)
 	if err != nil {
 		log.Error(err)
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		_ = bugsnag.Notify(err, ctxReq)
+		return err
 	}
 
 	return ctx.String(http.StatusOK, "")

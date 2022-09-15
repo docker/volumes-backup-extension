@@ -20,7 +20,18 @@ RUN --mount=type=cache,target=/usr/src/app/.npm \
     npm ci
 # install
 COPY ui /ui
-RUN npm run build
+RUN --mount=type=secret,id=BUGSNAG_API_KEY \
+    REACT_APP_BUGSNAG_API_KEY=$(cat /run/secrets/BUGSNAG_API_KEY) \
+    npm run build
+
+FROM alpine:3.16 as base
+ARG CLI_VERSION=20.10.17
+SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
+RUN apk update \
+    && apk add --no-cache ca-certificates curl \
+    && rm -rf /var/cache/apk/*
+RUN curl -fL "https://download.docker.com/linux/static/stable/$(uname -m)/docker-${CLI_VERSION}.tgz" | tar zxf - --strip-components 1 docker/docker \
+    && chmod +x /docker
 
 FROM --platform=$BUILDPLATFORM golang:1.17-alpine AS docker-credentials-client-builder
 ENV CGO_ENABLED=0
@@ -32,6 +43,13 @@ COPY client .
 RUN make cross
 
 FROM busybox:1.35.0
+
+ARG BUGSNAG_RELEASE_STAGE="local"
+ARG BUGSNAG_APP_VERSION="latest"
+
+ENV BUGSNAG_RELEASE_STAGE=$BUGSNAG_RELEASE_STAGE
+ENV BUGSNAG_APP_VERSION=$BUGSNAG_APP_VERSION
+
 LABEL org.opencontainers.image.title="Volumes Backup & Share" \
     org.opencontainers.image.description="Back up, clone, restore, and share Docker volumes effortlessly." \
     org.opencontainers.image.vendor="Docker Inc." \
@@ -76,10 +94,16 @@ WORKDIR /
 COPY docker-compose.yaml .
 COPY metadata.json .
 COPY icon.svg .
+COPY --from=base /etc/ssl/certs /etc/ssl/certs
+COPY --from=base /docker /usr/local/bin/docker
 COPY --from=builder /backend/bin/service /
 COPY --from=client-builder /ui/build ui
 COPY --from=docker-credentials-client-builder output/dist ./host
 
 RUN mkdir -p /vackup
 
-CMD /service -socket /run/guest-services/ext.sock
+RUN --mount=type=secret,id=BUGSNAG_API_KEY \
+    BUGSNAG_API_KEY=$(cat /run/secrets/BUGSNAG_API_KEY); \
+    echo "$BUGSNAG_API_KEY" > /tmp/bugsnag-api-key.txt
+
+ENTRYPOINT ["/bin/sh", "-c", "BUGSNAG_API_KEY=$(cat /tmp/bugsnag-api-key.txt); rm -rf /tmp/bugsnag-api-key.txt; BUGSNAG_API_KEY=$BUGSNAG_API_KEY /service -socket /run/guest-services/ext.sock"]

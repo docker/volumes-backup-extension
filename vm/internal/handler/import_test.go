@@ -61,7 +61,8 @@ func TestImportTarGzFile(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, rec.Code)
-	sizes := backend.GetVolumesSize(c.Request().Context(), cli, volume)
+	sizes, err := backend.GetVolumesSize(c.Request().Context(), cli, volume)
+	require.NoError(t, err)
 	require.Equal(t, int64(16000), sizes[volume].Bytes)
 	require.Equal(t, "16.0 kB", sizes[volume].Human)
 }
@@ -142,7 +143,8 @@ func TestImportTarGzFileShouldRemovePreviousVolumeData(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, rec.Code)
-	sizes := backend.GetVolumesSize(c.Request().Context(), cli, volume)
+	sizes, err := backend.GetVolumesSize(c.Request().Context(), cli, volume)
+	require.NoError(t, err)
 	require.Equal(t, int64(16000), sizes[volume].Bytes)
 	require.Equal(t, "16.0 kB", sizes[volume].Human)
 }

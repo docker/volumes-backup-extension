@@ -9,6 +9,7 @@ import (
 )
 
 func (h *Handler) DeleteVolume(ctx echo.Context) error {
+	ctxReq := ctx.Request().Context()
 	volumeName := ctx.Param("volume")
 
 	if volumeName == "" {
@@ -19,31 +20,28 @@ func (h *Handler) DeleteVolume(ctx echo.Context) error {
 
 	cli, err := h.DockerClient()
 	if err != nil {
-		log.Error(err)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	defer func() {
 		h.ProgressCache.Lock()
 		delete(h.ProgressCache.m, volumeName)
 		h.ProgressCache.Unlock()
-		_ = backend.TriggerUIRefresh(ctx.Request().Context(), cli)
+		_ = backend.TriggerUIRefresh(ctxReq, cli)
 	}()
 
 	h.ProgressCache.Lock()
 	h.ProgressCache.m[volumeName] = "delete"
 	h.ProgressCache.Unlock()
 
-	if err := backend.TriggerUIRefresh(ctx.Request().Context(), cli); err != nil {
-		log.Error(err)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+	if err := backend.TriggerUIRefresh(ctxReq, cli); err != nil {
+		return err
 	}
 
 	// Delete volume
-	err = cli.VolumeRemove(ctx.Request().Context(), volumeName, true)
+	err = cli.VolumeRemove(ctxReq, volumeName, true)
 	if err != nil {
-		log.Error(err)
-		return ctx.String(http.StatusInternalServerError, err.Error())
+		return err
 	}
 
 	return ctx.String(http.StatusNoContent, "")

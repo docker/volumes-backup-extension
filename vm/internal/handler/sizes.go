@@ -13,7 +13,10 @@ func (h *Handler) VolumesSize(ctx echo.Context) error {
 		return err
 	}
 
-	m := backend.GetVolumesSize(ctx.Request().Context(), cli, "*")
+	m, err := backend.GetVolumesSize(ctx.Request().Context(), cli, "*")
+	if err != nil {
+		return err
+	}
 
 	return ctx.JSON(http.StatusOK, m)
 }

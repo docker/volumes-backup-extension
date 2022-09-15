@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"flag"
+	"github.com/bugsnag/bugsnag-go/v2"
+	"github.com/labstack/echo/middleware"
 	"net"
 	"net/http"
 	"os"
@@ -12,8 +14,8 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/volumes-backup-extension/internal/handler"
 	"github.com/docker/volumes-backup-extension/internal/log"
+	"github.com/docker/volumes-backup-extension/internal/setup"
 	"github.com/labstack/echo"
-	"github.com/labstack/echo/middleware"
 )
 
 var (
@@ -25,6 +27,8 @@ func main() {
 	flag.StringVar(&socketPath, "socket", "/run/guest/ext.sock", "Unix domain socket to listen on")
 	flag.Parse()
 
+	setup.ConfigureBugsnag()
+
 	_ = os.RemoveAll(socketPath)
 
 	// Output to stdout instead of the default stderr
@@ -32,7 +36,12 @@ func main() {
 
 	router := echo.New()
 	router.HideBanner = true
-	router.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+	router.HTTPErrorHandler = func(err error, c echo.Context) {
+		setup.ConfigureBugsnagHTTPErrorHandler(err, c)
+		router.DefaultHTTPErrorHandler(err, c)
+	}
+
+	logMiddleware := middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Skipper: middleware.DefaultSkipper,
 		Format: `{"time":"${time_rfc3339_nano}","id":"${id}",` +
 			`"host":"${host}","method":"${method}","uri":"${uri}","user_agent":"${user_agent}",` +
@@ -40,20 +49,22 @@ func main() {
 			`,"bytes_in":${bytes_in},"bytes_out":${bytes_out}}` + "\n",
 		CustomTimeFormat: "2006-01-02 15:04:05.00000",
 		Output:           os.Stdout,
-	}))
+	})
+	router.Use(logMiddleware)
 
 	log.Infof("Starting listening on %s\n", socketPath)
 	ln, err := net.Listen("unix", socketPath)
 	if err != nil {
+		_ = bugsnag.Notify(err)
 		log.Fatal(err)
 	}
 	router.Listener = ln
 
 	cliFactory := func() (*client.Client, error) {
-
 		return client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	}
 	if err != nil {
+		_ = bugsnag.Notify(err)
 		log.Fatal(err)
 	}
 
@@ -75,7 +86,13 @@ func main() {
 
 	// Start server
 	go func() {
-		if err := router.Start(""); err != nil && err != http.ErrServerClosed {
+		server := &http.Server{
+			Addr: "",
+		}
+		setup.ConfigureBugsnagHandler(server)
+
+		if err := router.StartServer(server); err != nil && err != http.ErrServerClosed {
+			_ = bugsnag.Notify(err)
 			log.Fatal("shutting down the server")
 		}
 	}()
@@ -88,6 +105,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := router.Shutdown(ctx); err != nil {
+		_ = bugsnag.Notify(err)
 		log.Fatal(err)
 	}
 }

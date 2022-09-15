@@ -1,13 +1,21 @@
 IMAGE?=docker/volumes-backup-extension
 TAG?=latest
-
 BUILDER=buildx-multi-arch
+
+export BUGSNAG_API_KEY?=
+export BUGSNAG_RELEASE_STAGE?=local
 
 INFO_COLOR = \033[0;36m
 NO_COLOR   = \033[m
 
 build-extension: ## Build service image to be deployed as a desktop extension
-	docker buildx build --load --tag=$(IMAGE):$(TAG) .
+	docker buildx build \
+		--secret id=BUGSNAG_API_KEY \
+		--build-arg BUGSNAG_RELEASE_STAGE=$(BUGSNAG_RELEASE_STAGE) \
+		--build-arg BUGSNAG_APP_VERSION=$(TAG) \
+		--load \
+		--tag=$(IMAGE):$(TAG) \
+		.
 
 install-extension: build-extension ## Install the extension
 	docker extension install $(IMAGE):$(TAG)
@@ -26,7 +34,7 @@ prepare-buildx: ## Create buildx builder for multi-arch build, if not exists
 	docker buildx inspect $(BUILDER) || docker buildx create --name=$(BUILDER) --driver=docker-container --driver-opt=network=host
 
 push-extension: prepare-buildx ## Build & Upload extension image to hub. Do not push if tag already exists: make push-extension tag=0.1
-	docker pull $(IMAGE):$(TAG) && echo "Failure: Tag already exists" || docker buildx build --push --builder=$(BUILDER) --platform=linux/amd64,linux/arm64 --build-arg TAG=$(TAG) --tag=$(IMAGE):$(TAG) .
+	docker pull $(IMAGE):$(TAG) && echo "Failure: Tag already exists" || docker buildx build --secret id=BUGSNAG_API_KEY --build-arg BUGSNAG_RELEASE_STAGE=$(BUGSNAG_RELEASE_STAGE) --build-arg BUGSNAG_APP_VERSION=$(TAG) --push --builder=$(BUILDER) --platform=linux/amd64,linux/arm64 --build-arg TAG=$(TAG) --tag=$(IMAGE):$(TAG) .
 
 help: ## Show this help
 	@echo Please specify a build target. The choices are:

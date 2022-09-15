@@ -77,6 +77,11 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64
+          build-args: |
+            BUGSNAG_RELEASE_STAGE=""
+            BUGSNAG_APP_VERSION=""
+          secrets: |
+            BUGSNAG_API_KEY=""
 
       - name: Run Trivy for all CVEs (non-blocking)
         uses: aquasecurity/trivy-action@master
@@ -123,6 +128,7 @@ jobs:
             org.opencontainers.image.title=Volumes Backup & Share
             org.opencontainers.image.description=Back up, clone, restore, and share Docker volumes effortlessly.
             org.opencontainers.image.vendor=Docker Inc.
+
       - name: Docker Build and Push to Docker Hub
         if: ${{ !github.event.pull_request.head.repo.fork }}
         uses: docker/build-push-action@v2
@@ -133,6 +139,12 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64,linux/arm64
+          build-args: |
+            BUGSNAG_RELEASE_STAGE=production
+            BUGSNAG_APP_VERSION=${{ github.event.release.tag_name }}
+          secrets: |
+            BUGSNAG_API_KEY=${{ secrets.BUGSNAG_API_KEY }}
+
         # If PR, put image tags in the PR comments
         # from https://github.com/marketplace/actions/create-or-update-comment
       - name: Find comment for image tags
