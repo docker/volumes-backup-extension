@@ -24,10 +24,14 @@ RUN --mount=type=secret,id=BUGSNAG_API_KEY \
     REACT_APP_BUGSNAG_API_KEY=$(cat /run/secrets/BUGSNAG_API_KEY) \
     npm run build
 
-FROM alpine:3.16 as certs
+FROM alpine:3.16 as base
+ARG CLI_VERSION=20.10.17
+SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 RUN apk update \
-    && apk add --no-cache ca-certificates \
+    && apk add --no-cache ca-certificates curl \
     && rm -rf /var/cache/apk/*
+RUN curl -fL "https://download.docker.com/linux/static/stable/$(uname -m)/docker-${CLI_VERSION}.tgz" | tar zxf - --strip-components 1 docker/docker \
+    && chmod +x /docker
 
 FROM --platform=$BUILDPLATFORM golang:1.17-alpine AS docker-credentials-client-builder
 ENV CGO_ENABLED=0
@@ -37,14 +41,6 @@ RUN apk update \
     && rm -rf /var/cache/apk/*
 COPY client .
 RUN make cross
-
-FROM alpine:3.16.2 AS docker-cli
-ARG CLI_VERSION=20.10.17
-SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
-RUN apk add --no-cache curl \
-    && rm -rf /var/cache/apk/*
-RUN curl -fL "https://download.docker.com/linux/static/stable/$(uname -m)/docker-${CLI_VERSION}.tgz" | tar zxf - --strip-components 1 docker/docker \
-    && chmod +x /docker
 
 FROM busybox:1.35.0
 
@@ -98,11 +94,11 @@ WORKDIR /
 COPY docker-compose.yaml .
 COPY metadata.json .
 COPY icon.svg .
+COPY --from=base /etc/ssl/certs /etc/ssl/certs
+COPY --from=base /docker /usr/local/bin/docker
 COPY --from=builder /backend/bin/service /
 COPY --from=client-builder /ui/build ui
 COPY --from=docker-credentials-client-builder output/dist ./host
-COPY --from=certs /etc/ssl/certs /etc/ssl/certs
-COPY --from=docker-cli /docker /usr/local/bin/docker
 
 RUN mkdir -p /vackup
 
