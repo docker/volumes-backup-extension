@@ -25,10 +25,10 @@
 
 ## Installation
 
-Install Docker Extension with the [Extensions CLI](https://docs.docker.com/desktop/extensions-sdk/#prerequisites).
-
+The recommended way to install the extension is from the Marketplace in Docker Desktop.
+You could also install it with the Docker Extensions CLI, targeting either a published released (e.g. `1.0.0`) or branch (e.g. `main`):
 ```bash
-  docker extension install docker/volumes-backup-extension:latest
+  docker extension install docker/volumes-backup-extension:main
 ```
 
 ## Run Locally

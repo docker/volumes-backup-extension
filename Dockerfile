@@ -88,7 +88,14 @@ LABEL org.opencontainers.image.title="Volumes Backup & Share" \
         {\"title\":\"Support\", \"url\":\"https://github.com/docker/volumes-backup-extension/issues\"} \
     ]" \
     com.docker.desktop.extension.icon="https://raw.githubusercontent.com/docker/volumes-backup-extension/main/icon.svg" \
-    com.docker.extension.changelog="" 
+    com.docker.extension.changelog="<ul>\
+    <li>Improved volume list performance.</li> \
+    <li>Added support to import backups from any .tar.gz.</li> \
+    <li>Changed the clone operation to copy the volume labels as well.</li> \
+    <li>Fixed a bug where the clone operation will not validate whether the destination volume already existed.</li> \
+    <li>Added error tracking to detect issues before users report them.</li> \
+    <li>Fixed new vulnerabilities detected in the Dockerfile.</li> \
+    </ul>"
 
 WORKDIR /
 COPY docker-compose.yaml .
