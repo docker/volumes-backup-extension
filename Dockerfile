@@ -40,9 +40,10 @@ RUN make cross
 
 FROM alpine:3.16.2 AS docker-cli
 ARG CLI_VERSION=20.10.17
+SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 RUN apk add --no-cache curl \
     && rm -rf /var/cache/apk/*
-RUN curl -fL https://download.docker.com/linux/static/stable/$(uname -m)/docker-${CLI_VERSION}.tgz | tar zxf - --strip-components 1 docker/docker \
+RUN curl -fL "https://download.docker.com/linux/static/stable/$(uname -m)/docker-${CLI_VERSION}.tgz" | tar zxf - --strip-components 1 docker/docker \
     && chmod +x /docker
 
 FROM busybox:1.35.0
