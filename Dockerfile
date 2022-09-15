@@ -1,4 +1,4 @@
-FROM golang:1.17-alpine AS builder
+FROM golang:1.17-alpine@sha256:99ddec1bbfd6d6bca3f9804c02363daee8c8524dae50df7942e8e60788fd17c9 AS builder
 ENV CGO_ENABLED=0
 WORKDIR /backend
 COPY vm/go.* .
@@ -10,7 +10,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     go build -trimpath -ldflags="-s -w" -o bin/service
 
-FROM --platform=$BUILDPLATFORM node:17.7-alpine3.14 AS client-builder
+FROM --platform=$BUILDPLATFORM node:17.7-alpine3.14@sha256:539e64749f7dc6c578d744d879fd0ec37f3afe552ae4aca9744cc85121728c4c AS client-builder
 WORKDIR /ui
 # cache packages in layer
 COPY ui/package.json /ui/package.json
@@ -24,7 +24,7 @@ RUN --mount=type=secret,id=BUGSNAG_API_KEY \
     REACT_APP_BUGSNAG_API_KEY=$(cat /run/secrets/BUGSNAG_API_KEY) \
     npm run build
 
-FROM alpine:3.16 as base
+FROM alpine:3.16@sha256:bc41182d7ef5ffc53a40b044e725193bc10142a1243f395ee852a8d9730fc2ad as base
 ARG CLI_VERSION=20.10.17
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 RUN apk update \
@@ -33,7 +33,7 @@ RUN apk update \
 RUN curl -fL "https://download.docker.com/linux/static/stable/$(uname -m)/docker-${CLI_VERSION}.tgz" | tar zxf - --strip-components 1 docker/docker \
     && chmod +x /docker
 
-FROM --platform=$BUILDPLATFORM golang:1.17-alpine AS docker-credentials-client-builder
+FROM --platform=$BUILDPLATFORM golang:1.17-alpine@sha256:99ddec1bbfd6d6bca3f9804c02363daee8c8524dae50df7942e8e60788fd17c9 AS docker-credentials-client-builder
 ENV CGO_ENABLED=0
 WORKDIR /output
 RUN apk update \
@@ -42,7 +42,7 @@ RUN apk update \
 COPY client .
 RUN make cross
 
-FROM busybox:1.35.0
+FROM busybox:1.35.0@sha256:b8f68c62fe862281bf598060f15cb080ef778dc9db19f136d19a3531ffcb9aa0
 
 ARG BUGSNAG_RELEASE_STAGE="local"
 ARG BUGSNAG_APP_VERSION="latest"
