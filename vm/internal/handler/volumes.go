@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/docker/docker/api/types/filters
+	"github.com/docker/docker/api/types/filters"
 	"github.com/labstack/echo"
 )
 
@@ -28,7 +28,7 @@ func (h *Handler) Volumes(ctx echo.Context) error {
 		return err
 	}
 
-	v, err := cli.VolumeList(ctx.Request().Context(), filters.NewArgs())
+	v, err := cli.VolumeList(ctxReq, filters.NewArgs())
 	if err != nil {
 		return err
 	}
