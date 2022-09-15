@@ -70,9 +70,11 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 	// Export
 	cmd := []string{
 		"tar",
-		"-zcvf",
-		"/vackup" + "/" + filepath.Base(fileName),
-		"/vackup-volume",
+		"zcvf",
+		"/vackup" + "/" + filepath.Base(fileName), // the .tar.gz file
+		"-C",             // -C is used to not include the parent directory
+		"/vackup-volume", // the directory where the files to compress are
+		".",
 	}
 
 	cmdJoined := strings.Join(cmd, " ")
