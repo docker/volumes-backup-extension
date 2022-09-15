@@ -1,4 +1,4 @@
-FROM golang:1.17-alpine AS builder
+FROM golang:1.17-alpine@sha256:99ddec1bbfd6d6bca3f9804c02363daee8c8524dae50df7942e8e60788fd17c9 AS builder
 ENV CGO_ENABLED=0
 WORKDIR /backend
 COPY vm/go.* .
