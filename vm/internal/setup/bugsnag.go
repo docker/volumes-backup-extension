@@ -49,21 +49,17 @@ func ConfigureBugsnagHandler(server *http.Server) {
 }
 
 func ConfigureBugsnagHTTPErrorHandler(err error, c echo.Context) {
-	if os.Getenv("BUGSNAG_API_KEY") != "" {
-		if he, ok := err.(*echo.HTTPError); ok {
-			if he.Code == http.StatusInternalServerError {
-				// log to container logs
-				log.Error(err)
-				// log to Bugsnag
-				_ = bugsnag.Notify(err, c.Request().Context())
-			}
-		} else {
-			// log to container logs
-			log.Error(err)
-			// log to Bugsnag
-			_ = bugsnag.Notify(err, c.Request().Context())
-		}
+	if os.Getenv("BUGSNAG_API_KEY") == "" {
+		return
 	}
+
+	he, ok := err.(*echo.HTTPError)
+	if ok && he.Code != http.StatusInternalServerError {
+		return
+	}
+
+	log.Error(err)
+	_ = bugsnag.Notify(err, c.Request().Context())
 }
 
 func getDockerDesktopVersion() string {
