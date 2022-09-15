@@ -24,7 +24,7 @@ RUN --mount=type=secret,id=BUGSNAG_API_KEY \
     REACT_APP_BUGSNAG_API_KEY=$(cat /run/secrets/BUGSNAG_API_KEY) \
     npm run build
 
-FROM alpine:3.16 as base
+FROM alpine:3.16@sha256:bc41182d7ef5ffc53a40b044e725193bc10142a1243f395ee852a8d9730fc2ad as base
 ARG CLI_VERSION=20.10.17
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 RUN apk update \
