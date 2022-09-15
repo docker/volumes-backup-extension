@@ -33,11 +33,17 @@ const ddClient = createDockerDesktopClient();
 
 interface Props {
   open: boolean;
-  onClose(v: boolean): void;
+  onClose(): void;
+  onCompletion(v: boolean, selectedVolumeName: string): void;
   volumes: IVolumeRow[];
 }
 
-export default function ImportDialog({ volumes, open, onClose }: Props) {
+export default function ImportDialog({
+  volumes,
+  open,
+  onClose,
+  onCompletion,
+}: Props) {
   const [fromRadioValue, setFromRadioValue] = useState<
     "file" | "image" | "pull-registry"
   >("file");
@@ -86,21 +92,39 @@ export default function ImportDialog({ volumes, open, onClose }: Props) {
       importVolume({
         volumeName: volumeId?.[0] || selectedVolumeName,
         path,
-      });
+      })
+        .then(() => {
+          onCompletion(true, selectedVolumeName);
+        })
+        .catch(() => {
+          onCompletion(false, selectedVolumeName);
+        });
     } else if (fromRadioValue === "image") {
       track({ ...metrics, importType: "fromLocalImage" });
       loadImage({
         volumeName: volumeId?.[0] || selectedVolumeName,
         imageName: image,
-      });
+      })
+        .then(() => {
+          onCompletion(true, selectedVolumeName);
+        })
+        .catch(() => {
+          onCompletion(false, selectedVolumeName);
+        });
     } else {
       track({ ...metrics, importType: "fromRegistry" });
       pullFromRegistry({
         imageName: registryImage,
         volumeId: volumeId?.[0],
-      });
+      })
+        .then(() => {
+          onCompletion(true, selectedVolumeName);
+        })
+        .catch(() => {
+          onCompletion(false, selectedVolumeName);
+        });
     }
-    onClose(true);
+    onClose();
   };
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -245,7 +269,7 @@ export default function ImportDialog({ volumes, open, onClose }: Props) {
           onClick={() => {
             track({ action: "ImportVolumeCancel" });
             setPath("");
-            onClose(false);
+            onClose();
           }}
         >
           Cancel

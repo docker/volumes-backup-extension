@@ -61,6 +61,8 @@ func main() {
 
 	router.GET("/progress", h.ActionsInProgress)
 	router.GET("/volumes", h.Volumes)
+	router.GET("/volumes/size", h.VolumesSize)
+	router.GET("/volumes/container", h.VolumesContainer)
 	router.GET("/volumes/:volume/size", h.VolumeSize)
 	router.POST("/volumes/:volume/clone", h.CloneVolume)
 	router.POST("/volumes/:volume/delete", h.DeleteVolume)
