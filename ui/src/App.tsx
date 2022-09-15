@@ -15,6 +15,7 @@ import {
   CircularProgress,
   Grid,
   LinearProgress,
+  Skeleton,
   Stack,
   Tooltip,
   Typography,
@@ -91,6 +92,9 @@ export function App() {
 
   const [actionsInProgress, setActionsInProgress] = React.useState({});
 
+  const [recalculateVolumeSize, setRecalculateVolumeSize] =
+    React.useState<string>(null);
+
   const columns = [
     { field: "volumeDriver", headerName: "Driver", hide: true },
     {
@@ -103,6 +107,14 @@ export function App() {
       headerName: "Containers",
       flex: 1,
       renderCell: (params) => {
+        if (isVolumesSizeLoading) {
+          return (
+            <Box sx={{ width: "100%" }}>
+              <Skeleton animation="wave" />
+            </Box>
+          );
+        }
+
         if (params.row.volumeContainers) {
           return (
             <Box display="flex" flexDirection="column">
@@ -119,10 +131,13 @@ export function App() {
       field: "volumeSize",
       headerName: "Size",
       renderCell: (params) => {
-        if (volumesSizeLoadingMap[params.row.volumeName]) {
+        if (
+          isVolumesSizeLoading ||
+          volumesSizeLoadingMap[params.row.volumeName]
+        ) {
           return (
             <Box sx={{ width: "100%" }}>
-              <LinearProgress />
+              <Skeleton animation="wave" />
             </Box>
           );
         }
@@ -290,31 +305,13 @@ export function App() {
     }
   };
 
-  const { data: rows, isLoading, listVolumes, setData } = useGetVolumes();
-
-  useEffect(() => {
-    const volumeEvents = async () => {
-      console.log("listening to volume events...");
-      await ddClient.docker.cli.exec(
-        "events",
-        ["--format", `"{{ json . }}"`, "--filter", "type=volume"],
-        {
-          stream: {
-            onOutput() {
-              listVolumes();
-            },
-            onClose(exitCode) {
-              console.log("onClose with exit code " + exitCode);
-            },
-            splitOutputLines: true,
-          },
-        }
-      );
-    };
-
-    volumeEvents();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const {
+    data: rows,
+    listVolumes,
+    isLoading,
+    isVolumesSizeLoading,
+    setData,
+  } = useGetVolumes();
 
   const getActionsInProgress = async () => {
     ddClient.extension.vm.service
@@ -396,45 +393,83 @@ export function App() {
       });
   };
 
-  const handleExportDialogClose = (actionSuccessfullyCompleted: boolean) => {
+  const handleExportDialogClose = () => {
     setOpenExportDialog(false);
     context.actions.setVolume(null);
-    if (actionSuccessfullyCompleted) {
-      listVolumes();
-    }
   };
 
-  const handleImportIntoNewDialogClose = (
-    actionSuccessfullyCompleted: boolean
-  ) => {
+  const handleImportIntoNewDialogClose = () => {
     setOpenImportIntoNewDialog(false);
     context.actions.setVolume(null);
+  };
+
+  const handleImportIntoNewDialogCompletion = (
+    actionSuccessfullyCompleted: boolean,
+    selectedVolumeName: string
+  ) => {
     if (actionSuccessfullyCompleted) {
-      if (context.store.volume)
+      if (selectedVolumeName && context.store.volume) {
+        // the import is performed on an existing volume
         calculateVolumeSize(context.store.volume.volumeName);
+      } else {
+        // the import is performed on a new volume, so we fetch all volumes to populate the table
+        listVolumes();
+      }
     }
   };
 
-  const handleCloneDialogClose = (actionSuccessfullyCompleted: boolean) => {
+  const handleCloneDialogClose = () => {
     setOpenCloneDialog(false);
     context.actions.setVolume(null);
+  };
+
+  const handleCloneDialogOnCompletion = (
+    clonedVolumeName: string,
+    actionSuccessfullyCompleted: boolean
+  ) => {
     if (actionSuccessfullyCompleted) {
-      listVolumes();
+      const rowsCopy = rows.slice();
+      rowsCopy.push({
+        id: rows.length,
+        volumeName: clonedVolumeName,
+        volumeDriver: "local",
+      });
+
+      setData(rowsCopy);
+      setRecalculateVolumeSize(clonedVolumeName);
     }
   };
+
+  useEffect(() => {
+    if (!recalculateVolumeSize) {
+      return;
+    }
+    calculateVolumeSize(recalculateVolumeSize);
+  }, [recalculateVolumeSize]);
 
   const handleTransferDialogClose = () => {
     setOpenTransferDialog(false);
     context.actions.setVolume(null);
   };
 
-  const handleDeleteForeverDialogClose = (
-    actionSuccessfullyCompleted: boolean
-  ) => {
+  const handleDeleteForeverDialogClose = () => {
     setOpenDeleteForeverDialog(false);
     context.actions.setVolume(null);
-    if (actionSuccessfullyCompleted) {
-      listVolumes();
+  };
+
+  const handleDeleteForeverDialogCompletion = (
+    actionSuccessfullyCompleted: boolean
+  ) => {
+    if (actionSuccessfullyCompleted && context.store.volume) {
+      const rowsCopy = rows.slice();
+      const index = rowsCopy.findIndex(
+        (element) => element.volumeName === context.store.volume.volumeName
+      );
+      if (index > -1) {
+        rowsCopy.splice(index, 1);
+      }
+
+      setData(rowsCopy);
     }
   };
 
@@ -528,6 +563,7 @@ export function App() {
               volumes={rows}
               open={openImportIntoNewDialog}
               onClose={handleImportIntoNewDialogClose}
+              onCompletion={handleImportIntoNewDialogCompletion}
             />
           )}
 
@@ -535,6 +571,7 @@ export function App() {
             <CloneDialog
               open={openCloneDialog}
               onClose={handleCloneDialogClose}
+              onCompletion={handleCloneDialogOnCompletion}
             />
           )}
 
@@ -548,9 +585,8 @@ export function App() {
           {openDeleteForeverDialog && (
             <DeleteForeverDialog
               open={openDeleteForeverDialog}
-              onClose={(e) => {
-                handleDeleteForeverDialogClose(e);
-              }}
+              onClose={handleDeleteForeverDialogClose}
+              onCompletion={handleDeleteForeverDialogCompletion}
             />
           )}
         </Grid>

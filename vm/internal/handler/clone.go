@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	volumetypes "github.com/docker/docker/api/types/volume"
 	"io"
 	"net/http"
 	"os"
@@ -65,6 +66,19 @@ func (h *Handler) CloneVolume(ctx echo.Context) error {
 		return err
 	}
 	_, err = io.Copy(os.Stdout, reader)
+	if err != nil {
+		return err
+	}
+
+	// Create destination volume with the same labels as the source volume
+	volInspect, err := cli.VolumeInspect(ctx.Request().Context(), volumeName)
+	if err != nil {
+		return err
+	}
+	_, err = cli.VolumeCreate(ctx.Request().Context(), volumetypes.VolumeCreateBody{
+		Labels: volInspect.Labels,
+		Name:   destVolume,
+	})
 	if err != nil {
 		return err
 	}

@@ -50,6 +50,11 @@ func TestCloneVolume(t *testing.T) {
 	_, err := cli.VolumeCreate(c.Request().Context(), volumetypes.VolumeCreateBody{
 		Driver: "local",
 		Name:   volume,
+		Labels: map[string]string{
+			"com.docker.compose.project": "my-compose-project",
+			"com.docker.compose.version": "2.10.2",
+			"com.docker.compose.volume":  "foo-bar",
+		},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -100,4 +105,14 @@ func TestCloneVolume(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, int64(16000), sizes[destVolume].Bytes)
 	require.Equal(t, "16.0 kB", sizes[destVolume].Human)
+
+	// Check volume labels
+	volInspect, err := cli.VolumeInspect(context.Background(), destVolume)
+	if err != nil {
+		t.Fatal(err)
+	}
+	require.Len(t, volInspect.Labels, 3)
+	require.Equal(t, "my-compose-project", volInspect.Labels["com.docker.compose.project"])
+	require.Equal(t, "2.10.2", volInspect.Labels["com.docker.compose.version"])
+	require.Equal(t, "foo-bar", volInspect.Labels["com.docker.compose.volume"])
 }
