@@ -2,8 +2,10 @@ package setup
 
 import (
 	"github.com/docker/volumes-backup-extension/internal/log"
+	"github.com/labstack/echo"
 	"net/http"
 	"os"
+	"os/exec"
 	"runtime"
 
 	"github.com/bugsnag/bugsnag-go/v2"
@@ -26,6 +28,7 @@ func ConfigureBugsnag() {
 
 	bugsnag.OnBeforeNotify(func(event *bugsnag.Event, config *bugsnag.Configuration) error {
 		event.MetaData.Add("OS", "Architecture", runtime.GOARCH)
+		event.MetaData.Add("OS", "Docker Desktop Version", getDockerDesktopVersion())
 		return nil
 	})
 
@@ -43,4 +46,33 @@ func ConfigureBugsnagHandler(server *http.Server) {
 	}
 	server.Handler = bugsnag.Handler(nil)
 	log.Info("Bugsnag handler configured successfully.")
+}
+
+func ConfigureBugsnagHTTPErrorHandler(err error, c echo.Context) {
+	if os.Getenv("BUGSNAG_API_KEY") != "" {
+		if he, ok := err.(*echo.HTTPError); ok {
+			if he.Code == http.StatusInternalServerError {
+				// log to container logs
+				log.Error(err)
+				// log to Bugsnag
+				_ = bugsnag.Notify(err, c.Request().Context())
+			}
+		} else {
+			// log to container logs
+			log.Error(err)
+			// log to Bugsnag
+			_ = bugsnag.Notify(err, c.Request().Context())
+		}
+	}
+}
+
+func getDockerDesktopVersion() string {
+	cmd := exec.Command("docker", "version", "--format", "{{ json .Server.Platform.Name }}") // e.g. "Docker Desktop 4.12.0 (85790)"
+	stdout, err := cmd.Output()
+	if err != nil {
+		log.Error(err)
+		return ""
+	}
+
+	return string(stdout)
 }

@@ -37,21 +37,7 @@ func main() {
 	router := echo.New()
 	router.HideBanner = true
 	router.HTTPErrorHandler = func(err error, c echo.Context) {
-		if os.Getenv("BUGSNAG_API_KEY") != "" {
-			if he, ok := err.(*echo.HTTPError); ok {
-				if he.Code == http.StatusInternalServerError {
-					// log to container logs
-					log.Error(err)
-					// log to Bugsnag
-					_ = bugsnag.Notify(err, c.Request().Context())
-				}
-			} else {
-				// log to container logs
-				log.Error(err)
-				// log to Bugsnag
-				_ = bugsnag.Notify(err, c.Request().Context())
-			}
-		}
+		setup.ConfigureBugsnagHTTPErrorHandler(err, c)
 		router.DefaultHTTPErrorHandler(err, c)
 	}
 

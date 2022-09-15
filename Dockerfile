@@ -38,6 +38,13 @@ RUN apk update \
 COPY client .
 RUN make cross
 
+FROM alpine:3.16.2 AS docker-cli
+ARG CLI_VERSION=20.10.17
+RUN apk add --no-cache curl \
+    && rm -rf /var/cache/apk/*
+RUN curl -fL https://download.docker.com/linux/static/stable/$(uname -m)/docker-${CLI_VERSION}.tgz | tar zxf - --strip-components 1 docker/docker \
+    && chmod +x /docker
+
 FROM busybox:1.35.0
 
 ARG BUGSNAG_RELEASE_STAGE="local"
@@ -94,6 +101,7 @@ COPY --from=builder /backend/bin/service /
 COPY --from=client-builder /ui/build ui
 COPY --from=docker-credentials-client-builder output/dist ./host
 COPY --from=certs /etc/ssl/certs /etc/ssl/certs
+COPY --from=docker-cli /docker /usr/local/bin/docker
 
 RUN mkdir -p /vackup
 
