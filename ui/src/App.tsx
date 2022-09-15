@@ -569,6 +569,7 @@ export function App() {
 
           {openCloneDialog && (
             <CloneDialog
+              volumes={rows}
               open={openCloneDialog}
               onClose={handleCloneDialogClose}
               onCompletion={handleCloneDialogOnCompletion}

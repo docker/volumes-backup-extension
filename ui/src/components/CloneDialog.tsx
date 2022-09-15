@@ -1,5 +1,5 @@
 import React, { useContext } from "react";
-import { Button, TextField, Typography, Grid } from "@mui/material";
+import { Button, Typography, Grid } from "@mui/material";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
@@ -10,6 +10,8 @@ import { createDockerDesktopClient } from "@docker/extension-api-client";
 import { MyContext } from "../index";
 import { useNotificationContext } from "../NotificationContext";
 import { track } from "../common/track";
+import { IVolumeRow } from "../hooks/useGetVolumes";
+import { VolumeInput } from "./VolumeInput";
 
 const ddClient = createDockerDesktopClient();
 
@@ -17,12 +19,13 @@ interface Props {
   open: boolean;
   onClose(): void;
   onCompletion(clonedVolumeName: string, v?: boolean): void;
+  volumes: IVolumeRow[];
 }
 
 export default function CloneDialog({ ...props }: Props) {
   const context = useContext(MyContext);
   const { sendNotification } = useNotificationContext();
-
+  const [hasError, setHasError] = React.useState<boolean>(false);
   const [volumeName, setVolumeName] = React.useState<string>(
     `${context.store.volume.volumeName}-cloned`
   );
@@ -65,17 +68,12 @@ export default function CloneDialog({ ...props }: Props) {
 
         <Grid container direction="column" spacing={2}>
           <Grid item mt={2}>
-            <TextField
-              required
-              autoFocus
-              id="volume-name"
-              label="Volume name"
-              fullWidth
-              defaultValue={`${context.store.volume.volumeName}-cloned`}
-              spellCheck={false}
-              onChange={(e) => {
-                setVolumeName(e.target.value);
-              }}
+            <VolumeInput
+              volumes={props.volumes}
+              value={volumeName}
+              onChange={setVolumeName}
+              hasError={hasError}
+              setHasError={setHasError}
             />
           </Grid>
 
@@ -101,7 +99,7 @@ export default function CloneDialog({ ...props }: Props) {
         <Button
           variant="contained"
           onClick={cloneVolume}
-          disabled={volumeName === ""}
+          disabled={volumeName === "" || hasError}
         >
           Clone
         </Button>

@@ -52,6 +52,12 @@ func (h *Handler) CloneVolume(ctx echo.Context) error {
 		return err
 	}
 
+	// Check if destination volume already exists
+	destVolInspect, _ := cli.VolumeInspect(ctx.Request().Context(), destVolume)
+	if destVolInspect.Name != "" {
+		return ctx.String(http.StatusConflict, fmt.Sprintf("destination volume %q already exists", destVolInspect.Name))
+	}
+
 	// Stop container(s)
 	stoppedContainers, err := backend.StopContainersAttachedToVolume(ctxReq, cli, volumeName)
 	if err != nil {
