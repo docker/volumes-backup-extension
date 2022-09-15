@@ -68,7 +68,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Docker Metadata for Final Image Build
+      - name: Get tag for Docker Image
         id: docker_meta
         uses: docker/metadata-action@v3
         with:
@@ -81,30 +81,14 @@ jobs:
             type=ref,event=branch
             type=ref,event=tag
             type=semver,pattern={{version}}
-          # The action will generate its own OCI labels that are not suitable for the Marketplace.
-          # We have to override them with the same values as the ones defined in the Dockerfile.
-          # https://github.com/docker/metadata-action#overwrite-labels
-          labels: |
-            org.opencontainers.image.title=Volumes Backup & Share
-            org.opencontainers.image.description=Back up, clone, restore, and share Docker volumes effortlessly.
-            org.opencontainers.image.vendor=Docker Inc.
-            org.opencontainers.image.revision=${{ github.event.pull_request.head.sha || github.event.after || github.event.release.tag_name }}
 
       - name: Docker Build and Push to Docker Hub
-        if: ${{ !github.event.pull_request.head.repo.fork }}
-        uses: docker/build-push-action@v2
-        with:
-          push: true
-          tags: ${{ steps.docker_meta.outputs.tags }}
-          labels: ${{ steps.docker_meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          platforms: linux/amd64,linux/arm64
-          build-args: |
-            BUGSNAG_RELEASE_STAGE=production
-            BUGSNAG_APP_VERSION=${{ github.event.release.tag_name }}
-          secrets: |
-            BUGSNAG_API_KEY=${{ secrets.BUGSNAG_API_KEY }}
+        env:
+          TAG: ${{ steps.docker_meta.outputs.version }}
+          BUGSNAG_RELEASE_STAGE: production
+          BUGSNAG_API_KEY: ${{ secrets.BUGSNAG_API_KEY }}
+        run: |
+          make push-extension
 
         # If PR, put image tags in the PR comments
         # from https://github.com/marketplace/actions/create-or-update-comment
