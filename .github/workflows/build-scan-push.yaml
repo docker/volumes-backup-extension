@@ -84,6 +84,7 @@ jobs:
 
       - name: Docker Build and Push to Docker Hub
         env:
+          GIT_COMMIT: ${{ github.event.pull_request.head.sha || github.event.after || github.event.release.tag_name }}
           TAG: ${{ steps.docker_meta.outputs.version }}
           BUGSNAG_RELEASE_STAGE: production
           BUGSNAG_API_KEY: ${{ secrets.BUGSNAG_API_KEY }}
