@@ -67,7 +67,12 @@ export default function ImportDialog({
     ddClient.desktopUI.dialog
       .showOpenDialog({
         properties: ["openFile"],
-        filters: [{ name: ".tar.gz", extensions: ["tar.gz"] }], // should contain extension without wildcards or dots
+        filters: [
+          {
+            name: "Compressed archives",
+            extensions: ["tar.gz", "tar.zst", "bzip2"],
+          },
+        ], // should contain extension without wildcards or dots
       })
       .then((result) => {
         if (result.canceled) {

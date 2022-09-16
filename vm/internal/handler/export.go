@@ -64,17 +64,38 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 		return err
 	}
 
+	var compressProgram string
+	tarOpts := "-cvf"
+
+	fileExt := filepath.Ext(fileName)
+	log.Infof("fileExt: %s", fileExt)
+
+	switch fileExt {
+	case ".gz":
+		//compressProgram = "gzip" // TODO: use pigz (parallel implementation of gzip)
+		tarOpts = tarOpts[1:] + "z" // remove "-" from first tarOptos, specify "z" to indicate gzip compression
+	case ".zst":
+		compressProgram = "zstdmt" // zstdmt is equivalent to zstd -T0 (attempt to detect and use the number of physical CPU cores)
+	case ".bz2":
+		compressProgram = "bzip2" // TODO: install bzip2 in AlpineTarZstdImage
+		tarOpts += "j"            // bzip compression
+	default:
+		compressProgram = ""
+	}
+
 	// Export
-	cmd := []string{
-		"tar",
-		"-I",
-		"zstdmt", // zstdmt is equivalent to zstd -T0 (attempt to detect and use the number of physical CPU cores)
-		"-cvf",
-		"/vackup" + "/" + filepath.Base(fileName), // the .tar.gz file
+	cmd := []string{"tar"}
+
+	if compressProgram != "" {
+		cmd = append(cmd, "-I", compressProgram)
+	}
+
+	cmd = append(cmd,
+		tarOpts,
+		"/vackup"+"/"+filepath.Base(fileName), // the .tar.zst file
 		"-C",             // -C is used to not include the parent directory
 		"/vackup-volume", // the directory where the files to compress are
-		".",
-	}
+		".")
 
 	cmdJoined := strings.Join(cmd, " ")
 	log.Infof("cmdJoined: %s", cmdJoined)
