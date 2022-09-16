@@ -67,7 +67,9 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 	// Export
 	cmd := []string{
 		"tar",
-		"zcvf",
+		"-I",
+		"zstdmt", // zstdmt is equivalent to zstd -T0 (attempt to detect and use the number of physical CPU cores)
+		"-cvf",
 		"/vackup" + "/" + filepath.Base(fileName), // the .tar.gz file
 		"-C",             // -C is used to not include the parent directory
 		"/vackup-volume", // the directory where the files to compress are
@@ -84,7 +86,7 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 	log.Infof("binds: %+v", binds)
 
 	// Ensure the image is present before creating the container
-	reader, err := cli.ImagePull(ctxReq, internal.BusyboxImage, types.ImagePullOptions{
+	reader, err := cli.ImagePull(ctxReq, internal.AlpineTarZstdImage, types.ImagePullOptions{
 		Platform: "linux/" + runtime.GOARCH,
 	})
 	if err != nil {
@@ -96,7 +98,7 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 	}
 
 	resp, err := cli.ContainerCreate(ctxReq, &container.Config{
-		Image:        internal.BusyboxImage,
+		Image:        internal.AlpineTarZstdImage,
 		AttachStdout: true,
 		AttachStderr: true,
 		Cmd:          []string{"/bin/sh", "-c", cmdJoined},
