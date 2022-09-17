@@ -1,0 +1,17 @@
+version: '3.1'
+
+services:
+  db:
+    image: postgres:14.5
+    restart: always
+    environment:
+      POSTGRES_DB: my_db_name
+      POSTGRES_USER: my_name
+      POSTGRES_PASSWORD: my_password
+      PGDATA: /var/lib/postgresql/data/pgdata/
+    volumes:
+      - ./:/docker-entrypoint-initdb.d/
+      - pgdata:/var/lib/postgresql/data/pgdata
+
+volumes:
+  pgdata:

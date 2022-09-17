@@ -72,13 +72,11 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 
 	switch fileExt {
 	case ".gz":
-		//compressProgram = "gzip" // TODO: use pigz (parallel implementation of gzip)
-		tarOpts = tarOpts[1:] + "z" // remove "-" from first tarOptos, specify "z" to indicate gzip compression
+		compressProgram = "\"pigz -6 -k\"" // pigz (parallel implementation of gzip), use -6 as the default compression level (-1 is fastest, -9 is best), "-k" to not delete the original file after processing
 	case ".zst":
 		compressProgram = "zstdmt" // zstdmt is equivalent to zstd -T0 (attempt to detect and use the number of physical CPU cores)
 	case ".bz2":
-		compressProgram = "bzip2" // TODO: install bzip2 in AlpineTarZstdImage
-		tarOpts += "j"            // bzip compression
+		compressProgram = "bzip2"
 	default:
 		compressProgram = ""
 	}
