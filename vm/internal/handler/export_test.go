@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/docker/volumes-backup-extension/internal/log"
+	"github.com/klauspost/compress/zstd"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -39,7 +40,7 @@ func TestExportVolume(t *testing.T) {
 
 	tmpDir := os.TempDir()
 
-	compressions := []string{".tar.gz"} // TODO: add ".tar.zst" and ".tar.bz2"
+	compressions := []string{".tar.gz", ".tar.zst"} // TODO: ".tar.bz2"
 
 	for _, compression := range compressions {
 		t.Run(fmt.Sprintf("TestExportVolume_%s_%s", image, compression), func(t *testing.T) {
@@ -61,15 +62,14 @@ func TestExportVolume(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			dst := filepath.Join(tmpDir, "export-destination")
+			dst := filepath.Join(tmpDir, fmt.Sprintf("export-destination-%s", compression))
 			defer func() {
-				// the folder that is exported from the volume.tar.gz
 				if err = os.RemoveAll(dst); err != nil {
 					t.Fatal(err)
 				}
 			}()
 
-			if err := extractTarGz(t, dst, r); err != nil {
+			if err := extractArchive(t, compression, dst, r); err != nil {
 				t.Fatal(err)
 			}
 
@@ -94,15 +94,10 @@ func TestExportVolume(t *testing.T) {
 	_ = cli.VolumeRemove(context.Background(), volume, true)
 }
 
-func extractTarGz(t *testing.T, dst string, gzipStream io.Reader) error {
+func untar(t *testing.T, dst string, input io.Reader) error {
 	t.Helper()
 
-	uncompressedStream, err := gzip.NewReader(gzipStream)
-	if err != nil {
-		return err
-	}
-
-	tarReader := tar.NewReader(uncompressedStream)
+	tarReader := tar.NewReader(input)
 
 	for true {
 		header, err := tarReader.Next()
@@ -145,6 +140,19 @@ func extractTarGz(t *testing.T, dst string, gzipStream io.Reader) error {
 	return nil
 }
 
+func extractArchive(t *testing.T, compression, dst string, r io.Reader) error {
+	switch compression {
+	case ".tar.gz":
+		input, _ := gzip.NewReader(r)
+		return untar(t, dst, input)
+	case ".tar.zst":
+		input, _ := zstd.NewReader(r)
+		return untar(t, dst, input)
+	default:
+		return fmt.Errorf("compression %s not handled", compression)
+	}
+}
+
 func readFile(t *testing.T, dir string, identifier string) []byte {
 	t.Helper()
 
@@ -170,7 +178,7 @@ var table = struct {
 	input: map[string][]string{
 		//"localhost:5000/felipecruz/10mb": {".tar.gz", ".tar.zst"},
 		//"localhost:5000/felipecruz/1gb":  {".tar.gz", ".tar.zst"},
-		"docker.io/felipecruz/postgres_pgdata_4gb": {".tar.gz", ".tar.zst"},
+		"docker.io/felipecruz/postgres_pgdata_4gb": {".tar.gz", ".tar.zst", ".tar.bz2"},
 	},
 }
 
@@ -202,7 +210,6 @@ func BenchmarkExportVolume(b *testing.B) {
 }
 
 func export(cli *client.Client, volume, path, compression string) *httptest.ResponseRecorder {
-
 	// Setup
 	e := echo.New()
 	q := make(url.Values)
