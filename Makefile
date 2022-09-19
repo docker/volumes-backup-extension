@@ -36,6 +36,13 @@ prepare-buildx: ## Create buildx builder for multi-arch build, if not exists
 push-extension: prepare-buildx ## Build & Upload extension image to hub. Do not push if tag already exists: make push-extension tag=0.1
 	docker pull $(IMAGE):$(TAG) && echo "Failure: Tag already exists" || docker buildx build --secret id=BUGSNAG_API_KEY --build-arg BUGSNAG_RELEASE_STAGE=$(BUGSNAG_RELEASE_STAGE) --build-arg BUGSNAG_APP_VERSION=$(TAG) --push --builder=$(BUILDER) --platform=linux/amd64,linux/arm64 --build-arg TAG=$(TAG) --tag=$(IMAGE):$(TAG) .
 
+run-benchmark: ## Run the Go benchmarks
+	cd vm \
+	&& go install golang.org/x/perf/cmd/benchstat@latest \
+	&& rm -rf benchmark.txt \
+	&& go test -timeout 30m -run="-" -bench=".*" -count=1 ./... | tee benchmark.txt \
+    && benchstat benchmark.txt
+
 help: ## Show this help
 	@echo Please specify a build target. The choices are:
 	@grep -E '^[0-9a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "$(INFO_COLOR)%-30s$(NO_COLOR) %s\n", $$1, $$2}'

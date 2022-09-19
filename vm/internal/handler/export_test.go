@@ -183,8 +183,6 @@ var table = struct {
 	input map[string][]string
 }{
 	input: map[string][]string{
-		//"localhost:5000/felipecruz/10mb": {".tar.gz", ".tar.zst"},
-		//"localhost:5000/felipecruz/1gb":  {".tar.gz", ".tar.zst"},
 		"docker.io/felipecruz/postgres_pgdata_4gb": {".tar.gz", ".tar.zst", ".tar.bz2"},
 	},
 }

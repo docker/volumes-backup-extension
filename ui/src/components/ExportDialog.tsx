@@ -42,7 +42,7 @@ export default function ExportDialog({ open, onClose }: Props) {
     "directory" | "local-image" | "new-image" | "push-registry"
   >("directory");
   const [fileName, setFileName] = useState<string>(
-    `${context.store.volume.volumeName}.tar.gz`
+    `${context.store.volume.volumeName}.tar.zst`
   );
   const [path, setPath] = useState<string>("");
   const [image, setImage] = useState<string>("");
@@ -121,7 +121,7 @@ export default function ExportDialog({ open, onClose }: Props) {
                 id="file-name"
                 label="File name"
                 fullWidth
-                defaultValue={`${context.store.volume.volumeName}.tar.gz`}
+                defaultValue={`${context.store.volume.volumeName}.tar.zst`}
                 spellCheck={false}
                 onChange={(e) => {
                   setFileName(e.target.value);

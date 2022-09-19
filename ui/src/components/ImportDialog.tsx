@@ -70,7 +70,7 @@ export default function ImportDialog({
         filters: [
           {
             name: "Compressed archives",
-            extensions: ["tar.gz", "tar.zst", "bzip2"],
+            extensions: ["tar.gz", "tar.zst", "bz2"],
           },
         ], // should contain extension without wildcards or dots
       })
