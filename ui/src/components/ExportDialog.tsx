@@ -110,7 +110,7 @@ export default function ExportDialog({ open, onClose }: Props) {
 
         <Stack pt={1} pb={2} pl={4}>
           <Typography pb={1} variant="body2">
-            Create a compressed file (gzip’ed tarball) in a selected directory
+            Create a compressed file (.tar.gz, .tar.zst or .tar.bz2) in a selected directory
             with the content of a chosen volume.
           </Typography>
           {fromRadioValue === "directory" && (
