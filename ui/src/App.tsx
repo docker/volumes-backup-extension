@@ -1,13 +1,13 @@
 import React, { useContext, useEffect } from "react";
 import {
-  DataGrid,
+  DataGridPro,
   GridActionsCellItem,
   GridCellParams,
   GridToolbarColumnsButton,
   GridToolbarContainer,
   GridToolbarDensitySelector,
   GridToolbarFilterButton,
-} from "@mui/x-data-grid";
+} from "@mui/x-data-grid-pro";
 import { createDockerDesktopClient } from "@docker/extension-api-client";
 import {
   Box,
@@ -35,40 +35,27 @@ import CloneDialog from "./components/CloneDialog";
 import TransferDialog from "./components/TransferDialog";
 import DeleteForeverDialog from "./components/DeleteForeverDialog";
 import { MyContext } from ".";
-import { isError } from "./common/isError";
 import ImportDialog from "./components/ImportDialog";
 import { useGetVolumes } from "./hooks/useGetVolumes";
 import { Header } from "./components/Header";
 import { track } from "./common/track";
+import EmptyConfirmationDialog from "./components/EmptyConfirmationDialog";
 
 const ddClient = createDockerDesktopClient();
 
-interface ICustomToolbar {
-  openDialog(): void;
-}
-
-function CustomToolbar({ openDialog }: ICustomToolbar) {
+function CustomToolbar() {
   return (
-    <GridToolbarContainer>
-      <Grid container justifyContent="space-between">
-        <Grid item>
-          <GridToolbarColumnsButton />
-          <GridToolbarFilterButton />
-          <GridToolbarDensitySelector />
-        </Grid>
-        <Grid item>
-          <Button
-            variant="contained"
-            onClick={() => {
-              track({ action: "ImportNewVolumePopup" });
-              openDialog();
-            }}
-            endIcon={<DownloadIcon />}
-          >
-            Import into new volume
-          </Button>
-        </Grid>
-      </Grid>
+    <GridToolbarContainer
+      sx={{
+        "& .MuiButton-root": {
+          color: (theme) => theme.palette.docker.grey[500],
+          textTransform: "uppercase",
+        },
+      }}
+    >
+      <GridToolbarColumnsButton />
+      <GridToolbarFilterButton />
+      <GridToolbarDensitySelector />
     </GridToolbarContainer>
   );
 }
@@ -88,6 +75,8 @@ export function App() {
   const [openTransferDialog, setOpenTransferDialog] =
     React.useState<boolean>(false);
   const [openDeleteForeverDialog, setOpenDeleteForeverDialog] =
+    React.useState<boolean>(false);
+  const [openEmptyConfirmationDialog, setOpenEmptyConfirmationDialog] =
     React.useState<boolean>(false);
 
   const [actionsInProgress, setActionsInProgress] = React.useState({});
@@ -236,7 +225,7 @@ export function App() {
               </Tooltip>
             }
             label="Empty volume"
-            onClick={handleEmpty(params.row)}
+            onClick={() => handleEmpty(params.row)}
             showInMenu
             disabled={params.row.volumeSize === "0 B"}
           />,
@@ -286,10 +275,14 @@ export function App() {
     context.actions.setVolume(row);
   };
 
-  const handleEmpty = (row) => async () => {
-    track({ action: "EmptyVolume" });
-    await emptyVolume(row.volumeName);
-    await calculateVolumeSize(row.volumeName);
+  const handleEmpty = (row) => {
+    setOpenEmptyConfirmationDialog(true);
+    context.actions.setVolume(row);
+  };
+
+  const handleConfirmateEmpty = async () => {
+    const volumeName = context.store.volume.volumeName;
+    await calculateVolumeSize(volumeName);
   };
 
   const handleDelete = (row) => async () => {
@@ -365,34 +358,6 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const emptyVolume = (volumeName: string) => {
-    return ddClient.docker.cli
-      .exec("run", [
-        "--rm",
-        "--label com.volumes-backup-extension.trigger-ui-refresh=true",
-        "--label com.docker.compose.project=docker_volumes-backup-extension-desktop-extension",
-        `-v=${volumeName}:/vackup-volume `,
-        "busybox",
-        "/bin/sh",
-        "-c",
-        '"rm -rf /vackup-volume/..?* /vackup-volume/.[!.]* /vackup-volume/*"', // hidden and not-hidden files and folders: .[!.]* matches all dot files except . and files whose name begins with .., and ..?* matches all dot-dot files except ..
-      ])
-      .then((output) => {
-        if (isError(output.stderr)) {
-          sendNotification.error(output.stderr);
-          return;
-        }
-        sendNotification.info(
-          `The content of volume ${volumeName} has been removed`
-        );
-      })
-      .catch((error) => {
-        sendNotification.error(
-          `Failed to empty volume ${volumeName}: ${error.stderr} Exit code: ${error.code}`
-        );
-      });
-  };
-
   const handleExportDialogClose = () => {
     setOpenExportDialog(false);
     context.actions.setVolume(null);
@@ -457,6 +422,11 @@ export function App() {
     context.actions.setVolume(null);
   };
 
+  const handleEmptyConfirmationDialogClose = () => {
+    setOpenEmptyConfirmationDialog(false);
+    context.actions.setVolume(null);
+  };
+
   const handleDeleteForeverDialogCompletion = (
     actionSuccessfullyCompleted: boolean
   ) => {
@@ -510,13 +480,25 @@ export function App() {
       <Stack direction="column" alignItems="start" spacing={2} sx={{ mt: 4 }}>
         <Grid container>
           <Grid item flex={1}>
-            <DataGrid
+            <Grid item sx={{ display: "flex", justifyContent: "flex-end" }}>
+              <Button
+                variant="text"
+                onClick={() => {
+                  track({ action: "ImportNewVolumePopup" });
+                  setOpenImportIntoNewDialog(true);
+                }}
+                endIcon={<DownloadIcon />}
+              >
+                Import into new volume
+              </Button>
+            </Grid>
+            <DataGridPro
               loading={isLoading}
               components={{
                 LoadingOverlay: LinearProgress,
                 Toolbar: () => (
                   <CustomToolbar
-                    openDialog={() => setOpenImportIntoNewDialog(true)}
+                  // openDialog={() => setOpenImportIntoNewDialog(true)}
                   />
                 ),
               }}
@@ -588,6 +570,13 @@ export function App() {
               open={openDeleteForeverDialog}
               onClose={handleDeleteForeverDialogClose}
               onCompletion={handleDeleteForeverDialogCompletion}
+            />
+          )}
+          {openEmptyConfirmationDialog && (
+            <EmptyConfirmationDialog
+              open={openEmptyConfirmationDialog}
+              onClose={handleEmptyConfirmationDialogClose}
+              onCompletion={handleConfirmateEmpty}
             />
           )}
         </Grid>

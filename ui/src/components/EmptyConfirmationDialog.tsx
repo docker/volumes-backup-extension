@@ -10,6 +10,7 @@ import { createDockerDesktopClient } from "@docker/extension-api-client";
 import { MyContext } from "../index";
 import { useNotificationContext } from "../NotificationContext";
 import { track } from "../common/track";
+import { isError } from "../common/isError";
 
 const ddClient = createDockerDesktopClient();
 
@@ -19,23 +20,36 @@ interface Props {
   onCompletion(v?: boolean): void;
 }
 
-export default function DeleteForeverDialog({ ...props }: Props) {
+export default function EmptyConfirmationDialog({ ...props }: Props) {
   const context = useContext(MyContext);
   const { sendNotification } = useNotificationContext();
 
-  const deleteVolume = () => {
-    track({ action: "DeleteVolume" });
-    ddClient.extension.vm.service
-      .post(`/volumes/${context.store.volume.volumeName}/delete`, {})
-      .then(() => {
+  const emptyVolume = () => {
+    track({ action: "EmptyVolume" });
+    ddClient.docker.cli
+      .exec("run", [
+        "--rm",
+        "--label com.volumes-backup-extension.trigger-ui-refresh=true",
+        "--label com.docker.compose.project=docker_volumes-backup-extension-desktop-extension",
+        `-v=${context.store.volume.volumeName}:/vackup-volume `,
+        "busybox",
+        "/bin/sh",
+        "-c",
+        '"rm -rf /vackup-volume/..?* /vackup-volume/.[!.]* /vackup-volume/*"', // hidden and not-hidden files and folders: .[!.]* matches all dot files except . and files whose name begins with .., and ..?* matches all dot-dot files except ..
+      ])
+      .then((output) => {
+        if (isError(output.stderr)) {
+          sendNotification.error(output.stderr);
+          props.onCompletion(false);
+          return;
+        }
         sendNotification.info(
-          `Volume ${context.store.volume.volumeName} deleted`
+          `The content of volume ${context.store.volume.volumeName} has been removed`
         );
-        props.onCompletion(true);
       })
       .catch((error) => {
         sendNotification.error(
-          `Failed to delete volume ${context.store.volume.volumeName}: ${error.stderr} Exit code: ${error.code}`
+          `Failed to empty volume ${context.store.volume.volumeName}: ${error.stderr} Exit code: ${error.code}`
         );
         props.onCompletion(false);
       });
@@ -44,11 +58,11 @@ export default function DeleteForeverDialog({ ...props }: Props) {
 
   return (
     <Dialog open={props.open} onClose={props.onClose}>
-      <DialogTitle>Delete a volume permanently</DialogTitle>
+      <DialogTitle>Empty a volume</DialogTitle>
       <DialogContent>
         <DialogContentText>
-          The volume will be deleted permanently. This action cannot be undone.
-          Are you sure?
+          The volume will be emptied. This action cannot be undone. Are you
+          sure?
         </DialogContentText>
       </DialogContent>
       <DialogActions>
@@ -61,8 +75,8 @@ export default function DeleteForeverDialog({ ...props }: Props) {
         >
           Cancel
         </Button>
-        <Button variant="contained" color="error" onClick={deleteVolume}>
-          Delete forever
+        <Button variant="contained" onClick={emptyVolume}>
+          Empty
         </Button>
       </DialogActions>
     </Dialog>
