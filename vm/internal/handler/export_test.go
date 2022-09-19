@@ -2,6 +2,7 @@ package handler
 
 import (
 	"archive/tar"
+	"compress/bzip2"
 	"compress/gzip"
 	"context"
 	"fmt"
@@ -40,14 +41,14 @@ func TestExportVolume(t *testing.T) {
 
 	tmpDir := os.TempDir()
 
-	compressions := []string{".tar.gz", ".tar.zst"} // TODO: ".tar.bz2"
+	compressions := []string{".tar.gz", ".tar.zst", ".tar.bz2"}
 
 	for _, compression := range compressions {
 		t.Run(fmt.Sprintf("TestExportVolume_%s_%s", image, compression), func(t *testing.T) {
-			archiveFile := filepath.Join(tmpDir, volume+compression)
+			archiveFileName := filepath.Join(tmpDir, volume+compression)
 
 			defer func() {
-				_ = os.Remove(archiveFile)
+				_ = os.Remove(archiveFileName)
 			}()
 
 			// Export volume
@@ -61,6 +62,9 @@ func TestExportVolume(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
+			archiveFile, _ := os.Stat(archiveFileName)
+			t.Logf("%s - Size: %d bytes.", archiveFile.Name(), archiveFile.Size())
 
 			dst := filepath.Join(tmpDir, fmt.Sprintf("export-destination-%s", compression))
 			defer func() {
@@ -147,6 +151,9 @@ func extractArchive(t *testing.T, compression, dst string, r io.Reader) error {
 		return untar(t, dst, input)
 	case ".tar.zst":
 		input, _ := zstd.NewReader(r)
+		return untar(t, dst, input)
+	case ".tar.bz2":
+		input := bzip2.NewReader(r)
 		return untar(t, dst, input)
 	default:
 		return fmt.Errorf("compression %s not handled", compression)
