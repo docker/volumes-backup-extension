@@ -496,11 +496,7 @@ export function App() {
               loading={isLoading}
               components={{
                 LoadingOverlay: LinearProgress,
-                Toolbar: () => (
-                  <CustomToolbar
-                  // openDialog={() => setOpenImportIntoNewDialog(true)}
-                  />
-                ),
+                Toolbar: () => <CustomToolbar />,
               }}
               rows={rows || []}
               columns={columns}
