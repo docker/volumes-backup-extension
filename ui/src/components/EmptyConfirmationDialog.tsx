@@ -46,6 +46,7 @@ export default function EmptyConfirmationDialog({ ...props }: Props) {
         sendNotification.info(
           `The content of volume ${context.store.volume.volumeName} has been removed`
         );
+        props.onCompletion(true);
       })
       .catch((error) => {
         sendNotification.error(
