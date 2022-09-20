@@ -67,7 +67,12 @@ export default function ImportDialog({
     ddClient.desktopUI.dialog
       .showOpenDialog({
         properties: ["openFile"],
-        filters: [{ name: ".tar.gz", extensions: ["tar.gz"] }], // should contain extension without wildcards or dots
+        filters: [
+          {
+            name: "Compressed archives",
+            extensions: ["tar.gz", "tar.zst", "bz2"],
+          },
+        ], // should contain extension without wildcards or dots
       })
       .then((result) => {
         if (result.canceled) {
@@ -139,8 +144,9 @@ export default function ImportDialog({
         <FormControlLabel value="file" control={<Radio />} label="Local file" />
         <Stack pt={1} pb={2} pl={4}>
           <Typography pb={1} variant="body2">
-            Select a file (.tar.gz) whose content is to be imported into the{" "}
-            {selectedVolumeName ? "existing" : "new"} volume.
+            Select a file (.tar.gz, .tar.zst, or .tar.bz2) whose content is to
+            be imported into the {selectedVolumeName ? "existing" : "new"}{" "}
+            volume.
           </Typography>
           {fromRadioValue === "file" && (
             <Grid container alignItems="center" gap={2}>

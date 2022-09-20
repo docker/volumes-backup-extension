@@ -2,9 +2,12 @@ package handler
 
 import (
 	"archive/tar"
+	"compress/bzip2"
 	"compress/gzip"
 	"context"
 	"fmt"
+	"github.com/docker/volumes-backup-extension/internal/log"
+	"github.com/klauspost/compress/zstd"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -25,121 +28,80 @@ import (
 )
 
 func TestExportVolume(t *testing.T) {
-	var containerID string
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	volume := "2f91f352f0ba381893b9e15ea87db0e28a88aa6e28070c07892681d7a0d6ba6b"
-	cli := setupDockerClient(t)
+	image := "docker.io/library/nginx:1.21"
+	mountPath := "/usr/share/nginx/html:ro"
+
+	setupVolume(context.Background(), cli, volume, image, mountPath)
+
 	tmpDir := os.TempDir()
 
-	defer func() {
-		_ = cli.ContainerRemove(context.Background(), containerID, types.ContainerRemoveOptions{
-			Force: true,
+	compressions := []string{".tar.gz", ".tar.zst", ".tar.bz2"}
+
+	for _, compression := range compressions {
+		t.Run(fmt.Sprintf("TestExportVolume_%s_%s", image, compression), func(t *testing.T) {
+			archiveFileName := filepath.Join(tmpDir, volume+compression)
+
+			defer func() {
+				_ = os.Remove(archiveFileName)
+			}()
+
+			// Export volume
+			rec := export(cli, volume, tmpDir, compression)
+
+			require.NoError(t, err)
+			require.Equal(t, http.StatusCreated, rec.Code)
+
+			// Check content of exportedFiles is correct
+			r, err := os.Open(filepath.Join(tmpDir, volume+compression))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			archiveFile, _ := os.Stat(archiveFileName)
+			t.Logf("%s - Size: %d bytes.", archiveFile.Name(), archiveFile.Size())
+
+			dst := filepath.Join(tmpDir, fmt.Sprintf("export-destination-%s", compression))
+			defer func() {
+				if err = os.RemoveAll(dst); err != nil {
+					t.Fatal(err)
+				}
+			}()
+
+			if err := extractArchive(t, compression, dst, r); err != nil {
+				t.Fatal(err)
+			}
+
+			exportedFiles := []string{"50x.html", "index.html"}
+
+			actual := make(map[string][]byte, len(exportedFiles))
+			for _, f := range exportedFiles {
+				actual[f] = readFile(t, dst, f)
+			}
+			require.Len(t, actual, 2)
+
+			golden := make(map[string][]byte, len(exportedFiles))
+			dir := filepath.Join("testdata", "export", "vackup-volume")
+			for _, f := range exportedFiles {
+				golden[f] = readFile(t, dir, f+".golden")
+				require.Equal(t, string(actual[f]), string(golden[f]))
+			}
+
 		})
-		_ = cli.VolumeRemove(context.Background(), volume, true)
-
-		exportedTarGz := filepath.Join(tmpDir, volume+".tar.gz")
-		t.Logf("removing %s", exportedTarGz)
-		if err := os.Remove(exportedTarGz); err != nil {
-			t.Log(err)
-		}
-	}()
-
-	// Setup
-	e := echo.New()
-	q := make(url.Values)
-	q.Set("path", tmpDir)
-	q.Set("fileName", volume+".tar.gz")
-	req := httptest.NewRequest(http.MethodGet, "/?"+q.Encode(), nil)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	c.SetPath("/volumes/:volume/export")
-	c.SetParamNames("volume")
-	c.SetParamValues(volume)
-	h := New(c.Request().Context(), func() (*client.Client, error) { return setupDockerClient(t), nil })
-
-	// Create volume
-	_, err := cli.VolumeCreate(c.Request().Context(), volumetypes.VolumeCreateBody{
-		Driver: "local",
-		Name:   volume,
-	})
-	if err != nil {
-		t.Fatal(err)
 	}
 
-	reader, err := cli.ImagePull(c.Request().Context(), "docker.io/library/nginx:1.21", types.ImagePullOptions{
-		Platform: "linux/" + runtime.GOARCH,
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	_, err = io.Copy(os.Stdout, reader)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Populate volume
-	resp, err := cli.ContainerCreate(c.Request().Context(), &container.Config{
-		Image: "docker.io/library/nginx:1.21",
-	}, &container.HostConfig{
-		Binds: []string{
-			volume + ":" + "/usr/share/nginx/html:ro",
-		},
-	}, nil, nil, "")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	containerID = resp.ID
-
-	// Export volume
-	err = h.ExportVolume(c)
-	require.NoError(t, err)
-
-	require.Equal(t, http.StatusCreated, rec.Code)
-
-	// Check content of exportedFiles is correct
-	r, err := os.Open(filepath.Join(tmpDir, volume+".tar.gz"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	dst := filepath.Join(tmpDir, "export-destination")
-	defer func() {
-		// the folder that is exported from the volume.tar.gz
-		if err = os.RemoveAll(dst); err != nil {
-			t.Fatal(err)
-		}
-	}()
-
-	if err := extractTarGz(t, dst, r); err != nil {
-		t.Fatal(err)
-	}
-
-	exportedFiles := []string{"50x.html", "index.html"}
-
-	actual := make(map[string][]byte, len(exportedFiles))
-	for _, f := range exportedFiles {
-		actual[f] = readFile(t, dst, f)
-	}
-	require.Len(t, actual, 2)
-
-	golden := make(map[string][]byte, len(exportedFiles))
-	dir := filepath.Join("testdata", "export", "vackup-volume")
-	for _, f := range exportedFiles {
-		golden[f] = readFile(t, dir, f+".golden")
-		require.Equal(t, string(actual[f]), string(golden[f]))
-	}
+	_ = cli.VolumeRemove(context.Background(), volume, true)
 }
 
-func extractTarGz(t *testing.T, dst string, gzipStream io.Reader) error {
+func untar(t *testing.T, dst string, input io.Reader) error {
 	t.Helper()
 
-	uncompressedStream, err := gzip.NewReader(gzipStream)
-	if err != nil {
-		return err
-	}
-
-	tarReader := tar.NewReader(uncompressedStream)
+	tarReader := tar.NewReader(input)
 
 	for true {
 		header, err := tarReader.Next()
@@ -182,6 +144,22 @@ func extractTarGz(t *testing.T, dst string, gzipStream io.Reader) error {
 	return nil
 }
 
+func extractArchive(t *testing.T, compression, dst string, r io.Reader) error {
+	switch compression {
+	case ".tar.gz":
+		input, _ := gzip.NewReader(r)
+		return untar(t, dst, input)
+	case ".tar.zst":
+		input, _ := zstd.NewReader(r)
+		return untar(t, dst, input)
+	case ".tar.bz2":
+		input := bzip2.NewReader(r)
+		return untar(t, dst, input)
+	default:
+		return fmt.Errorf("compression %s not handled", compression)
+	}
+}
+
 func readFile(t *testing.T, dir string, identifier string) []byte {
 	t.Helper()
 
@@ -199,4 +177,101 @@ func readFile(t *testing.T, dir string, identifier string) []byte {
 	}
 
 	return b
+}
+
+var table = struct {
+	input map[string][]string
+}{
+	input: map[string][]string{
+		"docker.io/felipecruz/postgres_pgdata_4gb": {".tar.gz", ".tar.zst", ".tar.bz2"},
+	},
+}
+
+func BenchmarkExportVolume(b *testing.B) {
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	volume := "2f91f352f0ba381893b9e15ea87db0e28a88aa6e28070c07892681d7a0d6ba6b"
+	tmpDir := os.TempDir()
+
+	for image, v := range table.input {
+		setupVolume(context.Background(), cli, volume, image, "/volume-data:ro")
+
+		for _, compression := range v {
+			archiveFileName := filepath.Join(tmpDir, volume+compression)
+			b.Run(fmt.Sprintf("compression_%s_%s", image, compression), func(b *testing.B) {
+				for n := 0; n < b.N; n++ {
+					export(cli, volume, tmpDir, compression)
+					archiveFile, _ := os.Stat(archiveFileName)
+					b.Logf("%s - Size: %d bytes.", archiveFile.Name(), archiveFile.Size())
+				}
+			})
+		}
+
+		_ = cli.VolumeRemove(context.Background(), volume, true)
+	}
+}
+
+func export(cli *client.Client, volume, path, compression string) *httptest.ResponseRecorder {
+	// Setup
+	e := echo.New()
+	q := make(url.Values)
+	q.Set("path", path)
+	q.Set("fileName", volume+compression)
+	req := httptest.NewRequest(http.MethodGet, "/?"+q.Encode(), nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetPath("/volumes/:volume/export")
+	c.SetParamNames("volume")
+	c.SetParamValues(volume)
+	h := New(c.Request().Context(), func() (*client.Client, error) { return cli, nil })
+
+	// Export volume
+	err := h.ExportVolume(c)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return rec
+}
+
+// setupVolume creates a volume and fills it with data from an image.
+func setupVolume(ctx context.Context, cli *client.Client, volume, image, mountPath string) {
+	// Create volume
+	_, err := cli.VolumeCreate(ctx, volumetypes.VolumeCreateBody{
+		Driver: "local",
+		Name:   volume,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	reader, err := cli.ImagePull(ctx, image, types.ImagePullOptions{
+		Platform: "linux/" + runtime.GOARCH,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = io.Copy(os.Stdout, reader)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Populate volume
+	resp, err := cli.ContainerCreate(ctx, &container.Config{
+		Image: image,
+	}, &container.HostConfig{
+		Binds: []string{
+			volume + ":" + mountPath,
+		},
+	}, nil, nil, "")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_ = cli.ContainerRemove(ctx, resp.ID, types.ContainerRemoveOptions{
+		Force: true,
+	})
 }

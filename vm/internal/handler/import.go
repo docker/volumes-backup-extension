@@ -65,7 +65,7 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 	log.Infof("binds: %+v", binds)
 
 	// Ensure the image is present before creating the container
-	reader, err := cli.ImagePull(ctxReq, internal.BusyboxImage, types.ImagePullOptions{
+	reader, err := cli.ImagePull(ctxReq, internal.AlpineTarZstdImage, types.ImagePullOptions{
 		Platform: "linux/" + runtime.GOARCH,
 	})
 	if err != nil {
@@ -77,13 +77,14 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 	}
 
 	resp, err := cli.ContainerCreate(ctxReq, &container.Config{
-		Image:        internal.BusyboxImage,
+		Image:        internal.AlpineTarZstdImage,
 		AttachStdout: true,
 		AttachStderr: true,
 		// remove hidden and not-hidden files and folders:
 		// ..?* matches all dot-dot files except '..'
 		// .[!.]* matches all dot files except '.' and files whose name begins with '..'
-		Cmd: []string{"/bin/sh", "-c", "rm -rf /vackup-volume/..?* /vackup-volume/.[!.]* /vackup-volume/* && tar -xvzf /vackup -C /vackup-volume"},
+		// tar accepts `-a` for format auto-detection
+		Cmd: []string{"/bin/sh", "-c", "rm -rf /vackup-volume/..?* /vackup-volume/.[!.]* /vackup-volume/* && tar -axvf /vackup -C /vackup-volume"},
 		Labels: map[string]string{
 			"com.docker.desktop.extension":        "true",
 			"com.docker.desktop.extension.name":   "Volumes Backup & Share",

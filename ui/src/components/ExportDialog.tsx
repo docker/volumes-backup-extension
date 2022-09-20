@@ -42,7 +42,7 @@ export default function ExportDialog({ open, onClose }: Props) {
     "directory" | "local-image" | "new-image" | "push-registry"
   >("directory");
   const [fileName, setFileName] = useState<string>(
-    `${context.store.volume.volumeName}.tar.gz`
+    `${context.store.volume.volumeName}.tar.zst`
   );
   const [path, setPath] = useState<string>("");
   const [image, setImage] = useState<string>("");
@@ -110,8 +110,8 @@ export default function ExportDialog({ open, onClose }: Props) {
 
         <Stack pt={1} pb={2} pl={4}>
           <Typography pb={1} variant="body2">
-            Create a compressed file (gzip’ed tarball) in a selected directory
-            with the content of a chosen volume.
+            Create a compressed file (.tar.gz, .tar.zst or .tar.bz2) in a
+            selected directory with the content of a chosen volume.
           </Typography>
           {fromRadioValue === "directory" && (
             <>
@@ -121,7 +121,7 @@ export default function ExportDialog({ open, onClose }: Props) {
                 id="file-name"
                 label="File name"
                 fullWidth
-                defaultValue={`${context.store.volume.volumeName}.tar.gz`}
+                defaultValue={`${context.store.volume.volumeName}.tar.zst`}
                 spellCheck={false}
                 onChange={(e) => {
                   setFileName(e.target.value);

@@ -39,6 +39,7 @@ func pullImagesIfNotPresent(ctx context.Context, cli *client.Client) {
 	images := []string{
 		internal.BusyboxImage,
 		internal.NsenterImage,
+		internal.AlpineTarZstdImage,
 	}
 
 	for _, image := range images {

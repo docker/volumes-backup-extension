@@ -64,15 +64,36 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 		return err
 	}
 
+	var compressProgram string
+	tarOpts := "-cvf"
+
+	fileExt := filepath.Ext(fileName)
+	log.Infof("fileExt: %s", fileExt)
+
+	switch fileExt {
+	case ".gz":
+		compressProgram = "\"pigz -6 -k\"" // pigz (parallel implementation of gzip), use -6 as the default compression level (-1 is fastest, -9 is best), "-k" to not delete the original file after processing
+	case ".zst":
+		compressProgram = "zstdmt" // zstdmt is equivalent to zstd -T0 (attempt to detect and use the number of physical CPU cores)
+	case ".bz2":
+		compressProgram = "bzip2"
+	default:
+		compressProgram = ""
+	}
+
 	// Export
-	cmd := []string{
-		"tar",
-		"zcvf",
-		"/vackup" + "/" + filepath.Base(fileName), // the .tar.gz file
+	cmd := []string{"tar"}
+
+	if compressProgram != "" {
+		cmd = append(cmd, "-I", compressProgram)
+	}
+
+	cmd = append(cmd,
+		tarOpts,
+		"/vackup"+"/"+filepath.Base(fileName), // the .tar.zst file
 		"-C",             // -C is used to not include the parent directory
 		"/vackup-volume", // the directory where the files to compress are
-		".",
-	}
+		".")
 
 	cmdJoined := strings.Join(cmd, " ")
 	log.Infof("cmdJoined: %s", cmdJoined)
@@ -84,7 +105,7 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 	log.Infof("binds: %+v", binds)
 
 	// Ensure the image is present before creating the container
-	reader, err := cli.ImagePull(ctxReq, internal.BusyboxImage, types.ImagePullOptions{
+	reader, err := cli.ImagePull(ctxReq, internal.AlpineTarZstdImage, types.ImagePullOptions{
 		Platform: "linux/" + runtime.GOARCH,
 	})
 	if err != nil {
@@ -96,7 +117,7 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 	}
 
 	resp, err := cli.ContainerCreate(ctxReq, &container.Config{
-		Image:        internal.BusyboxImage,
+		Image:        internal.AlpineTarZstdImage,
 		AttachStdout: true,
 		AttachStderr: true,
 		Cmd:          []string{"/bin/sh", "-c", cmdJoined},

@@ -13,6 +13,8 @@ require (
 	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
 )
 
+require github.com/klauspost/compress v1.15.10 // indirect
+
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/Microsoft/go-winio v0.5.2 // indirect
