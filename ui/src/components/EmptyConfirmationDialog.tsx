@@ -62,8 +62,8 @@ export default function EmptyConfirmationDialog({ ...props }: Props) {
       <DialogTitle>Empty a volume</DialogTitle>
       <DialogContent>
         <DialogContentText>
-          The volume will be emptied. This action cannot be undone. Are you
-          sure?
+          The volume <strong>{context.store.volume.volumeName}</strong> will be
+          emptied. This action cannot be undone. Are you sure?
         </DialogContentText>
       </DialogContent>
       <DialogActions>

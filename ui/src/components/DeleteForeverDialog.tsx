@@ -47,8 +47,8 @@ export default function DeleteForeverDialog({ ...props }: Props) {
       <DialogTitle>Delete a volume permanently</DialogTitle>
       <DialogContent>
         <DialogContentText>
-          The volume will be deleted permanently. This action cannot be undone.
-          Are you sure?
+          The volume <strong>{context.store.volume.volumeName}</strong> will be
+          deleted permanently. This action cannot be undone. Are you sure?
         </DialogContentText>
       </DialogContent>
       <DialogActions>
