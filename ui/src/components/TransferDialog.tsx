@@ -157,7 +157,7 @@ export default function TransferDialog({ ...props }: Props) {
           Any existing data inside the destination volume will be replaced.
         </Alert>
         <FormControl>
-          <FormLabel id="from-label">
+          <FormLabel id="from-label" focused={false}>
             <Typography variant="h3" my={1}>
               From:
             </Typography>
@@ -165,7 +165,7 @@ export default function TransferDialog({ ...props }: Props) {
           <VolumeOrInput />
         </FormControl>
         <FormControl sx={{ width: "100%" }}>
-          <FormLabel id="to-label">
+          <FormLabel id="to-label" focused={false}>
             <Typography variant="h3" mt={3} mb={1}>
               To:
             </Typography>

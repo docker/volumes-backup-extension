@@ -232,7 +232,7 @@ export default function ExportDialog({ open, onClose }: Props) {
       <DialogTitle>Export content</DialogTitle>
       <DialogContent>
         <FormControl>
-          <FormLabel id="from-label">
+          <FormLabel id="from-label" focused={false}>
             <Typography variant="h3" my={1}>
               From:
             </Typography>
@@ -240,7 +240,7 @@ export default function ExportDialog({ open, onClose }: Props) {
           <VolumeOrInput />
         </FormControl>
         <FormControl sx={{ width: "100%" }}>
-          <FormLabel id="to-label">
+          <FormLabel id="to-label" focused={false}>
             <Typography variant="h3" mt={3} mb={1}>
               To:
             </Typography>

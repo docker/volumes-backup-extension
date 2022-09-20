@@ -6,6 +6,7 @@ import { DockerMuiThemeProvider } from "@docker/docker-mui-theme";
 import { App } from "./App";
 import type { IVolumeRow } from "./hooks/useGetVolumes";
 import { NotificationProvider } from "./NotificationContext";
+import { LicenseInfo } from "@mui/x-data-grid-pro";
 
 interface IAppContext {
   store: {
@@ -15,6 +16,8 @@ interface IAppContext {
     setVolume(v: IVolumeRow | null): void;
   };
 }
+
+LicenseInfo.setLicenseKey(process.env["REACT_APP_MUI_LICENSE_KEY"]);
 
 export const MyContext = React.createContext<IAppContext>(null);
 

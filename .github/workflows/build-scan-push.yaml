@@ -91,14 +91,15 @@ jobs:
           labels: |
             org.opencontainers.image.revision=${{ github.event.pull_request.head.sha || github.event.after || github.event.release.tag_name }}
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+#          cache-from: type=gha
+#          cache-to: type=gha,mode=max
           platforms: linux/amd64,linux/arm64
           build-args: |
             BUGSNAG_RELEASE_STAGE=production
             BUGSNAG_APP_VERSION=${{ github.event.release.tag_name }}
           secrets: |
             BUGSNAG_API_KEY=${{ secrets.BUGSNAG_API_KEY }}
+            REACT_APP_MUI_LICENSE_KEY=${{ secrets.REACT_APP_MUI_LICENSE_KEY }}
 
         # If PR, put image tags in the PR comments
         # from https://github.com/marketplace/actions/create-or-update-comment

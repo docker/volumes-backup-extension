@@ -222,14 +222,16 @@ export default function ImportDialog({
         <Stack>
           {selectedVolumeName && (
             <Alert
-              sx={(theme) => ({ marginBottom: theme.spacing(2) })}
+              sx={(theme) => ({
+                marginBottom: theme.spacing(2),
+              })}
               severity="warning"
             >
               Any existing data inside the volume will be replaced.
             </Alert>
           )}
           <FormControl>
-            <FormLabel id="from-label">
+            <FormLabel id="from-label" focused={false}>
               <Typography variant="h3" mb={1}>
                 From:
               </Typography>
@@ -248,7 +250,7 @@ export default function ImportDialog({
           </FormControl>
 
           <FormControl>
-            <FormLabel id="to-label">
+            <FormLabel id="to-label" focused={false}>
               <Typography variant="h3" mt={3} mb={1}>
                 To:
               </Typography>
