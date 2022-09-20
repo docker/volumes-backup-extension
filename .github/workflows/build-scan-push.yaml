@@ -91,8 +91,8 @@ jobs:
           labels: |
             org.opencontainers.image.revision=${{ github.event.pull_request.head.sha || github.event.after || github.event.release.tag_name }}
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
-#          cache-from: type=gha
-#          cache-to: type=gha,mode=max
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           platforms: linux/amd64,linux/arm64
           build-args: |
             BUGSNAG_RELEASE_STAGE=production
