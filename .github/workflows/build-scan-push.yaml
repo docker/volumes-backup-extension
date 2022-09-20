@@ -99,7 +99,7 @@ jobs:
             BUGSNAG_APP_VERSION=${{ github.event.release.tag_name }}
           secrets: |
             BUGSNAG_API_KEY=${{ secrets.BUGSNAG_API_KEY }}
-            REACT_APP_MUI_LICENSE_KEY: ${{ secrets.REACT_APP_MUI_LICENSE_KEY }}
+            REACT_APP_MUI_LICENSE_KEY=${{ secrets.REACT_APP_MUI_LICENSE_KEY }}
 
         # If PR, put image tags in the PR comments
         # from https://github.com/marketplace/actions/create-or-update-comment
