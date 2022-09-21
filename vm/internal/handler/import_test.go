@@ -20,6 +20,55 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestImportTarGzFileFromPreviousVersion tests the backwards compatibility of importing a tar.gz archive generated from version 1.0.0 of the Volumes Backup extension.
+// See https://github.com/docker/volumes-backup-extension/pull/63.
+func TestImportTarGzFileFromExtensionVersion1_0_0(t *testing.T) {
+	volume := "d022054e9eff40145acba93f2787c3d91113319c3df7f9115e441f0ce2af167b"
+	cli := setupDockerClient(t)
+
+	defer func() {
+		_ = cli.VolumeRemove(context.Background(), volume, true)
+	}()
+
+	fileName := "postgres_pgdata.tar.gz"
+
+	// Setup
+	e := echo.New()
+	q := make(url.Values)
+	pwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	absolutePath := filepath.Join(pwd, "testdata", "import", "1.0.0", fileName)
+	q.Set("path", absolutePath)
+	req := httptest.NewRequest(http.MethodGet, "/?"+q.Encode(), nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetPath("/volumes/:volume/import")
+	c.SetParamNames("volume")
+	c.SetParamValues(volume)
+	h := New(c.Request().Context(), func() (*client.Client, error) { return setupDockerClient(t), nil })
+
+	// Create volume
+	_, err = cli.VolumeCreate(c.Request().Context(), volumetypes.VolumeCreateBody{
+		Driver: "local",
+		Name:   volume,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Import volume
+	err = h.ImportTarGzFile(c)
+
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, rec.Code)
+	sizes, err := backend.GetVolumesSize(c.Request().Context(), cli, volume)
+	require.NoError(t, err)
+	require.Equal(t, int64(50764000), sizes[volume].Bytes)
+	require.Equal(t, "50.8 MB", sizes[volume].Human)
+}
+
 func TestImportTarGzFile(t *testing.T) {
 	volume := "9a66f7e879b539462d372feee03588aed95fe03236be950b0b1ed55ec7b995d1"
 	cli := setupDockerClient(t)

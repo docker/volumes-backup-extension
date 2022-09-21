@@ -76,15 +76,22 @@ func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
 		return err
 	}
 
+	// remove hidden and not-hidden files and folders:
+	// ..?* matches all dot-dot files except '..'
+	// .[!.]* matches all dot files except '.' and files whose name begins with '..'
+	rmCmd := "rm -rf /vackup-volume/..?* /vackup-volume/.[!.]* /vackup-volume/*"
+
+	// For backwards compatibility with version 1.0.0 of the extension, we check if the archive contains a root folder named "vackup-volume"
+	// If so, we use the "--strip-components=1" flag to decompress the **content** of the root folder (instead of the copying the root folder itself too).
+	// tar accepts "-a" to auto-detect the compression format (.tar.gz, .tar.zst or .tar.bz2).
+	fullCmd := fmt.Sprintf("%s && if [[ \"$(tar -tf /vackup vackup-volume/)\" ]]; then tar -axvf /vackup --strip-components=1 -C /vackup-volume; else tar -axvf /vackup -C /vackup-volume; fi", rmCmd)
+	log.Infof("fullCmd: %s", fullCmd)
+
 	resp, err := cli.ContainerCreate(ctxReq, &container.Config{
 		Image:        internal.AlpineTarZstdImage,
 		AttachStdout: true,
 		AttachStderr: true,
-		// remove hidden and not-hidden files and folders:
-		// ..?* matches all dot-dot files except '..'
-		// .[!.]* matches all dot files except '.' and files whose name begins with '..'
-		// tar accepts `-a` for format auto-detection
-		Cmd: []string{"/bin/sh", "-c", "rm -rf /vackup-volume/..?* /vackup-volume/.[!.]* /vackup-volume/* && tar -axvf /vackup -C /vackup-volume"},
+		Cmd:          []string{"/bin/sh", "-c", fullCmd},
 		Labels: map[string]string{
 			"com.docker.desktop.extension":        "true",
 			"com.docker.desktop.extension.name":   "Volumes Backup & Share",
