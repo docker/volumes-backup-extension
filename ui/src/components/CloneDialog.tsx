@@ -3,7 +3,6 @@ import { Button, Typography, Grid } from "@mui/material";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
-import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import { createDockerDesktopClient } from "@docker/extension-api-client";
 
@@ -64,8 +63,6 @@ export default function CloneDialog({ ...props }: Props) {
     <Dialog fullWidth maxWidth="sm" open={props.open} onClose={props.onClose}>
       <DialogTitle>Clone a volume</DialogTitle>
       <DialogContent>
-        <DialogContentText>Clones a volume.</DialogContentText>
-
         <Grid container direction="column" spacing={2}>
           <Grid item mt={2}>
             <VolumeInput

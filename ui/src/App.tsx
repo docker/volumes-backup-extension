@@ -184,6 +184,7 @@ export function App() {
             }
             label="Clone volume"
             onClick={handleClone(params.row)}
+            disabled={params.row.volumeSize === "0 B"}
           />,
           <GridActionsCellItem
             key={"action_export_" + params.row.id}
