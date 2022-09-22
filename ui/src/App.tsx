@@ -493,41 +493,43 @@ export function App() {
                 Import into new volume
               </Button>
             </Grid>
-            <DataGridPro
-              loading={isLoading}
-              components={{
-                LoadingOverlay: LinearProgress,
-                Toolbar: () => <CustomToolbar />,
-              }}
-              rows={rows || []}
-              columns={columns}
-              pageSize={10}
-              rowsPerPageOptions={[10]}
-              checkboxSelection={false}
-              disableSelectionOnClick={true}
-              autoHeight
-              getRowHeight={() => "auto"}
-              onCellClick={handleCellClick}
-              sx={{
-                "&.MuiDataGrid-root--densityCompact .MuiDataGrid-cell": {
-                  py: 1,
-                },
-                "&.MuiDataGrid-root--densityStandard .MuiDataGrid-cell": {
-                  py: 1,
-                },
-                "&.MuiDataGrid-root--densityComfortable .MuiDataGrid-cell": {
-                  py: 2,
-                },
-                "& .MuiDataGrid-cell": {
-                  "& .MuiIconButton-root.circular-progress": {
-                    "&:hover": {
+            <Grid container flex={1} height="80vh">
+              <DataGridPro
+                loading={isLoading}
+                components={{
+                  LoadingOverlay: LinearProgress,
+                  Toolbar: () => <CustomToolbar />,
+                }}
+                rows={rows || []}
+                columns={columns}
+                pageSize={10}
+                rowsPerPageOptions={[10]}
+                checkboxSelection={false}
+                disableSelectionOnClick={true}
+                // autoHeight
+                getRowHeight={() => "auto"}
+                onCellClick={handleCellClick}
+                sx={{
+                  "&.MuiDataGrid-root--densityCompact .MuiDataGrid-cell": {
+                    py: 1,
+                  },
+                  "&.MuiDataGrid-root--densityStandard .MuiDataGrid-cell": {
+                    py: 1,
+                  },
+                  "&.MuiDataGrid-root--densityComfortable .MuiDataGrid-cell": {
+                    py: 2,
+                  },
+                  "& .MuiDataGrid-cell": {
+                    "& .MuiIconButton-root.circular-progress": {
+                      "&:hover": {
+                        backgroundColor: "transparent",
+                      },
                       backgroundColor: "transparent",
                     },
-                    backgroundColor: "transparent",
                   },
-                },
-              }}
-            />
+                }}
+              />
+            </Grid>
           </Grid>
 
           {openExportDialog && (
