@@ -50,6 +50,9 @@ function CustomToolbar() {
         "& .MuiButton-root": {
           color: (theme) => theme.palette.docker.grey[500],
           textTransform: "uppercase",
+          "&:hover": {
+            backgroundColor: (theme) => theme.palette.action.hover,
+          },
         },
       }}
     >

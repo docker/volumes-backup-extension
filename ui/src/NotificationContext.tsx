@@ -86,7 +86,9 @@ export const NotificationProvider: FC = ({ children }) => {
             action={buildActions(values.actions || [DEFAULT_ACTION])}
             sx={{
               "& .MuiButton-root": {
-                color: useLightTheme ? "#086DD7" : "white",
+                color: useLightTheme
+                  ? (theme) => theme.palette.docker.blue[500]
+                  : "white",
                 "&:hover": {
                   backgroundColor: (theme) => {
                     if (values.type === "error") {
@@ -104,7 +106,7 @@ export const NotificationProvider: FC = ({ children }) => {
               backgroundColor: (theme) => {
                 if (values.type === "error") {
                   return useLightTheme
-                    ? "#FDEAEA" // theme.palette.docker.red[100] is wrong, I had to hard-code "#FDEAEA" instead
+                    ? theme.palette.docker.red[100] // red-100 should be "#FDEAEA" but it's not 🤷‍♂️
                     : theme.palette.docker.red[200];
                 }
 
