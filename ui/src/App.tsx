@@ -404,8 +404,10 @@ export function App() {
   ) => {
     if (actionSuccessfullyCompleted) {
       const rowsCopy = rows.slice();
+      const highestId = rows.slice(-1)[0].id;
+      const nextId = highestId + 1;
       rowsCopy.push({
-        id: rows.length,
+        id: nextId,
         volumeName: clonedVolumeName,
         volumeDriver: "local",
       });
