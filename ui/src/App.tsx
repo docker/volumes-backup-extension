@@ -225,7 +225,7 @@ export function App() {
             key={"action_empty_" + params.row.id}
             icon={
               <Tooltip title="Empty volume">
-                <DeleteIcon>Empty volume</DeleteIcon>
+                <DeleteForeverIcon>Empty volume</DeleteForeverIcon>
               </Tooltip>
             }
             label="Empty volume"
@@ -237,7 +237,7 @@ export function App() {
             key={"action_delete_" + params.row.id}
             icon={
               <Tooltip title="Delete volume">
-                <DeleteForeverIcon>Delete volume</DeleteForeverIcon>
+                <DeleteIcon>Delete volume</DeleteIcon>
               </Tooltip>
             }
             label="Delete volume"
