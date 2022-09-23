@@ -80,8 +80,8 @@ export default function CloneDialog({ ...props }: Props) {
           <VolumeOrInput />
         </FormControl>
         <Grid container direction="column" spacing={2}>
-          <Grid item mt={2} sx={{ width: "100%" }}>
-            <FormControl>
+          <Grid item mt={2}>
+            <FormControl sx={{ width: "100%" }}>
               <FormLabel id="to-label" focused={false}>
                 <Typography variant="h3" mt={3} mb={1}>
                   To:
