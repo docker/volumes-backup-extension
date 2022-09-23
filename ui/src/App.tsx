@@ -87,6 +87,12 @@ export function App() {
   const [recalculateVolumeSize, setRecalculateVolumeSize] =
     React.useState<string>(null);
 
+  // useLayoutEffect(() => {
+
+  // }, [])
+  // const dgWrapper = document.querySelector("#data-grid-wrapper");
+  // if (dgWrapper) dgWrapper.setAttribute('height', );
+
   const columns = [
     { field: "volumeDriver", headerName: "Driver", hide: true },
     {
@@ -481,7 +487,7 @@ export function App() {
   return (
     <>
       <Header />
-      <Stack direction="column" alignItems="start" spacing={2} sx={{ mt: 4 }}>
+      <Stack direction="column" alignItems="start" spacing={2} sx={{ mt: 1 }}>
         <Grid container>
           <Grid item flex={1}>
             <Grid item sx={{ display: "flex", justifyContent: "flex-end" }}>
@@ -496,7 +502,7 @@ export function App() {
                 Import into new volume
               </Button>
             </Grid>
-            <Grid container flex={1} height="80vh">
+            <Grid container flex={1} height="calc(100vh - 134px)">
               <DataGridPro
                 loading={isLoading}
                 components={{
@@ -509,7 +515,6 @@ export function App() {
                 rowsPerPageOptions={[10]}
                 checkboxSelection={false}
                 disableSelectionOnClick={true}
-                // autoHeight
                 getRowHeight={() => "auto"}
                 onCellClick={handleCellClick}
                 sx={{
