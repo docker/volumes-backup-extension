@@ -2,7 +2,7 @@ import { createContext, FC, useContext, useState } from "react";
 import Snackbar from "@mui/material/Snackbar/Snackbar";
 import SnackbarContent from "@mui/material/SnackbarContent/SnackbarContent";
 import Button from "@mui/material/Button/Button";
-import { Stack } from "@mui/material";
+import { Stack, useMediaQuery } from "@mui/material";
 
 interface INotification {
   message: string;
@@ -29,6 +29,8 @@ const NotificationContext = createContext<INotificationContext>({
 });
 
 export const NotificationProvider: FC = ({ children }) => {
+  const useLightTheme = useMediaQuery("(prefers-color-scheme: light)");
+
   const [open, setOpen] = useState(false);
   const [values, setValues] = useState<INotification>({
     message: "",
@@ -83,10 +85,33 @@ export const NotificationProvider: FC = ({ children }) => {
             message={values.message}
             action={buildActions(values.actions || [DEFAULT_ACTION])}
             sx={{
-              backgroundColor:
-                values.type === "error"
-                  ? (theme) => theme.palette.docker.red[200]
-                  : (theme) => theme.palette.docker.grey[100],
+              "& .MuiButton-root": {
+                color: useLightTheme
+                  ? (theme) => theme.palette.docker.blue[500]
+                  : "white",
+                "&:hover": {
+                  backgroundColor: (theme) => {
+                    if (values.type === "error") {
+                      return useLightTheme
+                        ? theme.palette.docker.red[200]
+                        : theme.palette.docker.red[100];
+                    }
+
+                    return useLightTheme
+                      ? "white"
+                      : theme.palette.docker.grey[200];
+                  },
+                },
+              },
+              backgroundColor: (theme) => {
+                if (values.type === "error") {
+                  return useLightTheme
+                    ? theme.palette.docker.red[100] // red-100 should be "#FDEAEA" but it's not 🤷‍♂️
+                    : theme.palette.docker.red[200];
+                }
+
+                return useLightTheme ? "white" : theme.palette.docker.grey[200];
+              },
               color: (theme) => theme.palette.text.primary,
               borderRadius: "4px !important",
               ".MuiSnackbarContent-message": {

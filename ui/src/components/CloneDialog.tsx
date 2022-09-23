@@ -1,9 +1,14 @@
 import React, { useContext } from "react";
-import { Button, Typography, Grid } from "@mui/material";
+import {
+  Button,
+  Typography,
+  Grid,
+  FormLabel,
+  FormControl,
+} from "@mui/material";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
-import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import { createDockerDesktopClient } from "@docker/extension-api-client";
 
@@ -11,6 +16,8 @@ import { MyContext } from "../index";
 import { useNotificationContext } from "../NotificationContext";
 import { track } from "../common/track";
 import { IVolumeRow } from "../hooks/useGetVolumes";
+import { VolumeOrInput } from "./VolumeOrInput";
+import { VolumeIcon } from "./VolumeIcon";
 import { VolumeInput } from "./VolumeInput";
 
 const ddClient = createDockerDesktopClient();
@@ -64,23 +71,45 @@ export default function CloneDialog({ ...props }: Props) {
     <Dialog fullWidth maxWidth="sm" open={props.open} onClose={props.onClose}>
       <DialogTitle>Clone a volume</DialogTitle>
       <DialogContent>
-        <DialogContentText>Clones a volume.</DialogContentText>
-
+        <FormControl>
+          <FormLabel id="from-label" focused={false}>
+            <Typography variant="h3" my={1}>
+              From:
+            </Typography>
+          </FormLabel>
+          <VolumeOrInput />
+        </FormControl>
         <Grid container direction="column" spacing={2}>
           <Grid item mt={2}>
-            <VolumeInput
-              volumes={props.volumes}
-              value={volumeName}
-              onChange={setVolumeName}
-              hasError={hasError}
-              setHasError={setHasError}
-            />
+            <FormControl sx={{ width: "100%" }}>
+              <FormLabel id="to-label" focused={false}>
+                <Typography variant="h3" mt={3} mb={1}>
+                  To:
+                </Typography>
+              </FormLabel>
+
+              <Grid container gap={2}>
+                <Grid item pt={1}>
+                  <VolumeIcon />
+                </Grid>
+                <Grid item flex={1}>
+                  <VolumeInput
+                    volumes={props.volumes}
+                    value={volumeName}
+                    onChange={setVolumeName}
+                    hasError={hasError}
+                    setHasError={setHasError}
+                  />
+                </Grid>
+              </Grid>
+            </FormControl>
           </Grid>
 
           {volumeName !== "" && (
             <Grid item>
               <Typography variant="body1" color="text.secondary">
-                The volume will be cloned to a new volume named {volumeName}.
+                The volume will be cloned to a new volume named{" "}
+                <strong>{volumeName}</strong>.
               </Typography>
             </Grid>
           )}

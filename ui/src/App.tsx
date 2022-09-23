@@ -50,6 +50,9 @@ function CustomToolbar() {
         "& .MuiButton-root": {
           color: (theme) => theme.palette.docker.grey[500],
           textTransform: "uppercase",
+          "&:hover": {
+            backgroundColor: (theme) => theme.palette.action.hover,
+          },
         },
       }}
     >
@@ -83,6 +86,12 @@ export function App() {
 
   const [recalculateVolumeSize, setRecalculateVolumeSize] =
     React.useState<string>(null);
+
+  // useLayoutEffect(() => {
+
+  // }, [])
+  // const dgWrapper = document.querySelector("#data-grid-wrapper");
+  // if (dgWrapper) dgWrapper.setAttribute('height', );
 
   const columns = [
     { field: "volumeDriver", headerName: "Driver", hide: true },
@@ -184,6 +193,7 @@ export function App() {
             }
             label="Clone volume"
             onClick={handleClone(params.row)}
+            disabled={params.row.volumeSize === "0 B"}
           />,
           <GridActionsCellItem
             key={"action_export_" + params.row.id}
@@ -221,7 +231,7 @@ export function App() {
             key={"action_empty_" + params.row.id}
             icon={
               <Tooltip title="Empty volume">
-                <DeleteIcon>Empty volume</DeleteIcon>
+                <DeleteForeverIcon>Empty volume</DeleteForeverIcon>
               </Tooltip>
             }
             label="Empty volume"
@@ -233,7 +243,7 @@ export function App() {
             key={"action_delete_" + params.row.id}
             icon={
               <Tooltip title="Delete volume">
-                <DeleteForeverIcon>Delete volume</DeleteForeverIcon>
+                <DeleteIcon>Delete volume</DeleteIcon>
               </Tooltip>
             }
             label="Delete volume"
@@ -477,7 +487,7 @@ export function App() {
   return (
     <>
       <Header />
-      <Stack direction="column" alignItems="start" spacing={2} sx={{ mt: 4 }}>
+      <Stack direction="column" alignItems="start" spacing={2} sx={{ mt: 1 }}>
         <Grid container>
           <Grid item flex={1}>
             <Grid item sx={{ display: "flex", justifyContent: "flex-end" }}>
@@ -492,41 +502,42 @@ export function App() {
                 Import into new volume
               </Button>
             </Grid>
-            <DataGridPro
-              loading={isLoading}
-              components={{
-                LoadingOverlay: LinearProgress,
-                Toolbar: () => <CustomToolbar />,
-              }}
-              rows={rows || []}
-              columns={columns}
-              pageSize={10}
-              rowsPerPageOptions={[10]}
-              checkboxSelection={false}
-              disableSelectionOnClick={true}
-              autoHeight
-              getRowHeight={() => "auto"}
-              onCellClick={handleCellClick}
-              sx={{
-                "&.MuiDataGrid-root--densityCompact .MuiDataGrid-cell": {
-                  py: 1,
-                },
-                "&.MuiDataGrid-root--densityStandard .MuiDataGrid-cell": {
-                  py: 1,
-                },
-                "&.MuiDataGrid-root--densityComfortable .MuiDataGrid-cell": {
-                  py: 2,
-                },
-                "& .MuiDataGrid-cell": {
-                  "& .MuiIconButton-root.circular-progress": {
-                    "&:hover": {
+            <Grid container flex={1} height="calc(100vh - 134px)">
+              <DataGridPro
+                loading={isLoading}
+                components={{
+                  LoadingOverlay: LinearProgress,
+                  Toolbar: () => <CustomToolbar />,
+                }}
+                rows={rows || []}
+                columns={columns}
+                pageSize={10}
+                rowsPerPageOptions={[10]}
+                checkboxSelection={false}
+                disableSelectionOnClick={true}
+                getRowHeight={() => "auto"}
+                onCellClick={handleCellClick}
+                sx={{
+                  "&.MuiDataGrid-root--densityCompact .MuiDataGrid-cell": {
+                    py: 1,
+                  },
+                  "&.MuiDataGrid-root--densityStandard .MuiDataGrid-cell": {
+                    py: 1,
+                  },
+                  "&.MuiDataGrid-root--densityComfortable .MuiDataGrid-cell": {
+                    py: 2,
+                  },
+                  "& .MuiDataGrid-cell": {
+                    "& .MuiIconButton-root.circular-progress": {
+                      "&:hover": {
+                        backgroundColor: "transparent",
+                      },
                       backgroundColor: "transparent",
                     },
-                    backgroundColor: "transparent",
                   },
-                },
-              }}
-            />
+                }}
+              />
+            </Grid>
           </Grid>
 
           {openExportDialog && (
