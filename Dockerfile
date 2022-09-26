@@ -45,7 +45,7 @@ RUN apk update \
 COPY client .
 RUN make cross
 
-FROM busybox:1.35.0@sha256:b8f68c62fe862281bf598060f15cb080ef778dc9db19f136d19a3531ffcb9aa0
+FROM busybox:1.35.0@sha256:80548a8d85fa32ce25b126657e29e6caf92ce8aa6b4a0bb5708c58a8d6a751f3
 
 ARG BUGSNAG_RELEASE_STAGE="local"
 ARG BUGSNAG_APP_VERSION="latest"
