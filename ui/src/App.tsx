@@ -87,6 +87,33 @@ export function App() {
   const [recalculateVolumeSize, setRecalculateVolumeSize] =
     React.useState<string>(null);
 
+  useEffect(() => {
+    document.body.addEventListener("drop", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (
+        e.dataTransfer.files &&
+        e.dataTransfer.files.length > 0 &&
+        !openImportIntoNewDialog
+      ) {
+        if (
+          e.dataTransfer.files[0].name.endsWith(".tar.gz") ||
+          e.dataTransfer.files[0].name.endsWith(".tar.zst") ||
+          e.dataTransfer.files[0].name.endsWith(".tar.bz2")
+        ) {
+          track({ action: "ImportNewVolumePopup" });
+          setOpenImportIntoNewDialog(true);
+        }
+        e.dataTransfer.clearData();
+      }
+    });
+
+    document.body.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+  }, []);
+
   // useLayoutEffect(() => {
 
   // }, [])
