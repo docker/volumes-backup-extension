@@ -18,10 +18,13 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func GetContainersForVolume(ctx context.Context, cli *client.Client, volumeName string) []string {
+func GetContainersForVolume(ctx context.Context, cli *client.Client, volumeName string, specialFilters filters.Args) []string {
+	// add our filters filterArgs
+	specialFilters.Add("volume", volumeName)
+
 	containers, err := cli.ContainerList(ctx, types.ContainerListOptions{
 		All:     true,
-		Filters: filters.NewArgs(filters.Arg("volume", volumeName)),
+		Filters: specialFilters,
 	})
 	if err != nil {
 		log.Error(err)
@@ -36,11 +39,11 @@ func GetContainersForVolume(ctx context.Context, cli *client.Client, volumeName 
 	return containerNames
 }
 
-func StopContainersAttachedToVolume(ctx context.Context, cli *client.Client, volumeName string) ([]string, error) {
+func StopRunningContainersAttachedToVolume(ctx context.Context, cli *client.Client, volumeName string) ([]string, error) {
 	var stoppedContainersByExtension []string
 	var timeout = 10 * time.Second
 
-	containerNames := GetContainersForVolume(ctx, cli, volumeName)
+	containerNames := GetContainersForVolume(ctx, cli, volumeName, filters.NewArgs(filters.Arg("status", "running")))
 
 	g, gCtx := errgroup.WithContext(ctx)
 	for _, containerName := range containerNames {
@@ -74,7 +77,7 @@ func StopContainersAttachedToVolume(ctx context.Context, cli *client.Client, vol
 	return containerNames, g.Wait()
 }
 
-func StartContainersAttachedToVolume(ctx context.Context, cli *client.Client, containers []string) error {
+func StartContainersByName(ctx context.Context, cli *client.Client, containers []string) error {
 	g, gCtx := errgroup.WithContext(ctx)
 
 	for _, containerName := range containers {

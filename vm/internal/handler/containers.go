@@ -31,7 +31,7 @@ func (h *Handler) VolumesContainer(ctx echo.Context) error {
 
 		go func(volumeName string) {
 			defer wg.Done()
-			containers := backend.GetContainersForVolume(ctxReq, cli, volumeName)
+			containers := backend.GetContainersForVolume(ctxReq, cli, volumeName, filters.NewArgs())
 			res.Lock()
 			defer res.Unlock()
 			entry, ok := res.data[volumeName]

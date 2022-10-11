@@ -79,7 +79,7 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 	log.Infof("parsedRef.String(): %s", parsedRef.String())
 
 	// Stop container(s)
-	stoppedContainers, err := backend.StopContainersAttachedToVolume(ctxReq, cli, volumeName)
+	stoppedContainers, err := backend.StopRunningContainersAttachedToVolume(ctxReq, cli, volumeName)
 	if err != nil {
 		return err
 	}
@@ -122,7 +122,7 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 	}
 
 	// Start container(s)
-	err = backend.StartContainersAttachedToVolume(ctxReq, cli, stoppedContainers)
+	err = backend.StartContainersByName(ctxReq, cli, stoppedContainers)
 	if err != nil {
 		return err
 	}
