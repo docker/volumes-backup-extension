@@ -85,7 +85,6 @@ func StopRunningContainersAttachedToVolume(ctx context.Context, cli *client.Clie
 		))
 	for _, containerName := range removingContainerNames {
 		containerName := containerName
-		cli.ContainerWait(ctx, containerName, container.WaitConditionRemoved)
 		g.Go(func() error {
 			log.Infof("container %s is being removed, waiting for removal to complete", containerName)
 			cli.ContainerWait(ctx, containerName, container.WaitConditionRemoved)
