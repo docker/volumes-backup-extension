@@ -43,7 +43,11 @@ func StopRunningContainersAttachedToVolume(ctx context.Context, cli *client.Clie
 	var stoppedContainersByExtension []string
 	var timeout = 10 * time.Second
 
-	containerNames := GetContainersForVolume(ctx, cli, volumeName, filters.NewArgs(filters.Arg("status", "running")))
+	containerNames := GetContainersForVolume(ctx, cli, volumeName,
+		filters.NewArgs(
+			filters.Arg("status", "running"),
+			filters.Arg("status", "restarting"),
+		))
 
 	g, gCtx := errgroup.WithContext(ctx)
 	for _, containerName := range containerNames {
@@ -70,6 +74,22 @@ func StopRunningContainersAttachedToVolume(ctx context.Context, cli *client.Clie
 
 			log.Infof("container %s stopped", containerName)
 			stoppedContainersByExtension = append(stoppedContainersByExtension, containerName)
+			return nil
+		})
+	}
+
+	//wait for containers with "removing" status to be completely removed
+	removingContainerNames := GetContainersForVolume(ctx, cli, volumeName,
+		filters.NewArgs(
+			filters.Arg("status", "removing"),
+		))
+	for _, containerName := range removingContainerNames {
+		containerName := containerName
+		cli.ContainerWait(ctx, containerName, container.WaitConditionRemoved)
+		g.Go(func() error {
+			log.Infof("container %s is being removed, waiting for removal to complete", containerName)
+			cli.ContainerWait(ctx, containerName, container.WaitConditionRemoved)
+			log.Infof("container %s removed successfully", containerName)
 			return nil
 		})
 	}
