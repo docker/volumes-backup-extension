@@ -1,7 +1,7 @@
 IMAGE?=docker/volumes-backup-extension
 TAG?=latest
 BUILDER=buildx-multi-arch
-REACT_APP_MUI_LICENSE_KEY?=UNKNOWN_KEY
+export REACT_APP_MUI_LICENSE_KEY?=UNKNOWN_KEY
 
 export BUGSNAG_API_KEY?=
 export BUGSNAG_RELEASE_STAGE?=local
