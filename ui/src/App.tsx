@@ -489,6 +489,7 @@ export function App() {
             (element) => element.volumeName === volumeName
           );
           rowsCopy[index].volumeSize = sizeObj.Human;
+          rowsCopy[index].volumeBytes = sizeObj.Bytes;
 
           setData(rowsCopy);
 
