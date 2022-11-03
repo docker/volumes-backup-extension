@@ -1,16 +1,19 @@
 package handler
 
 import (
+	"crypto/tls"
+	"encoding/base64"
 	"encoding/json"
-	"io/ioutil"
-	"net/http"
-	"strings"
-
+	"github.com/containerd/containerd/remotes"
+	"github.com/containerd/containerd/remotes/docker"
 	"github.com/docker/distribution/reference"
 	dockertypes "github.com/docker/docker/api/types"
 	"github.com/docker/volumes-backup-extension/internal/backend"
 	"github.com/docker/volumes-backup-extension/internal/log"
 	"github.com/labstack/echo"
+	"github.com/sirupsen/logrus"
+	"net/http"
+	"strings"
 )
 
 type PushRequest struct {
@@ -84,41 +87,18 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 		return err
 	}
 
-	// Save the content of the volume into an image
-	if err := backend.Save(ctxReq, cli, volumeName, parsedRef.String()); err != nil {
+	// Push volume as an OCI artifact to registry
+	authConfig := &dockertypes.AuthConfig{}
+	authJSON := base64.NewDecoder(base64.URLEncoding, strings.NewReader(request.Base64EncodedAuth))
+	if err := json.NewDecoder(authJSON).Decode(authConfig); err != nil {
+		logrus.Infof("failed to decode auth config: %s\n", err)
 		return err
 	}
 
-	// Push the image to registry
-	pushResp, err := cli.ImagePush(ctxReq, parsedRef.String(), dockertypes.ImagePushOptions{
-		RegistryAuth: request.Base64EncodedAuth,
-	})
-	if err != nil {
+	resolver := newDockerResolver(authConfig.Username, authConfig.Password, true)
+	if err := backend.Push(ctxReq, request.Reference, volumeName, resolver); err != nil {
+		logrus.Infof("failed to push volume %s to ref %s: %s\n", request.Reference, request.Reference, err)
 		return err
-	}
-	defer pushResp.Close()
-
-	response, err := ioutil.ReadAll(pushResp)
-
-	for _, line := range strings.Split(string(response), "\n") {
-		log.Info(line)
-
-		if !strings.Contains(line, "error") {
-			continue
-		}
-
-		pel := PushErrorLine{}
-		if err := json.Unmarshal([]byte(line), &pel); err == nil {
-			// the image push had an error, e.g:
-			// {"errorDetail":{"message":"unauthorized: authentication required"},"error":"unauthorized: authentication required"}
-			// or
-			// {"errorDetail":{"message":"no basic auth credentials"},"error":"no basic auth credentials"}
-			if pel.Error == "unauthorized: authentication required" || pel.Error == "no basic auth credentials" {
-				return ctx.String(http.StatusUnauthorized, pel.Error)
-			} else {
-				return ctx.String(http.StatusInternalServerError, pel.Error)
-			}
-		}
 	}
 
 	// Start container(s)
@@ -128,4 +108,34 @@ func (h *Handler) PushVolume(ctx echo.Context) error {
 	}
 
 	return ctx.String(http.StatusCreated, "")
+}
+
+func newDockerResolver(username, password string, insecure bool) remotes.Resolver {
+	client := http.DefaultClient
+	if insecure {
+		client.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		}
+	}
+	opts := docker.ResolverOptions{
+		Hosts: func(s string) ([]docker.RegistryHost, error) {
+			return []docker.RegistryHost{
+				{
+					Authorizer: docker.NewDockerAuthorizer(
+						docker.WithAuthCreds(func(s string) (string, string, error) {
+							return username, password, nil
+						})),
+					Host:         "docker.io",
+					Scheme:       "https",
+					Path:         "/v2",
+					Capabilities: docker.HostCapabilityPull | docker.HostCapabilityResolve | docker.HostCapabilityPush,
+					Client:       client,
+				},
+			}, nil
+		},
+	}
+
+	return docker.NewResolver(opts)
 }
