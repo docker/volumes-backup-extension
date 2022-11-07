@@ -3,6 +3,8 @@ import {
   DataGridPro,
   GridActionsCellItem,
   GridCellParams,
+  GridColumns,
+  GridComparatorFn,
   GridToolbarColumnsButton,
   GridToolbarContainer,
   GridToolbarDensitySelector,
@@ -36,7 +38,7 @@ import TransferDialog from "./components/TransferDialog";
 import DeleteForeverDialog from "./components/DeleteForeverDialog";
 import { MyContext } from ".";
 import ImportDialog from "./components/ImportDialog";
-import { useGetVolumes } from "./hooks/useGetVolumes";
+import { IVolumeRow, useGetVolumes } from "./hooks/useGetVolumes";
 import { Header } from "./components/Header";
 import { track } from "./common/track";
 import EmptyConfirmationDialog from "./components/EmptyConfirmationDialog";
@@ -62,6 +64,10 @@ function CustomToolbar() {
     </GridToolbarContainer>
   );
 }
+
+const volumeSizeComparator: GridComparatorFn<number> = (v1, v2) => {
+  return v1 - v2;
+};
 
 export function App() {
   const context = useContext(MyContext);
@@ -93,7 +99,7 @@ export function App() {
   // const dgWrapper = document.querySelector("#data-grid-wrapper");
   // if (dgWrapper) dgWrapper.setAttribute('height', );
 
-  const columns = [
+  const columns: GridColumns<IVolumeRow> = [
     { field: "volumeDriver", headerName: "Driver", hide: true },
     {
       field: "volumeName",
@@ -116,8 +122,8 @@ export function App() {
         if (params.row.volumeContainers) {
           return (
             <Box display="flex" flexDirection="column">
-              {params.row.volumeContainers.map((container) => (
-                <Typography key={container}>{container}</Typography>
+              {params.row.volumeContainers.map((container, index) => (
+                <Typography key={index}>{container}</Typography>
               ))}
             </Box>
           );
@@ -128,6 +134,16 @@ export function App() {
     {
       field: "volumeSize",
       headerName: "Size",
+      valueGetter: (params) => {
+        if (
+          isVolumesSizeLoading ||
+          volumesSizeLoadingMap[params.row.volumeName]
+        ) {
+          return 0;
+        }
+
+        return params.row.volumeBytes;
+      },
       renderCell: (params) => {
         if (
           isVolumesSizeLoading ||
@@ -141,6 +157,7 @@ export function App() {
         }
         return <Typography>{params.row.volumeSize}</Typography>;
       },
+      sortComparator: volumeSizeComparator,
     },
     {
       field: "actions",
@@ -472,6 +489,7 @@ export function App() {
             (element) => element.volumeName === volumeName
           );
           rowsCopy[index].volumeSize = sizeObj.Human;
+          rowsCopy[index].volumeBytes = sizeObj.Bytes;
 
           setData(rowsCopy);
 
