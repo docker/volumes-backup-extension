@@ -1,12 +1,14 @@
 package handler
 
 import (
-	"github.com/docker/docker/api/types/filters"
 	"net/http"
 	"sync"
 
+	"github.com/docker/docker/api/types/filters"
+
+	"github.com/labstack/echo/v4"
+
 	"github.com/docker/volumes-backup-extension/internal/backend"
-	"github.com/labstack/echo"
 )
 
 func (h *Handler) VolumesContainer(ctx echo.Context) error {

@@ -1,4 +1,4 @@
-FROM golang:1.17-alpine@sha256:99ddec1bbfd6d6bca3f9804c02363daee8c8524dae50df7942e8e60788fd17c9 AS builder
+FROM golang:1.19-alpine AS builder
 ENV CGO_ENABLED=0
 WORKDIR /backend
 COPY vm/go.* .
@@ -36,7 +36,7 @@ RUN apk update \
 RUN curl -fL "https://download.docker.com/linux/static/stable/$(uname -m)/docker-${CLI_VERSION}.tgz" | tar zxf - --strip-components 1 docker/docker \
     && chmod +x /docker
 
-FROM --platform=$BUILDPLATFORM golang:1.17-alpine@sha256:99ddec1bbfd6d6bca3f9804c02363daee8c8524dae50df7942e8e60788fd17c9 AS docker-credentials-client-builder
+FROM --platform=$BUILDPLATFORM golang:1.19-alpine AS docker-credentials-client-builder
 ENV CGO_ENABLED=0
 WORKDIR /output
 RUN apk update \

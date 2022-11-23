@@ -6,8 +6,6 @@ import (
 	"compress/gzip"
 	"context"
 	"fmt"
-	"github.com/docker/volumes-backup-extension/internal/log"
-	"github.com/klauspost/compress/zstd"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -19,11 +17,15 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/klauspost/compress/zstd"
+
+	"github.com/docker/volumes-backup-extension/internal/log"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	volumetypes "github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/require"
 )
 

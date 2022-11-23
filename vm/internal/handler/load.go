@@ -4,9 +4,10 @@ import (
 	"net/http"
 
 	"github.com/bugsnag/bugsnag-go/v2"
+	"github.com/labstack/echo/v4"
+
 	"github.com/docker/volumes-backup-extension/internal/backend"
 	"github.com/docker/volumes-backup-extension/internal/log"
-	"github.com/labstack/echo"
 )
 
 func (h *Handler) LoadImage(ctx echo.Context) error {

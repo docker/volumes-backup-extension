@@ -15,9 +15,10 @@ import (
 	"github.com/docker/docker/api/types/container"
 	volumetypes "github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
-	"github.com/docker/volumes-backup-extension/internal/backend"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/require"
+
+	"github.com/docker/volumes-backup-extension/internal/backend"
 )
 
 // TestImportTarGzFileFromPreviousVersion tests the backwards compatibility of importing a tar.gz archive generated from version 1.0.0 of the Volumes Backup extension.

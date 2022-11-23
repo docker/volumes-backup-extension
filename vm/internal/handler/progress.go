@@ -1,9 +1,10 @@
 package handler
 
 import (
-	"github.com/labstack/echo"
 	"net/http"
 	"sync"
+
+	"github.com/labstack/echo/v4"
 )
 
 type ProgressCache struct {

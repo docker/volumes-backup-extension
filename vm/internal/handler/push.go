@@ -8,9 +8,10 @@ import (
 
 	"github.com/docker/distribution/reference"
 	dockertypes "github.com/docker/docker/api/types"
+	"github.com/labstack/echo/v4"
+
 	"github.com/docker/volumes-backup-extension/internal/backend"
 	"github.com/docker/volumes-backup-extension/internal/log"
-	"github.com/labstack/echo"
 )
 
 type PushRequest struct {

@@ -12,10 +12,11 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/pkg/stdcopy"
+	"github.com/labstack/echo/v4"
+
 	"github.com/docker/volumes-backup-extension/internal"
 	"github.com/docker/volumes-backup-extension/internal/backend"
 	"github.com/docker/volumes-backup-extension/internal/log"
-	"github.com/labstack/echo"
 )
 
 func (h *Handler) ExportVolume(ctx echo.Context) error {
@@ -91,8 +92,8 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 	cmd = append(cmd,
 		tarOpts,
 		"/vackup"+"/"+filepath.Base(fileName), // the .tar.zst file
-		"-C",             // -C is used to not include the parent directory
-		"/vackup-volume", // the directory where the files to compress are
+		"-C",                                  // -C is used to not include the parent directory
+		"/vackup-volume",                      // the directory where the files to compress are
 		".")
 
 	cmdJoined := strings.Join(cmd, " ")

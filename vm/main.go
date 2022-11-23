@@ -3,19 +3,21 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/bugsnag/bugsnag-go/v2"
-	"github.com/labstack/echo/middleware"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
 
+	"github.com/bugsnag/bugsnag-go/v2"
+	"github.com/labstack/echo/v4/middleware"
+
 	"github.com/docker/docker/client"
+	"github.com/labstack/echo/v4"
+
 	"github.com/docker/volumes-backup-extension/internal/handler"
 	"github.com/docker/volumes-backup-extension/internal/log"
 	"github.com/docker/volumes-backup-extension/internal/setup"
-	"github.com/labstack/echo"
 )
 
 var (

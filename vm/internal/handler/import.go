@@ -10,10 +10,11 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/pkg/stdcopy"
+	"github.com/labstack/echo/v4"
+
 	"github.com/docker/volumes-backup-extension/internal"
 	"github.com/docker/volumes-backup-extension/internal/backend"
 	"github.com/docker/volumes-backup-extension/internal/log"
-	"github.com/labstack/echo"
 )
 
 func (h *Handler) ImportTarGzFile(ctx echo.Context) error {
