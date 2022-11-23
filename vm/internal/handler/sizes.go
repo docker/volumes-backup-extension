@@ -3,8 +3,9 @@ package handler
 import (
 	"net/http"
 
+	"github.com/labstack/echo/v4"
+
 	"github.com/docker/volumes-backup-extension/internal/backend"
-	"github.com/labstack/echo"
 )
 
 func (h *Handler) VolumesSize(ctx echo.Context) error {

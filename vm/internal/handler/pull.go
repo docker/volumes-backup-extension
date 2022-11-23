@@ -7,10 +7,11 @@ import (
 
 	"github.com/docker/distribution/reference"
 	dockertypes "github.com/docker/docker/api/types"
+	"github.com/labstack/echo/v4"
+	"github.com/sirupsen/logrus"
+
 	"github.com/docker/volumes-backup-extension/internal/backend"
 	"github.com/docker/volumes-backup-extension/internal/log"
-	"github.com/labstack/echo"
-	"github.com/sirupsen/logrus"
 )
 
 type PullRequest struct {

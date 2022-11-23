@@ -1,12 +1,14 @@
 package setup
 
 import (
-	"github.com/docker/volumes-backup-extension/internal/log"
-	"github.com/labstack/echo"
 	"net/http"
 	"os"
 	"os/exec"
 	"runtime"
+
+	"github.com/labstack/echo/v4"
+
+	"github.com/docker/volumes-backup-extension/internal/log"
 
 	"github.com/bugsnag/bugsnag-go/v2"
 )
