@@ -98,7 +98,8 @@ LABEL org.opencontainers.image.title="Volumes Backup & Share" \
     <li>Fixed a bug where the clone operation will not validate whether the destination volume already existed.</li> \
     <li>Added error tracking to detect issues before users report them.</li> \
     <li>Fixed new vulnerabilities detected in the Dockerfile.</li> \
-    </ul>"
+    </ul>" \
+    com.docker.extension.categories="volumes"
 
 WORKDIR /
 COPY docker-compose.yaml .
