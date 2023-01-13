@@ -439,6 +439,7 @@ export function App() {
       return;
     }
     calculateVolumeSize(recalculateVolumeSize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recalculateVolumeSize]);
 
   const handleTransferDialogClose = () => {

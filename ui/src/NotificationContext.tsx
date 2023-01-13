@@ -59,6 +59,7 @@ export const NotificationProvider: FC = ({ children }) => {
         {actions.map((action) => (
           <Button
             key={action.name}
+            variant="text"
             onClick={() => {
               if (action.onClick) action.onClick();
               setOpen(false);
@@ -85,24 +86,6 @@ export const NotificationProvider: FC = ({ children }) => {
             message={values.message}
             action={buildActions(values.actions || [DEFAULT_ACTION])}
             sx={{
-              "& .MuiButton-root": {
-                color: useLightTheme
-                  ? (theme) => theme.palette.docker.blue[500]
-                  : "white",
-                "&:hover": {
-                  backgroundColor: (theme) => {
-                    if (values.type === "error") {
-                      return useLightTheme
-                        ? theme.palette.docker.red[200]
-                        : theme.palette.docker.red[100];
-                    }
-
-                    return useLightTheme
-                      ? "white"
-                      : theme.palette.docker.grey[200];
-                  },
-                },
-              },
               backgroundColor: (theme) => {
                 if (values.type === "error") {
                   return useLightTheme
@@ -110,7 +93,9 @@ export const NotificationProvider: FC = ({ children }) => {
                     : theme.palette.docker.red[200];
                 }
 
-                return useLightTheme ? "white" : theme.palette.docker.grey[200];
+                return useLightTheme
+                  ? theme.palette.common.white
+                  : theme.palette.docker.grey[200];
               },
               color: (theme) => theme.palette.text.primary,
               borderRadius: "4px !important",

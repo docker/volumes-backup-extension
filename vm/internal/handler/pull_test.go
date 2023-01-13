@@ -141,17 +141,15 @@ func TestPullVolume(t *testing.T) {
 		t.Log(string(response))
 
 		if strings.Contains(string(response), "error") {
-			return err
+			return fmt.Errorf("error pushing image %s", string(response))
 		}
 
+		t.Log("image pushed successfully")
 		return nil
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	// The sleep is to ensure the image is present in the registry after the `ImagePush` operation.
-	time.Sleep(3 * time.Second)
 
 	_, err = cli.ImageRemove(context.Background(), imageID, types.ImageRemoveOptions{
 		Force: true,
@@ -169,8 +167,11 @@ func TestPullVolume(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Pull volume from registry
-	err = h.PullVolume(c)
+	// Ths is to ensure the image is present in the registry after the `ImagePush` operation, might take a bit of time.
+	err = retry(10, 1*time.Second, func() error {
+		// Pull volume from registry
+		return h.PullVolume(c)
+	})
 
 	require.NoError(t, err)
 	require.Equal(t, http.StatusCreated, rec.Code)
