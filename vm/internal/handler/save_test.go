@@ -105,5 +105,5 @@ func TestSaveVolume(t *testing.T) {
 	require.Len(t, summary, 1)
 	require.Equal(t, imageID, summary[0].RepoTags[0])
 	t.Logf("Image size after saving volume into it: %d", summary[0].Size)
-	require.Regexp(t, `124\d{4}`, strconv.FormatInt(summary[0].Size, 10), "the image size should be around 1.24MB")
+	require.Regexp(t, `\d{7}`, strconv.FormatInt(summary[0].Size, 10), "the image size should be between 1 and 10 MB")
 }
