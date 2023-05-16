@@ -47,20 +47,12 @@ const ddClient = createDockerDesktopClient();
 
 function CustomToolbar() {
   return (
-    <GridToolbarContainer
-      sx={{
-        "& .MuiButton-root": {
-          color: (theme) => theme.palette.docker.grey[500],
-          textTransform: "uppercase",
-          "&:hover": {
-            backgroundColor: (theme) => theme.palette.action.hover,
-          },
-        },
-      }}
-    >
-      <GridToolbarColumnsButton />
-      <GridToolbarFilterButton />
-      <GridToolbarDensitySelector />
+    <GridToolbarContainer>
+      <GridToolbarColumnsButton variant="text" />
+      <GridToolbarFilterButton
+        componentsProps={{ button: { variant: "text" } }}
+      />
+      <GridToolbarDensitySelector variant="text" />
     </GridToolbarContainer>
   );
 }
