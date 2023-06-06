@@ -83,7 +83,7 @@ func (h *Handler) CloneVolume(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	_, err = cli.VolumeCreate(ctx.Request().Context(), volumetypes.VolumeCreateBody{
+	_, err = cli.VolumeCreate(ctx.Request().Context(), volumetypes.CreateOptions{
 		Labels: volInspect.Labels,
 		Name:   destVolume,
 	})
