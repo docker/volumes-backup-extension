@@ -14,7 +14,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
-	volumetypes "github.com/docker/docker/api/types/volume"
+	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/require"
@@ -22,7 +22,7 @@ import (
 
 func TestSaveVolume(t *testing.T) {
 	var containerID string
-	volume := "cde5adac7d16ae45c6d2bf8f2496d3da3b994227bfa4d3ea392a03c2ad33cce6"
+	volumeID := "cde5adac7d16ae45c6d2bf8f2496d3da3b994227bfa4d3ea392a03c2ad33cce6"
 	imageID := "vackup-cde5adac7d16ae45c6d2bf8f2496d3da3b994227bfa4d3ea392a03c2ad33cce6:latest"
 	cli := setupDockerClient(t)
 
@@ -30,7 +30,7 @@ func TestSaveVolume(t *testing.T) {
 		_ = cli.ContainerRemove(context.Background(), containerID, types.ContainerRemoveOptions{
 			Force: true,
 		})
-		_ = cli.VolumeRemove(context.Background(), volume, true)
+		_ = cli.VolumeRemove(context.Background(), volumeID, true)
 
 		t.Logf("removing image %s", imageID)
 		if _, err := cli.ImageRemove(context.Background(), imageID, types.ImageRemoveOptions{
@@ -49,13 +49,13 @@ func TestSaveVolume(t *testing.T) {
 	c := e.NewContext(req, rec)
 	c.SetPath("/volumes/:volume/save")
 	c.SetParamNames("volume")
-	c.SetParamValues(volume)
+	c.SetParamValues(volumeID)
 	h := New(c.Request().Context(), func() (*client.Client, error) { return cli, nil })
 
 	// Create volume
-	_, err := cli.VolumeCreate(c.Request().Context(), volumetypes.VolumeCreateBody{
+	_, err := cli.VolumeCreate(c.Request().Context(), volume.CreateOptions{
 		Driver: "local",
-		Name:   volume,
+		Name:   volumeID,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -78,7 +78,7 @@ func TestSaveVolume(t *testing.T) {
 		Image: "docker.io/library/nginx:1.21",
 	}, &container.HostConfig{
 		Binds: []string{
-			volume + ":" + "/usr/share/nginx/html:ro",
+			volumeID + ":" + "/usr/share/nginx/html:ro",
 		},
 	}, nil, nil, "")
 	if err != nil {

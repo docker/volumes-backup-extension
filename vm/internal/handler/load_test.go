@@ -13,7 +13,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
-	volumetypes "github.com/docker/docker/api/types/volume"
+	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/require"
@@ -22,12 +22,12 @@ import (
 )
 
 func TestLoadImage(t *testing.T) {
-	volume := "ec654aa5062241db227476aa877efc67d22fa4d3f8ed759c7a9738afce417c71"
+	volumeID := "ec654aa5062241db227476aa877efc67d22fa4d3f8ed759c7a9738afce417c71"
 	cli := setupDockerClient(t)
 	imageID := "vackup-load-test-img:latest"
 
 	defer func() {
-		_ = cli.VolumeRemove(context.Background(), volume, true)
+		_ = cli.VolumeRemove(context.Background(), volumeID, true)
 	}()
 
 	// Load image.tar.gz filesystem into a local image
@@ -58,13 +58,13 @@ func TestLoadImage(t *testing.T) {
 	c := e.NewContext(req, rec)
 	c.SetPath("/volumes/:volume/load")
 	c.SetParamNames("volume")
-	c.SetParamValues(volume)
+	c.SetParamValues(volumeID)
 	h := New(c.Request().Context(), func() (*client.Client, error) { return setupDockerClient(t), nil })
 
 	// Create volume
-	_, err = cli.VolumeCreate(c.Request().Context(), volumetypes.VolumeCreateBody{
+	_, err = cli.VolumeCreate(c.Request().Context(), volume.CreateOptions{
 		Driver: "local",
-		Name:   volume,
+		Name:   volumeID,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -75,20 +75,20 @@ func TestLoadImage(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, rec.Code)
-	sizes, err := backend.GetVolumesSize(c.Request().Context(), cli, volume)
+	sizes, err := backend.GetVolumesSize(c.Request().Context(), cli, volumeID)
 	require.NoError(t, err)
-	t.Logf("Volume size after loading image into it: %+v", sizes[volume])
-	require.Equal(t, int64(16000), sizes[volume].Bytes)
-	require.Equal(t, "16.0 kB", sizes[volume].Human)
+	t.Logf("Volume size after loading image into it: %+v", sizes[volumeID])
+	require.Equal(t, int64(16000), sizes[volumeID].Bytes)
+	require.Equal(t, "16.0 kB", sizes[volumeID].Human)
 }
 
 func TestLoadImageShouldRemovePreviousVolumeData(t *testing.T) {
-	volume := "348cbc9bc7092dcdf4acdd3653ffd7711cbe1b529c6fd699ecddec5c3577613c"
+	volumeID := "348cbc9bc7092dcdf4acdd3653ffd7711cbe1b529c6fd699ecddec5c3577613c"
 	cli := setupDockerClient(t)
 	imageID := "vackup-load-test-img:latest"
 
 	defer func() {
-		_ = cli.VolumeRemove(context.Background(), volume, true)
+		_ = cli.VolumeRemove(context.Background(), volumeID, true)
 	}()
 
 	// Load image.tar.gz filesystem into a local image
@@ -119,13 +119,13 @@ func TestLoadImageShouldRemovePreviousVolumeData(t *testing.T) {
 	c := e.NewContext(req, rec)
 	c.SetPath("/volumes/:volume/load")
 	c.SetParamNames("volume")
-	c.SetParamValues(volume)
+	c.SetParamValues(volumeID)
 	h := New(c.Request().Context(), func() (*client.Client, error) { return setupDockerClient(t), nil })
 
 	// Create volume
-	_, err = cli.VolumeCreate(c.Request().Context(), volumetypes.VolumeCreateBody{
+	_, err = cli.VolumeCreate(c.Request().Context(), volume.CreateOptions{
 		Driver: "local",
-		Name:   volume,
+		Name:   volumeID,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -149,7 +149,7 @@ func TestLoadImageShouldRemovePreviousVolumeData(t *testing.T) {
 		Env:   []string{"POSTGRES_PASSWORD=password"},
 	}, &container.HostConfig{
 		Binds: []string{
-			volume + ":" + "/var/lib/postgresql/data",
+			volumeID + ":" + "/var/lib/postgresql/data",
 		},
 	}, nil, nil, "")
 	if err != nil {
@@ -171,9 +171,9 @@ func TestLoadImageShouldRemovePreviousVolumeData(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, rec.Code)
-	sizes, err := backend.GetVolumesSize(c.Request().Context(), cli, volume)
+	sizes, err := backend.GetVolumesSize(c.Request().Context(), cli, volumeID)
 	require.NoError(t, err)
-	t.Logf("Volume size after loading image into it: %+v", sizes[volume])
-	require.Equal(t, int64(16000), sizes[volume].Bytes)
-	require.Equal(t, "16.0 kB", sizes[volume].Human)
+	t.Logf("Volume size after loading image into it: %+v", sizes[volumeID])
+	require.Equal(t, int64(16000), sizes[volumeID].Bytes)
+	require.Equal(t, "16.0 kB", sizes[volumeID].Human)
 }

@@ -7,18 +7,18 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	volumetypes "github.com/docker/docker/api/types/volume"
+	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/require"
 )
 
 func TestVolumes(t *testing.T) {
-	volume := "7115890bd1cdf80f4cc0b8aaa9f5300281e80b4bf68170a6eb20e174774f0089"
+	volumeID := "7115890bd1cdf80f4cc0b8aaa9f5300281e80b4bf68170a6eb20e174774f0089"
 	cli := setupDockerClient(t)
 
 	defer func() {
-		_ = cli.VolumeRemove(context.Background(), volume, true)
+		_ = cli.VolumeRemove(context.Background(), volumeID, true)
 	}()
 
 	// Setup
@@ -30,9 +30,9 @@ func TestVolumes(t *testing.T) {
 	h := New(c.Request().Context(), func() (*client.Client, error) { return cli, nil })
 
 	// Create volume
-	_, err := cli.VolumeCreate(c.Request().Context(), volumetypes.VolumeCreateBody{
+	_, err := cli.VolumeCreate(c.Request().Context(), volume.CreateOptions{
 		Driver: "local",
-		Name:   volume,
+		Name:   volumeID,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -48,11 +48,11 @@ func TestVolumes(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, http.StatusOK, rec.Code)
-	require.Contains(t, m, volume)
-	require.Equal(t, "local", m[volume].Driver)
-	require.Equal(t, int64(0), m[volume].Size)
-	require.Equal(t, "", m[volume].SizeHuman)
-	require.Len(t, m[volume].Containers, 0)
+	require.Contains(t, m, volumeID)
+	require.Equal(t, "local", m[volumeID].Driver)
+	require.Equal(t, int64(0), m[volumeID].Size)
+	require.Equal(t, "", m[volumeID].SizeHuman)
+	require.Len(t, m[volumeID].Containers, 0)
 }
 
 func setupDockerClient(t *testing.T) *client.Client {

@@ -23,7 +23,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
-	volumetypes "github.com/docker/docker/api/types/volume"
+	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/require"
@@ -239,11 +239,11 @@ func export(cli *client.Client, volume, path, compression string) *httptest.Resp
 }
 
 // setupVolume creates a volume and fills it with data from an image.
-func setupVolume(ctx context.Context, cli *client.Client, volume, image, mountPath string) {
+func setupVolume(ctx context.Context, cli *client.Client, volumeID, image, mountPath string) {
 	// Create volume
-	_, err := cli.VolumeCreate(ctx, volumetypes.VolumeCreateBody{
+	_, err := cli.VolumeCreate(ctx, volume.CreateOptions{
 		Driver: "local",
-		Name:   volume,
+		Name:   volumeID,
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -266,7 +266,7 @@ func setupVolume(ctx context.Context, cli *client.Client, volume, image, mountPa
 		Image: image,
 	}, &container.HostConfig{
 		Binds: []string{
-			volume + ":" + mountPath,
+			volumeID + ":" + mountPath,
 		},
 	}, nil, nil, "")
 	if err != nil {
