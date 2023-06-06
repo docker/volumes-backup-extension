@@ -92,7 +92,7 @@ LABEL org.opencontainers.image.title="Volumes Backup & Share" \
     ]" \
     com.docker.desktop.extension.icon="https://raw.githubusercontent.com/docker/volumes-backup-extension/main/icon.svg" \
     com.docker.extension.changelog="<ul>\
-    <li>Fixed style on grid buttons.</li> \
+    <li>Fixed current image vulnerabilities (CVEs) using Docker Scout.</li> \
     </ul>" \
     com.docker.extension.categories="volumes"
 

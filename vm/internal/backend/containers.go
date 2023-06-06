@@ -6,16 +6,16 @@ import (
 	"os"
 	"runtime"
 	"strings"
-	"time"
 
 	"github.com/bugsnag/bugsnag-go/v2"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/docker/volumes-backup-extension/internal"
 	"github.com/docker/volumes-backup-extension/internal/log"
-	"golang.org/x/sync/errgroup"
 )
 
 func GetContainersForVolume(ctx context.Context, cli *client.Client, volumeName string, specialFilters filters.Args) []string {
@@ -41,7 +41,7 @@ func GetContainersForVolume(ctx context.Context, cli *client.Client, volumeName 
 
 func StopRunningContainersAttachedToVolume(ctx context.Context, cli *client.Client, volumeName string) ([]string, error) {
 	var stoppedContainersByExtension []string
-	var timeout = 10 * time.Second
+	var timeout = 10 // seconds
 
 	containerNames := GetContainersForVolume(ctx, cli, volumeName,
 		filters.NewArgs(
@@ -67,7 +67,9 @@ func StopRunningContainersAttachedToVolume(ctx context.Context, cli *client.Clie
 			}
 
 			log.Infof("stopping container %s...", containerName)
-			err = cli.ContainerStop(gCtx, containerName, &timeout)
+			err = cli.ContainerStop(gCtx, containerName, container.StopOptions{
+				Timeout: &timeout,
+			})
 			if err != nil {
 				return err
 			}

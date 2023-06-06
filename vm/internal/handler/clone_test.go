@@ -13,7 +13,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
-	volumetypes "github.com/docker/docker/api/types/volume"
+	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/require"
@@ -23,15 +23,15 @@ import (
 
 func TestCloneVolume(t *testing.T) {
 	var containerID string
-	volume := "e6b2874a1b4ced2344d53b75e93346f60e1c363fe3e4cd9c6cb5bd8b975b9a45"
-	destVolume := volume + "-cloned"
+	volumeID := "e6b2874a1b4ced2344d53b75e93346f60e1c363fe3e4cd9c6cb5bd8b975b9a45"
+	destVolume := volumeID + "-cloned"
 	cli := setupDockerClient(t)
 
 	defer func() {
 		_ = cli.ContainerRemove(context.Background(), containerID, types.ContainerRemoveOptions{
 			Force: true,
 		})
-		_ = cli.VolumeRemove(context.Background(), volume, true)
+		_ = cli.VolumeRemove(context.Background(), volumeID, true)
 		_ = cli.VolumeRemove(context.Background(), destVolume, true)
 	}()
 
@@ -44,13 +44,13 @@ func TestCloneVolume(t *testing.T) {
 	c := e.NewContext(req, rec)
 	c.SetPath("/volumes/:volume/clone")
 	c.SetParamNames("volume")
-	c.SetParamValues(volume)
+	c.SetParamValues(volumeID)
 	h := New(c.Request().Context(), func() (*client.Client, error) { return setupDockerClient(t), nil })
 
 	// Create volume
-	_, err := cli.VolumeCreate(c.Request().Context(), volumetypes.VolumeCreateBody{
+	_, err := cli.VolumeCreate(c.Request().Context(), volume.CreateOptions{
 		Driver: "local",
-		Name:   volume,
+		Name:   volumeID,
 		Labels: map[string]string{
 			"com.docker.compose.project": "my-compose-project",
 			"com.docker.compose.version": "2.10.2",
@@ -78,7 +78,7 @@ func TestCloneVolume(t *testing.T) {
 		Image: "docker.io/library/nginx:1.21",
 	}, &container.HostConfig{
 		Binds: []string{
-			volume + ":" + "/usr/share/nginx/html:ro",
+			volumeID + ":" + "/usr/share/nginx/html:ro",
 		},
 	}, nil, nil, "")
 	if err != nil {
@@ -97,7 +97,7 @@ func TestCloneVolume(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Check volume has been cloned and contains the expected data
-	clonedVolumeResp, err := dockerClient.VolumeList(context.Background(), filters.NewArgs(filters.Arg("name", destVolume)))
+	clonedVolumeResp, err := dockerClient.VolumeList(context.Background(), volume.ListOptions{Filters: filters.NewArgs(filters.Arg("name", destVolume))})
 	if err != nil {
 		t.Fatal(err)
 	}

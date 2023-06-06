@@ -17,7 +17,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
-	volumetypes "github.com/docker/docker/api/types/volume"
+	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"github.com/labstack/echo/v4"
@@ -27,7 +27,7 @@ import (
 func TestPushVolume(t *testing.T) {
 	var containerID string
 	var registryContainerID string
-	volume := "998c9e00ea6ed7f7d27beeb2d876b18a02686172faa8897c50720c1365c82d8f"
+	volumeID := "998c9e00ea6ed7f7d27beeb2d876b18a02686172faa8897c50720c1365c82d8f"
 	registry := "localhost:5000" // or use docker.io to push it to DockerHub
 	imageID := registry + "/felipecruz/" + "test-push-volume-as-image"
 	cli := setupDockerClient(t)
@@ -39,7 +39,7 @@ func TestPushVolume(t *testing.T) {
 		_ = cli.ContainerRemove(context.Background(), containerID, types.ContainerRemoveOptions{
 			Force: true,
 		})
-		_ = cli.VolumeRemove(context.Background(), volume, true)
+		_ = cli.VolumeRemove(context.Background(), volumeID, true)
 
 		t.Logf("removing image %s", imageID)
 		if _, err := cli.ImageRemove(context.Background(), imageID, types.ImageRemoveOptions{
@@ -58,13 +58,13 @@ func TestPushVolume(t *testing.T) {
 	c := e.NewContext(req, rec)
 	c.SetPath("/volumes/:volume/push")
 	c.SetParamNames("volume")
-	c.SetParamValues(volume)
+	c.SetParamValues(volumeID)
 	h := New(c.Request().Context(), func() (*client.Client, error) { return setupDockerClient(t), nil })
 
 	// Create volume
-	_, err := cli.VolumeCreate(c.Request().Context(), volumetypes.VolumeCreateBody{
+	_, err := cli.VolumeCreate(c.Request().Context(), volume.CreateOptions{
 		Driver: "local",
-		Name:   volume,
+		Name:   volumeID,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -86,7 +86,7 @@ func TestPushVolume(t *testing.T) {
 		Image: "docker.io/library/nginx:1.21",
 	}, &container.HostConfig{
 		Binds: []string{
-			volume + ":" + "/usr/share/nginx/html:ro",
+			volumeID + ":" + "/usr/share/nginx/html:ro",
 		},
 	}, nil, nil, "")
 	if err != nil {
@@ -163,7 +163,7 @@ func TestPushVolume(t *testing.T) {
 func TestPushVolumeUsingCorrectAuth(t *testing.T) {
 	var containerID string
 	var registryContainerID string
-	volume := "26c3626656572089590620f155e0b097309ab5c53e5ce6fba94cf8ed94e0dfb7"
+	volumeID := "26c3626656572089590620f155e0b097309ab5c53e5ce6fba94cf8ed94e0dfb7"
 	registry := "localhost:5000" // or use docker.io to push it to DockerHub
 	imageID := registry + "/felipecruz/" + "test-auth-push-volume-as-image"
 	cli := setupDockerClient(t)
@@ -175,7 +175,7 @@ func TestPushVolumeUsingCorrectAuth(t *testing.T) {
 		_ = cli.ContainerRemove(context.Background(), containerID, types.ContainerRemoveOptions{
 			Force: true,
 		})
-		_ = cli.VolumeRemove(context.Background(), volume, true)
+		_ = cli.VolumeRemove(context.Background(), volumeID, true)
 
 		t.Logf("removing image %s", imageID)
 		if _, err := cli.ImageRemove(context.Background(), imageID, types.ImageRemoveOptions{
@@ -197,13 +197,13 @@ func TestPushVolumeUsingCorrectAuth(t *testing.T) {
 	c := e.NewContext(req, rec)
 	c.SetPath("/volumes/:volume/push")
 	c.SetParamNames("volume")
-	c.SetParamValues(volume)
+	c.SetParamValues(volumeID)
 	h := New(c.Request().Context(), func() (*client.Client, error) { return setupDockerClient(t), nil })
 
 	// Create volume
-	_, err := cli.VolumeCreate(c.Request().Context(), volumetypes.VolumeCreateBody{
+	_, err := cli.VolumeCreate(c.Request().Context(), volume.CreateOptions{
 		Driver: "local",
-		Name:   volume,
+		Name:   volumeID,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -225,7 +225,7 @@ func TestPushVolumeUsingCorrectAuth(t *testing.T) {
 		Image: "docker.io/library/nginx:1.21",
 	}, &container.HostConfig{
 		Binds: []string{
-			volume + ":" + "/usr/share/nginx/html:ro",
+			volumeID + ":" + "/usr/share/nginx/html:ro",
 		},
 	}, nil, nil, "")
 	if err != nil {
@@ -327,7 +327,7 @@ func TestPushVolumeUsingCorrectAuth(t *testing.T) {
 func TestPushVolumeUsingWrongAuthShouldFail(t *testing.T) {
 	var containerID string
 	var registryContainerID string
-	volume := "a5783caca4a98259c6d5a493e240f227f1aa93e72afd0fecaeb3a5575b8505d2"
+	volumeID := "a5783caca4a98259c6d5a493e240f227f1aa93e72afd0fecaeb3a5575b8505d2"
 	registry := "localhost:5000" // or use docker.io to push it to DockerHub
 	imageID := registry + "/felipecruz/" + "test-auth-push-volume-as-image"
 	cli := setupDockerClient(t)
@@ -339,7 +339,7 @@ func TestPushVolumeUsingWrongAuthShouldFail(t *testing.T) {
 		_ = cli.ContainerRemove(context.Background(), containerID, types.ContainerRemoveOptions{
 			Force: true,
 		})
-		_ = cli.VolumeRemove(context.Background(), volume, true)
+		_ = cli.VolumeRemove(context.Background(), volumeID, true)
 
 		t.Logf("removing image %s", imageID)
 		if _, err := cli.ImageRemove(context.Background(), imageID, types.ImageRemoveOptions{
@@ -361,13 +361,13 @@ func TestPushVolumeUsingWrongAuthShouldFail(t *testing.T) {
 	c := e.NewContext(req, rec)
 	c.SetPath("/volumes/:volume/push")
 	c.SetParamNames("volume")
-	c.SetParamValues(volume)
+	c.SetParamValues(volumeID)
 	h := New(c.Request().Context(), func() (*client.Client, error) { return setupDockerClient(t), nil })
 
-	// Create volume
-	_, err := cli.VolumeCreate(c.Request().Context(), volumetypes.VolumeCreateBody{
+	// Create volumeID
+	_, err := cli.VolumeCreate(c.Request().Context(), volume.CreateOptions{
 		Driver: "local",
-		Name:   volume,
+		Name:   volumeID,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -384,12 +384,12 @@ func TestPushVolumeUsingWrongAuthShouldFail(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Populate volume
+	// Populate volumeID
 	resp, err := cli.ContainerCreate(c.Request().Context(), &container.Config{
 		Image: "docker.io/library/nginx:1.21",
 	}, &container.HostConfig{
 		Binds: []string{
-			volume + ":" + "/usr/share/nginx/html:ro",
+			volumeID + ":" + "/usr/share/nginx/html:ro",
 		},
 	}, nil, nil, "")
 	if err != nil {
@@ -450,7 +450,7 @@ func TestPushVolumeUsingWrongAuthShouldFail(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Push volume
+	// Push volumeID
 	err = h.PushVolume(c)
 
 	require.NoError(t, err)

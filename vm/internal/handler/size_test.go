@@ -11,7 +11,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
-	volumetypes "github.com/docker/docker/api/types/volume"
+	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/require"
@@ -19,14 +19,14 @@ import (
 
 func TestVolumeSize(t *testing.T) {
 	var containerID string
-	volume := "f1c149694ab1318377505d40c2431b4387a53d8d28fa814d4584e12b1ed63cfc"
+	volumeID := "f1c149694ab1318377505d40c2431b4387a53d8d28fa814d4584e12b1ed63cfc"
 	cli := setupDockerClient(t)
 
 	defer func() {
 		_ = cli.ContainerRemove(context.Background(), containerID, types.ContainerRemoveOptions{
 			Force: true,
 		})
-		_ = cli.VolumeRemove(context.Background(), volume, true)
+		_ = cli.VolumeRemove(context.Background(), volumeID, true)
 	}()
 
 	// Setup
@@ -36,13 +36,13 @@ func TestVolumeSize(t *testing.T) {
 	c := e.NewContext(req, rec)
 	c.SetPath("/volumes/:volume/size")
 	c.SetParamNames("volume")
-	c.SetParamValues(volume)
+	c.SetParamValues(volumeID)
 	h := New(c.Request().Context(), func() (*client.Client, error) { return setupDockerClient(t), nil })
 
 	// Create volume
-	_, err := cli.VolumeCreate(c.Request().Context(), volumetypes.VolumeCreateBody{
+	_, err := cli.VolumeCreate(c.Request().Context(), volume.CreateOptions{
 		Driver: "local",
-		Name:   volume,
+		Name:   volumeID,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -65,7 +65,7 @@ func TestVolumeSize(t *testing.T) {
 		Image: "docker.io/library/nginx:1.21",
 	}, &container.HostConfig{
 		Binds: []string{
-			volume + ":" + "/usr/share/nginx/html:ro",
+			volumeID + ":" + "/usr/share/nginx/html:ro",
 		},
 	}, nil, nil, "")
 	if err != nil {

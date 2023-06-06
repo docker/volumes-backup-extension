@@ -13,7 +13,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
-	volumetypes "github.com/docker/docker/api/types/volume"
+	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/require"
@@ -24,11 +24,11 @@ import (
 // TestImportTarGzFileFromPreviousVersion tests the backwards compatibility of importing a tar.gz archive generated from version 1.0.0 of the Volumes Backup extension.
 // See https://github.com/docker/volumes-backup-extension/pull/63.
 func TestImportTarGzFileFromExtensionVersion1_0_0(t *testing.T) {
-	volume := "d022054e9eff40145acba93f2787c3d91113319c3df7f9115e441f0ce2af167b"
+	volumeID := "d022054e9eff40145acba93f2787c3d91113319c3df7f9115e441f0ce2af167b"
 	cli := setupDockerClient(t)
 
 	defer func() {
-		_ = cli.VolumeRemove(context.Background(), volume, true)
+		_ = cli.VolumeRemove(context.Background(), volumeID, true)
 	}()
 
 	fileName := "postgres_pgdata.tar.gz"
@@ -47,13 +47,13 @@ func TestImportTarGzFileFromExtensionVersion1_0_0(t *testing.T) {
 	c := e.NewContext(req, rec)
 	c.SetPath("/volumes/:volume/import")
 	c.SetParamNames("volume")
-	c.SetParamValues(volume)
+	c.SetParamValues(volumeID)
 	h := New(c.Request().Context(), func() (*client.Client, error) { return setupDockerClient(t), nil })
 
 	// Create volume
-	_, err = cli.VolumeCreate(c.Request().Context(), volumetypes.VolumeCreateBody{
+	_, err = cli.VolumeCreate(c.Request().Context(), volume.CreateOptions{
 		Driver: "local",
-		Name:   volume,
+		Name:   volumeID,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -64,18 +64,18 @@ func TestImportTarGzFileFromExtensionVersion1_0_0(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, rec.Code)
-	sizes, err := backend.GetVolumesSize(c.Request().Context(), cli, volume)
+	sizes, err := backend.GetVolumesSize(c.Request().Context(), cli, volumeID)
 	require.NoError(t, err)
-	require.Equal(t, int64(50764000), sizes[volume].Bytes)
-	require.Equal(t, "50.8 MB", sizes[volume].Human)
+	require.Equal(t, int64(50764000), sizes[volumeID].Bytes)
+	require.Equal(t, "50.8 MB", sizes[volumeID].Human)
 }
 
 func TestImportTarGzFile(t *testing.T) {
-	volume := "9a66f7e879b539462d372feee03588aed95fe03236be950b0b1ed55ec7b995d1"
+	volumeID := "9a66f7e879b539462d372feee03588aed95fe03236be950b0b1ed55ec7b995d1"
 	cli := setupDockerClient(t)
 
 	defer func() {
-		_ = cli.VolumeRemove(context.Background(), volume, true)
+		_ = cli.VolumeRemove(context.Background(), volumeID, true)
 	}()
 
 	fileName := "nginx.tar.gz"
@@ -94,13 +94,13 @@ func TestImportTarGzFile(t *testing.T) {
 	c := e.NewContext(req, rec)
 	c.SetPath("/volumes/:volume/import")
 	c.SetParamNames("volume")
-	c.SetParamValues(volume)
+	c.SetParamValues(volumeID)
 	h := New(c.Request().Context(), func() (*client.Client, error) { return setupDockerClient(t), nil })
 
 	// Create volume
-	_, err = cli.VolumeCreate(c.Request().Context(), volumetypes.VolumeCreateBody{
+	_, err = cli.VolumeCreate(c.Request().Context(), volume.CreateOptions{
 		Driver: "local",
-		Name:   volume,
+		Name:   volumeID,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -111,18 +111,18 @@ func TestImportTarGzFile(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, rec.Code)
-	sizes, err := backend.GetVolumesSize(c.Request().Context(), cli, volume)
+	sizes, err := backend.GetVolumesSize(c.Request().Context(), cli, volumeID)
 	require.NoError(t, err)
-	require.Equal(t, int64(16000), sizes[volume].Bytes)
-	require.Equal(t, "16.0 kB", sizes[volume].Human)
+	require.Equal(t, int64(16000), sizes[volumeID].Bytes)
+	require.Equal(t, "16.0 kB", sizes[volumeID].Human)
 }
 
 func TestImportTarGzFileShouldRemovePreviousVolumeData(t *testing.T) {
-	volume := "2744b01d1dfca0353a9f717988518d03307a119fe34d6fe5948f8a984f7f8d1f"
+	volumeID := "2744b01d1dfca0353a9f717988518d03307a119fe34d6fe5948f8a984f7f8d1f"
 	cli := setupDockerClient(t)
 
 	defer func() {
-		_ = cli.VolumeRemove(context.Background(), volume, true)
+		_ = cli.VolumeRemove(context.Background(), volumeID, true)
 	}()
 
 	fileName := "nginx.tar.gz"
@@ -141,13 +141,13 @@ func TestImportTarGzFileShouldRemovePreviousVolumeData(t *testing.T) {
 	c := e.NewContext(req, rec)
 	c.SetPath("/volumes/:volume/import")
 	c.SetParamNames("volume")
-	c.SetParamValues(volume)
+	c.SetParamValues(volumeID)
 	h := New(c.Request().Context(), func() (*client.Client, error) { return setupDockerClient(t), nil })
 
 	// Create volume
-	_, err = cli.VolumeCreate(c.Request().Context(), volumetypes.VolumeCreateBody{
+	_, err = cli.VolumeCreate(c.Request().Context(), volume.CreateOptions{
 		Driver: "local",
-		Name:   volume,
+		Name:   volumeID,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -171,7 +171,7 @@ func TestImportTarGzFileShouldRemovePreviousVolumeData(t *testing.T) {
 		Env:   []string{"POSTGRES_PASSWORD=password"},
 	}, &container.HostConfig{
 		Binds: []string{
-			volume + ":" + "/var/lib/postgresql/data",
+			volumeID + ":" + "/var/lib/postgresql/data",
 		},
 	}, nil, nil, "")
 	if err != nil {
@@ -193,8 +193,8 @@ func TestImportTarGzFileShouldRemovePreviousVolumeData(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, rec.Code)
-	sizes, err := backend.GetVolumesSize(c.Request().Context(), cli, volume)
+	sizes, err := backend.GetVolumesSize(c.Request().Context(), cli, volumeID)
 	require.NoError(t, err)
-	require.Equal(t, int64(16000), sizes[volume].Bytes)
-	require.Equal(t, "16.0 kB", sizes[volume].Human)
+	require.Equal(t, int64(16000), sizes[volumeID].Bytes)
+	require.Equal(t, "16.0 kB", sizes[volumeID].Human)
 }

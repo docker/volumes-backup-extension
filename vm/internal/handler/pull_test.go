@@ -20,7 +20,7 @@ import (
 	"github.com/docker/docker/api/types"
 	dockertypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
-	volumetypes "github.com/docker/docker/api/types/volume"
+	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"github.com/labstack/echo/v4"
@@ -32,8 +32,8 @@ import (
 func TestPullVolume(t *testing.T) {
 	var containerID string
 	var registryContainerID string
-	volume := "797a9e23f9da19b7c59e816c425bb491231914619a5d815435de9d8b28063bc8"
-	registry := "localhost:5000" // or use docker.io to pull volume from DockerHub
+	volumeID := "797a9e23f9da19b7c59e816c425bb491231914619a5d815435de9d8b28063bc8"
+	registry := "localhost:5000" // or use docker.io to pull volumeID from DockerHub
 	imageID := registry + "/felipecruz/" + "vackup-pull-test-img"
 	cli := setupDockerClient(t)
 
@@ -44,7 +44,7 @@ func TestPullVolume(t *testing.T) {
 		_ = cli.ContainerRemove(context.Background(), containerID, types.ContainerRemoveOptions{
 			Force: true,
 		})
-		_ = cli.VolumeRemove(context.Background(), volume, true)
+		_ = cli.VolumeRemove(context.Background(), volumeID, true)
 
 		t.Logf("removing image %s", imageID)
 		if _, err := cli.ImageRemove(context.Background(), imageID, types.ImageRemoveOptions{
@@ -63,7 +63,7 @@ func TestPullVolume(t *testing.T) {
 	c := e.NewContext(req, rec)
 	c.SetPath("/volumes/:volume/pull")
 	c.SetParamNames("volume")
-	c.SetParamValues(volume)
+	c.SetParamValues(volumeID)
 	h := New(c.Request().Context(), func() (*client.Client, error) { return setupDockerClient(t), nil })
 
 	// Provision a registry with an image (which represents a volume) ready to pull:
@@ -159,9 +159,9 @@ func TestPullVolume(t *testing.T) {
 	}
 
 	// Create empty volume where the content of the image pulled will be saved into
-	_, err = cli.VolumeCreate(c.Request().Context(), volumetypes.VolumeCreateBody{
+	_, err = cli.VolumeCreate(c.Request().Context(), volume.CreateOptions{
 		Driver: "local",
-		Name:   volume,
+		Name:   volumeID,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -177,16 +177,16 @@ func TestPullVolume(t *testing.T) {
 	require.Equal(t, http.StatusCreated, rec.Code)
 
 	// Check the content of the volume
-	m, err := backend.GetVolumesSize(c.Request().Context(), cli, volume)
+	m, err := backend.GetVolumesSize(c.Request().Context(), cli, volumeID)
 	require.NoError(t, err)
-	require.Equal(t, int64(16000), m[volume].Bytes)
-	require.Equal(t, "16.0 kB", m[volume].Human)
+	require.Equal(t, int64(16000), m[volumeID].Bytes)
+	require.Equal(t, "16.0 kB", m[volumeID].Human)
 }
 
 func TestPullVolumeUsingCorrectAuth(t *testing.T) {
 	var containerID string
 	var registryContainerID string
-	volume := "b3128131acca4d70263d477345b528ad3aba3ae66f2d94dddb02817da427020a"
+	volumeID := "b3128131acca4d70263d477345b528ad3aba3ae66f2d94dddb02817da427020a"
 	registry := "localhost:5000" // or use docker.io to push it to DockerHub
 	imageID := registry + "/felipecruz/" + "vackup-pull-test-img"
 	cli := setupDockerClient(t)
@@ -198,7 +198,7 @@ func TestPullVolumeUsingCorrectAuth(t *testing.T) {
 		_ = cli.ContainerRemove(context.Background(), containerID, types.ContainerRemoveOptions{
 			Force: true,
 		})
-		_ = cli.VolumeRemove(context.Background(), volume, true)
+		_ = cli.VolumeRemove(context.Background(), volumeID, true)
 
 		t.Logf("removing image %s", imageID)
 		if _, err := cli.ImageRemove(context.Background(), imageID, types.ImageRemoveOptions{
@@ -220,7 +220,7 @@ func TestPullVolumeUsingCorrectAuth(t *testing.T) {
 	c := e.NewContext(req, rec)
 	c.SetPath("/volumes/:volume/pull")
 	c.SetParamNames("volume")
-	c.SetParamValues(volume)
+	c.SetParamValues(volumeID)
 	h := New(c.Request().Context(), func() (*client.Client, error) { return setupDockerClient(t), nil })
 
 	// Run a local registry with auth
@@ -330,9 +330,9 @@ func TestPullVolumeUsingCorrectAuth(t *testing.T) {
 	}
 
 	// Create empty volume where the content of the image pulled will be saved into
-	_, err = cli.VolumeCreate(context.Background(), volumetypes.VolumeCreateBody{
+	_, err = cli.VolumeCreate(context.Background(), volume.CreateOptions{
 		Driver: "local",
-		Name:   volume,
+		Name:   volumeID,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -345,16 +345,16 @@ func TestPullVolumeUsingCorrectAuth(t *testing.T) {
 	require.Equal(t, http.StatusCreated, rec.Code)
 
 	// Check the content of the volume
-	m, err := backend.GetVolumesSize(c.Request().Context(), cli, volume)
+	m, err := backend.GetVolumesSize(c.Request().Context(), cli, volumeID)
 	require.NoError(t, err)
-	require.Equal(t, int64(16000), m[volume].Bytes)
-	require.Equal(t, "16.0 kB", m[volume].Human)
+	require.Equal(t, int64(16000), m[volumeID].Bytes)
+	require.Equal(t, "16.0 kB", m[volumeID].Human)
 }
 
 func TestPullVolumeUsingWrongAuthShouldFail(t *testing.T) {
 	var containerID string
 	var registryContainerID string
-	volume := "98fbf55c3ab45ea5bfc8ea8edf7f374b325e68eab947828aae5d6447df19ee3d"
+	volumeID := "98fbf55c3ab45ea5bfc8ea8edf7f374b325e68eab947828aae5d6447df19ee3d"
 	registry := "localhost:5000" // or use docker.io to push it to DockerHub
 	imageID := registry + "/felipecruz/" + "vackup-pull-test-img"
 	cli := setupDockerClient(t)
@@ -366,7 +366,7 @@ func TestPullVolumeUsingWrongAuthShouldFail(t *testing.T) {
 		_ = cli.ContainerRemove(context.Background(), containerID, types.ContainerRemoveOptions{
 			Force: true,
 		})
-		_ = cli.VolumeRemove(context.Background(), volume, true)
+		_ = cli.VolumeRemove(context.Background(), volumeID, true)
 
 		t.Logf("removing image %s", imageID)
 		if _, err := cli.ImageRemove(context.Background(), imageID, types.ImageRemoveOptions{
@@ -388,7 +388,7 @@ func TestPullVolumeUsingWrongAuthShouldFail(t *testing.T) {
 	c := e.NewContext(req, rec)
 	c.SetPath("/volumes/:volume/pull")
 	c.SetParamNames("volume")
-	c.SetParamValues(volume)
+	c.SetParamValues(volumeID)
 	h := New(c.Request().Context(), func() (*client.Client, error) { return setupDockerClient(t), nil })
 
 	// Run a local registry with auth
@@ -470,9 +470,9 @@ func TestPullVolumeUsingWrongAuthShouldFail(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Create empty volume where the content of the image pulled will be saved into
-	_, err = cli.VolumeCreate(context.Background(), volumetypes.VolumeCreateBody{
+	_, err = cli.VolumeCreate(context.Background(), volume.CreateOptions{
 		Driver: "local",
-		Name:   volume,
+		Name:   volumeID,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -485,10 +485,10 @@ func TestPullVolumeUsingWrongAuthShouldFail(t *testing.T) {
 	require.Equal(t, http.StatusUnauthorized, rec.Code)
 
 	// Check the content of the volume
-	m, err := backend.GetVolumesSize(c.Request().Context(), cli, volume)
+	m, err := backend.GetVolumesSize(c.Request().Context(), cli, volumeID)
 	require.NoError(t, err)
-	require.Equal(t, int64(0), m[volume].Bytes)
-	require.Equal(t, "0 B", m[volume].Human)
+	require.Equal(t, int64(0), m[volumeID].Bytes)
+	require.Equal(t, "0 B", m[volumeID].Human)
 }
 
 func retry(attempts int, sleep time.Duration, f func() error) (err error) {
