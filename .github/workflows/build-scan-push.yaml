@@ -84,7 +84,6 @@ jobs:
             type=ref,event=tag
             type=semver,pattern={{version}}
             type=edge,branch=$repo.default_branch
-            type=sha,prefix=,suffix=,format=short
 
       - name: Docker Build and Push to Docker Hub
         if: ${{ !github.event.pull_request.head.repo.fork }}
@@ -115,7 +114,7 @@ jobs:
         with:
           command: compare
           image: ${{ steps.meta.outputs.tags }}
-          to-latest: true
+          to: latest
           ignore-unchanged: true
           only-severities: critical,high
           token: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
