@@ -119,6 +119,7 @@ jobs:
           ignore-unchanged: true
           only-severities: critical,high
           token: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
+          organization: docker
 
         # If PR, put image tags in the PR comments
         # from https://github.com/marketplace/actions/create-or-update-comment
