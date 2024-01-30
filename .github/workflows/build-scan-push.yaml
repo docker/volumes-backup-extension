@@ -142,7 +142,6 @@ jobs:
         uses: docker/scout-action@v1
         with:
           command: compare
-          image: ${{ steps.docker_meta.outputs.tags }}
           to: docker/${{ github.event.repository.name }}:latest
           ignore-unchanged: true
           only-severities: critical,high
