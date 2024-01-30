@@ -113,7 +113,7 @@ jobs:
         uses: docker/scout-action@v1
         with:
           command: compare
-          image: ${{ steps.meta.outputs.tags }}
+          image: ${{ steps.docker_meta.outputs.tags }}
           to: docker/${{ github.event.repository.name }}:latest
           platform: linux/amd64
           ignore-unchanged: true
