@@ -75,12 +75,16 @@ jobs:
           images: docker/${{ github.event.repository.name }}
           flavor: |
             latest=false
+          labels: |
+            org.opencontainers.image.revision=${{ env.SHA }}
           tags: |
             type=raw,value=latest,enable=${{ endsWith(github.ref, github.event.repository.default_branch) }}
             type=ref,event=pr
             type=ref,event=branch
             type=ref,event=tag
             type=semver,pattern={{version}}
+            type=edge,branch=$repo.default_branch
+            type=sha,prefix=,suffix=,format=short
 
       - name: Docker Build and Push to Docker Hub
         if: ${{ !github.event.pull_request.head.repo.fork }}
@@ -88,6 +92,8 @@ jobs:
         with:
           push: true
           tags: ${{ steps.docker_meta.outputs.tags }}
+          sbom: ${{ github.event_name != 'pull_request' }}
+          provenance: ${{ github.event_name != 'pull_request' }}
           labels: |
             org.opencontainers.image.revision=${{ github.event.pull_request.head.sha || github.event.after || github.event.release.tag_name }}
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
@@ -100,6 +106,19 @@ jobs:
           secrets: |
             BUGSNAG_API_KEY=${{ secrets.BUGSNAG_API_KEY }}
             REACT_APP_MUI_LICENSE_KEY=${{ secrets.REACT_APP_MUI_LICENSE_KEY }}
+
+      # Compare the image built in the pull request with the one in production
+      - name: Docker Scout
+        id: docker-scout
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: docker/scout-action@v1
+        with:
+          command: compare
+          image: ${{ steps.meta.outputs.tags }}
+          to-env: production
+          ignore-unchanged: true
+          only-severities: critical,high
+          token: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
 
         # If PR, put image tags in the PR comments
         # from https://github.com/marketplace/actions/create-or-update-comment
