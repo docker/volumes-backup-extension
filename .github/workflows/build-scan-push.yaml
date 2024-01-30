@@ -146,7 +146,6 @@ jobs:
           to: docker/${{ github.event.repository.name }}:latest
           ignore-unchanged: true
           only-severities: critical,high
-          token: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
           organization: docker
           write-comment: true
           github-token: ${{ secrets.GITHUB_TOKEN }} # to be able to write the comment
