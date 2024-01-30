@@ -115,7 +115,7 @@ jobs:
         with:
           command: compare
           image: ${{ steps.meta.outputs.tags }}
-          to-env: production
+          to-latest: true
           ignore-unchanged: true
           only-severities: critical,high
           token: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
