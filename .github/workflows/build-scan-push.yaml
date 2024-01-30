@@ -119,6 +119,8 @@ jobs:
           only-severities: critical,high
           token: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
           organization: docker
+          write-comment: true
+          github-token: ${{ secrets.GITHUB_TOKEN }} # to be able to write the comment
 
         # If PR, put image tags in the PR comments
         # from https://github.com/marketplace/actions/create-or-update-comment
