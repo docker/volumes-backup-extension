@@ -106,23 +106,6 @@ jobs:
             BUGSNAG_API_KEY=${{ secrets.BUGSNAG_API_KEY }}
             REACT_APP_MUI_LICENSE_KEY=${{ secrets.REACT_APP_MUI_LICENSE_KEY }}
 
-      # Compare the image built in the pull request with the one in production
-      - name: Docker Scout
-        id: docker-scout
-        if: ${{ github.event_name == 'pull_request' }}
-        uses: docker/scout-action@v1
-        with:
-          command: compare
-          image: ${{ steps.docker_meta.outputs.tags }}
-          to: docker/${{ github.event.repository.name }}:latest
-          platform: linux/amd64
-          ignore-unchanged: true
-          only-severities: critical,high
-          token: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
-          organization: docker
-          write-comment: true
-          github-token: ${{ secrets.GITHUB_TOKEN }} # to be able to write the comment
-
         # If PR, put image tags in the PR comments
         # from https://github.com/marketplace/actions/create-or-update-comment
       - name: Find comment for image tags
@@ -151,3 +134,19 @@ jobs:
             ${{ steps.docker_meta.outputs.labels }}
             ```
           edit-mode: replace
+
+      # Compare the image built in the pull request with the one in production
+      - name: Docker Scout
+        id: docker-scout
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: docker/scout-action@v1
+        with:
+          command: compare
+          image: ${{ steps.docker_meta.outputs.tags }}
+          to: docker/${{ github.event.repository.name }}:latest
+          ignore-unchanged: true
+          only-severities: critical,high
+          token: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
+          organization: docker
+          write-comment: true
+          github-token: ${{ secrets.GITHUB_TOKEN }} # to be able to write the comment
