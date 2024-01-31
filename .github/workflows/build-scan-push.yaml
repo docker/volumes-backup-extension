@@ -87,7 +87,7 @@ jobs:
 
       - name: Docker Build and Push to Docker Hub
         if: ${{ !github.event.pull_request.head.repo.fork }}
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v5
         with:
           push: true
           tags: ${{ steps.docker_meta.outputs.tags }}
@@ -149,3 +149,4 @@ jobs:
           organization: docker
           write-comment: true
           github-token: ${{ secrets.GITHUB_TOKEN }} # to be able to write the comment
+          exit-code: true
