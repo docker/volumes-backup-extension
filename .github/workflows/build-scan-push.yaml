@@ -139,7 +139,7 @@ jobs:
       - name: Docker Scout
         id: docker-scout
         if: ${{ github.event_name == 'pull_request' }}
-        uses: docker/scout-action@v1
+        uses: docker/scout-action@v1.3.0
         with:
           command: compare
           image: ${{ steps.docker_meta.outputs.tags }}
