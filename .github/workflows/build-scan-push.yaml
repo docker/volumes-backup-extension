@@ -96,7 +96,7 @@ jobs:
           platforms: linux/amd64
 
       - name: Docker Scout CVEs
-        uses: docker/scout-action@v1.3.0
+        uses: docker/scout-action@v1.7.0
         with:
           command: cves
           image: "" # If image is not set the most recently built image will be used (i.e. the one from the previous step)
@@ -161,7 +161,7 @@ jobs:
       - name: Compare image against latest tag
         id: docker-scout
         if: ${{ github.event_name == 'pull_request' }}
-        uses: docker/scout-action@v1.3.0
+        uses: docker/scout-action@v1.7.0
         with:
           command: compare
           image: local://${{ steps.docker_meta.outputs.tags }}
