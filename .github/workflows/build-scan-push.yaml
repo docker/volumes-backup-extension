@@ -171,5 +171,5 @@ jobs:
           organization: docker
           write-comment: true
           github-token: ${{ secrets.GITHUB_TOKEN }} # to be able to write the comment
-          exit-on: "policy" # fail the build if policies have worsened
+          exit-on: "vulnerability"
           debug: true
