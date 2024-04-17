@@ -1,11 +1,12 @@
 import { createDockerDesktopClient } from "@docker/extension-api-client";
 import { QuestionAnswerOutlined } from "@mui/icons-material";
-import { Grid, Link } from "@mui/material";
+import { Grid, Link, Paper } from "@mui/material";
 import Typography from "@mui/material/Typography/Typography";
 
 const ddClient = createDockerDesktopClient();
 
 const FEEDBACK_FORM_URL = "https://forms.gle/kYAwK34RUFXyAdfS7";
+const LEARN_MORE_URL = "https://docs.docker.com/desktop/use-desktop/volumes/";
 
 export const Header = () => (
   <>
@@ -32,5 +33,27 @@ export const Header = () => (
     <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
       Backup, clone, restore, and share Docker volumes effortlessly.
     </Typography>
+    <Paper
+      sx={(theme) => ({
+        mt: 2,
+        background: theme.palette.docker.blue[100],
+        color: theme.palette.docker.blue[700],
+        border: "none",
+      })}
+    >
+      <Typography variant="body1" sx={{ p: 2 }}>
+        The functionality in this extension is now available as a Beta feature
+        in the Volumes tab of Docker Desktop in versions 4.29.0 and above. This
+        extension will be deprecated once the features are out of Beta.{" "}
+        <Link
+          href="#"
+          onClick={() => {
+            ddClient.host.openExternal(LEARN_MORE_URL);
+          }}
+        >
+          Learn more
+        </Link>
+      </Typography>
+    </Paper>
   </>
 );

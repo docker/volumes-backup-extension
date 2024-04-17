@@ -3,6 +3,11 @@
 [![Build, Scan and Push](https://github.com/docker/volumes-backup-extension/actions/workflows/build-scan-push.yaml/badge.svg)](https://github.com/docker/volumes-backup-extension/actions/workflows/build-scan-push.yaml)
 [![Lint Dockerfile](https://github.com/docker/volumes-backup-extension/actions/workflows/hadolint.yaml/badge.svg)](https://github.com/docker/volumes-backup-extension/actions/workflows/hadolint.yaml)
 
+
+> [!IMPORTANT]
+> The functionality in this extension is now available as a Beta feature in the Volumes tab of Docker Desktop in versions 4.29.0 and above. This extension will be deprecated once the features are out of Beta. [Learn more](https://docs.docker.com/desktop/use-desktop/volumes/)
+
+
 ![Extension Screenshot](./docs/images/1-table.png)
 
 🚀 This extension was originally created by [Felipe Cruz](https://github.com/felipecruz91/)
