@@ -113,8 +113,8 @@ jobs:
         with:
           push: true
           tags: ${{ steps.docker_meta.outputs.tags }}
-          #sbom: ${{ github.event_name != 'pull_request' }}
-          #provenance: ${{ github.event_name != 'pull_request' }}
+          sbom: ${{ github.event_name != 'pull_request' }}
+          provenance: ${{ github.event_name != 'pull_request' }}
           labels: |
             org.opencontainers.image.revision=${{ github.event.pull_request.head.sha || github.event.after || github.event.release.tag_name }}
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
