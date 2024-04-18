@@ -54,7 +54,7 @@ ENV BUGSNAG_RELEASE_STAGE=$BUGSNAG_RELEASE_STAGE
 ENV BUGSNAG_APP_VERSION=$BUGSNAG_APP_VERSION
 
 LABEL org.opencontainers.image.title="Volumes Backup & Share" \
-    org.opencontainers.image.description="Backup, clone, restore, and share Docker volumes effortlessly." \
+    org.opencontainers.image.description="Backup, clone, restore, and share Docker volumes effortlessly. Also available as a Beta feature in the Volumes tab in Docker Desktop version 4.29.0 and later. This extension will be soon deprecated." \
     org.opencontainers.image.vendor="Docker Inc." \
     com.docker.desktop.extension.api.version=">= 0.2.3" \
     com.docker.extension.screenshots="[ \
@@ -65,7 +65,8 @@ LABEL org.opencontainers.image.title="Volumes Backup & Share" \
     {\"alt\": \"Clone volume dialog\", \"url\": \"https://raw.githubusercontent.com/docker/volumes-backup-extension/main/docs/images/5-clone.png\"}, \
     {\"alt\": \"Delete volume dialog\", \"url\": \"https://raw.githubusercontent.com/docker/volumes-backup-extension/main/docs/images/6-delete.png\"} \
     ]" \
-    com.docker.extension.detailed-description="<p>With Volumes Backup & Share you can easily create copies of your volumes and also share them with others through SSH or pushing them to a registry.</p> \
+    com.docker.extension.detailed-description="<p><strong>The functionality in this extension is now available as a Beta feature in the Volumes tab in Docker Desktop versions 4.29.0 and later. This extension will be deprecated once the features are out of Beta.</strong> <a href='https://docs.docker.com/desktop/use-desktop/volumes/'>Learn more</a></p> \
+    <p>With Volumes Backup & Share you can easily create copies of your volumes and also share them with others through SSH or pushing them to a registry.</p> \
     <h2 id="-features">✨ What can you do with this extension?</h2> \
     <ul> \
     <li>Export a volume:</li> \
