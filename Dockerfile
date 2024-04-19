@@ -20,12 +20,11 @@ RUN --mount=type=cache,target=/usr/src/app/.npm \
     npm ci
 # install
 COPY ui /ui
-RUN --mount=type=secret,id=BUGSNAG_API_KEY \
+RUN --mount=type=secret,id=BUGSNAG_API_KEY,target=/run/secrets/BUGSNAG_API_KEY \
+    --mount=type=secret,id=REACT_APP_MUI_LICENSE_KEY,target=/run/secrets/REACT_APP_MUI_LICENSE_KEY \
     REACT_APP_BUGSNAG_API_KEY=$(cat /run/secrets/BUGSNAG_API_KEY) \
-    npm run build
-RUN --mount=type=secret,id=REACT_APP_MUI_LICENSE_KEY \
     REACT_APP_MUI_LICENSE_KEY=$(cat /run/secrets/REACT_APP_MUI_LICENSE_KEY) \
-    yarn build
+    npm run build
 
 FROM alpine:3.16@sha256:bc41182d7ef5ffc53a40b044e725193bc10142a1243f395ee852a8d9730fc2ad as base
 ARG CLI_VERSION=20.10.17
