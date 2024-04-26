@@ -20,6 +20,8 @@ RUN --mount=type=cache,target=/usr/src/app/.npm \
     npm ci
 # install
 COPY ui /ui
+# avoid reusing cached layers from another build without secrets provided, cf https://docs.docker.com/build/cache/invalidation/#build-secrets
+ARG VALID_SECRET_CACHE 
 RUN --mount=type=secret,id=BUGSNAG_API_KEY,target=/run/secrets/BUGSNAG_API_KEY \
     --mount=type=secret,id=REACT_APP_MUI_LICENSE_KEY,target=/run/secrets/REACT_APP_MUI_LICENSE_KEY \
     REACT_APP_BUGSNAG_API_KEY=$(cat /run/secrets/BUGSNAG_API_KEY) \
@@ -92,7 +94,7 @@ LABEL org.opencontainers.image.title="Volumes Backup & Share" \
     ]" \
     com.docker.desktop.extension.icon="https://raw.githubusercontent.com/docker/volumes-backup-extension/main/icon.svg" \
     com.docker.extension.changelog="<ul>\
-    <li>Fixed current image vulnerabilities (CVEs) using Docker Scout.</li> \
+    <li>Fix MUI missing license.</li> \
     </ul>" \
     com.docker.extension.categories="volumes"
 
@@ -108,6 +110,7 @@ COPY --from=docker-credentials-client-builder output/dist ./host
 
 RUN mkdir -p /vackup
 
+ARG VALID_SECRET_CACHE 
 RUN --mount=type=secret,id=BUGSNAG_API_KEY \
     BUGSNAG_API_KEY=$(cat /run/secrets/BUGSNAG_API_KEY); \
     echo "$BUGSNAG_API_KEY" > /tmp/bugsnag-api-key.txt

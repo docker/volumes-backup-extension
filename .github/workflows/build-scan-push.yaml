@@ -124,6 +124,7 @@ jobs:
           build-args: |
             BUGSNAG_RELEASE_STAGE=production
             BUGSNAG_APP_VERSION=${{ github.event.release.tag_name }}
+            VALID_SECRET_CACHE=1
           secrets: |
             "BUGSNAG_API_KEY=${{ secrets.BUGSNAG_API_KEY }}"
             "REACT_APP_MUI_LICENSE_KEY=${{ secrets.REACT_APP_MUI_LICENSE_KEY }}"
