@@ -39,6 +39,37 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 	log.Infof("path: %s", path)
 	log.Infof("fileName: %s", fileName)
 
+	// Check if the target file already exists
+	targetFilePath := filepath.Join(path, fileName)
+	if _, err := os.Stat(targetFilePath); err == nil {
+		// File exists, prompt for confirmation
+		fmt.Println("A file with the same name already exists in the target directory.")
+		fmt.Println("Do you want to:")
+		fmt.Println("1. Overwrite the existing file (O)")
+		fmt.Println("2. Keep both files (K)")
+		fmt.Println("3. Cancel the export (C)")
+
+		var userInput string
+		fmt.Scanln(&userInput)
+
+		switch strings.ToLower(userInput) {
+		case "o": // Overwrite
+			// Continue with export
+		case "k": // Keep both
+			// Modify fileName to avoid overwriting
+			fileName = fileName + "(1)"
+			targetFilePath = filepath.Join(path, fileName)
+		case "c": // Cancel
+			return ctx.String(http.StatusOK, "Export canceled.")
+		default:
+			return ctx.String(http.StatusBadRequest, "Invalid input. Please choose a valid option.")
+		}
+	}
+
+	log.Infof("volumeName: %s", volumeName)
+	log.Infof("path: %s", path)
+	log.Infof("fileName: %s", fileName)
+
 	cli, err := h.DockerClient()
 	if err != nil {
 		return err
@@ -91,9 +122,9 @@ func (h *Handler) ExportVolume(ctx echo.Context) error {
 
 	cmd = append(cmd,
 		tarOpts,
-		"/vackup"+"/"+filepath.Base(fileName), // the .tar.zst file
-		"-C",                                  // -C is used to not include the parent directory
-		"/vackup-volume",                      // the directory where the files to compress are
+		targetFilePath,                          // the .tar.zst file
+		"-C",                                    // -C is used to not include the parent directory
+		"/vackup-volume",                        // the directory where the files to compress are
 		".")
 
 	cmdJoined := strings.Join(cmd, " ")
