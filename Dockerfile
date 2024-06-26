@@ -1,4 +1,4 @@
-FROM golang:1.21-alpine AS builder
+FROM golang:1.22-alpine AS builder
 ENV CGO_ENABLED=0
 WORKDIR /backend
 COPY vm/go.* .
@@ -28,7 +28,7 @@ RUN --mount=type=secret,id=BUGSNAG_API_KEY,target=/run/secrets/BUGSNAG_API_KEY \
     REACT_APP_MUI_LICENSE_KEY=$(cat /run/secrets/REACT_APP_MUI_LICENSE_KEY) \
     npm run build
 
-FROM alpine:3.16@sha256:bc41182d7ef5ffc53a40b044e725193bc10142a1243f395ee852a8d9730fc2ad as base
+FROM alpine:3.20@sha256:b89d9c93e9ed3597455c90a0b88a8bbb5cb7188438f70953fede212a0c4394e0 as base
 ARG CLI_VERSION=20.10.17
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 RUN apk update \
@@ -37,7 +37,7 @@ RUN apk update \
 RUN curl -fL "https://download.docker.com/linux/static/stable/$(uname -m)/docker-${CLI_VERSION}.tgz" | tar zxf - --strip-components 1 docker/docker \
     && chmod +x /docker
 
-FROM --platform=$BUILDPLATFORM golang:1.21-alpine AS docker-credentials-client-builder
+FROM --platform=$BUILDPLATFORM golang:1.22-alpine AS docker-credentials-client-builder
 ENV CGO_ENABLED=0
 WORKDIR /output
 RUN apk update \
@@ -46,7 +46,7 @@ RUN apk update \
 COPY client .
 RUN make cross
 
-FROM busybox:1.35.0@sha256:d7f4aada301c0f13d93ceed62fef318c195c38bf430fc8bfbdf1d850514422ff
+FROM busybox:1.36.1@sha256:9ae97d36d26566ff84e8893c64a6dc4fe8ca6d1144bf5b87b2b85a32def253c7
 
 ARG BUGSNAG_RELEASE_STAGE="local"
 ARG BUGSNAG_APP_VERSION="latest"
