@@ -10,7 +10,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     go build -trimpath -ldflags="-s -w" -o bin/service
 
-FROM --platform=$BUILDPLATFORM node:18.3-alpine3.14@sha256:a648bbe9a0af3991ef1bf02208b2e9b04b4bad49790efc5740a43d13cd1482b5 AS client-builder
+FROM --platform=$BUILDPLATFORM node:17.7-alpine3.14@sha256:539e64749f7dc6c578d744d879fd0ec37f3afe552ae4aca9744cc85121728c4c AS client-builder
 WORKDIR /ui
 # cache packages in layer
 COPY ui/package.json /ui/package.json
@@ -28,7 +28,7 @@ RUN --mount=type=secret,id=BUGSNAG_API_KEY,target=/run/secrets/BUGSNAG_API_KEY \
     REACT_APP_MUI_LICENSE_KEY=$(cat /run/secrets/REACT_APP_MUI_LICENSE_KEY) \
     npm run build
 
-FROM alpine:3.20@sha256:b89d9c93e9ed3597455c90a0b88a8bbb5cb7188438f70953fede212a0c4394e0 as base
+FROM alpine:3.20@sha256:b89d9c93e9ed3597455c90a0b88a8bbb5cb7188438f70953fede212a0c4394e0 AS base
 ARG CLI_VERSION=20.10.17
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 RUN apk update \
