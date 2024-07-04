@@ -6,4 +6,4 @@ services:
       - DAC_OVERRIDE
       - FOWNER
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock.raw:/var/run/docker.sock
