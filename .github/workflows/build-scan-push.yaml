@@ -153,6 +153,10 @@ jobs:
             ```text
             ${{ steps.docker_meta.outputs.tags }}
             ```
+             To install the extension from this PR:
+            ```text
+            docker extension install -f ${{ steps.docker_meta.outputs.tags }}
+            ```
             Labels added to images:
             ```text
             ${{ steps.docker_meta.outputs.labels }}
