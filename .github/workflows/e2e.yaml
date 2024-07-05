@@ -1,0 +1,58 @@
+# Copyright 2024 Docker Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: E2E tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  e2e:
+    name: Run E2E tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install and start Docker Desktop
+        uses: docker/desktop-action/start@v0.3.6
+
+      - name: Change Desktop settings and allow installing non marketplace extensions
+        run: |
+          jq '.onlyMarketplaceExtensions|=false' ~/.docker/desktop/settings.json >./new-settings.json
+          mv -f ./new-settings.json ~/.docker/desktop/settings.json
+
+      - name: Build extension
+        run: |
+          make build-extension
+
+      - name: Kill Mono process running on port 8084 to unblock it # https://github.com/actions/runner-images/issues/2821
+        shell: bash
+        run: |
+          sudo fuser -k -n tcp 8084
+      - name: Enable corepack
+        run: corepack enable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Run E2E tests
+        env:
+          SKIP_EXTENSION_IMAGE_BUILD: true
+        run: |
+          cd e2e/electron
+          yarn install
+          xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" -- yarn test:e2e
