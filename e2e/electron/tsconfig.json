@@ -1,0 +1,18 @@
+{
+  "extends": "@tsconfig/node16/tsconfig.json",
+  "compilerOptions": {
+    "preserveConstEnums": true,
+    "lib": [
+      "es2020",
+      "dom"
+    ],
+    "esModuleInterop": true
+  },
+  "include": [
+    "."
+  ],
+  "exclude": [
+    "node_modules"
+  ],
+  "noEmit": true // we don't ever generate .js files from this project, jest can run TS directly
+}
