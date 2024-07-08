@@ -7,8 +7,8 @@
     "@docker/extension-api-client": "^0.3.4",
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.5",
-    "@mui/icons-material": "^5.15.21",
-    "@mui/material": "^5.15.21",
+    "@mui/icons-material": "^5.16.0",
+    "@mui/material": "^5.16.0",
     "@mui/x-data-grid-pro": "^5.10.0",
     "cra-template": "1.2.0",
     "react": "^17.0.2",
@@ -42,6 +42,6 @@
     "eslint-plugin-react": "^7.34.3",
     "eslint-plugin-react-hooks": "^4.6.2",
     "prettier": "^2.7.1",
-    "typescript": "^5.5.2"
+    "typescript": "^5.5.3"
   }
 }
