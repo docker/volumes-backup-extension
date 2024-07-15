@@ -35,7 +35,7 @@
     "fkill": "^9.0.0",
     "get-port": "^7.1.0",
     "got": "^14.4.1",
-    "mkdirp": "^1.0.4",
+    "mkdirp": "^3.0.1",
     "puppeteer": "^22.13.0",
     "puppeteer-core": "^13.1.3"
   },
