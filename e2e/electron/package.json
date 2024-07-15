@@ -32,7 +32,7 @@
     "@types/bytes": "^3.1.4",
     "bytes": "^3.1.2",
     "find-process": "^1.4.4",
-    "fkill": "^7.1.1",
+    "fkill": "^9.0.0",
     "get-port": "^7.1.0",
     "got": "^14.4.1",
     "mkdirp": "^1.0.4",
