@@ -25,7 +25,7 @@
     "jest": "^29.7.0",
     "prettier": "^3.3.3",
     "ts-jest": "^29.2.3",
-    "typescript": "^4.5.5"
+    "typescript": "^5.5.4"
   },
   "dependencies": {
     "@rumpl/node-eventsource": "^1.0.0",
