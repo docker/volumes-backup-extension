@@ -66,7 +66,7 @@ LABEL org.opencontainers.image.title="Volumes Backup & Share" \
     {\"alt\": \"Clone volume dialog\", \"url\": \"https://raw.githubusercontent.com/docker/volumes-backup-extension/main/docs/images/5-clone.png\"}, \
     {\"alt\": \"Delete volume dialog\", \"url\": \"https://raw.githubusercontent.com/docker/volumes-backup-extension/main/docs/images/6-delete.png\"} \
     ]" \
-    com.docker.extension.detailed-description="<p><strong>The functionality in this extension is now available as a Beta feature in the Volumes tab in Docker Desktop versions 4.29.0 and later. This extension will be deprecated once the features are out of Beta.</strong> <a href='https://docs.docker.com/desktop/use-desktop/volumes/'>Learn more</a></p> \
+    com.docker.extension.detailed-description="<p><strong>The functionality in this extension has been available in the Volumes tab of Docker Desktop in versions 4.29 and later. This extension will be deprecated and removed from the marketplace effective September 30, 2024.</strong> <a href='https://docs.docker.com/desktop/use-desktop/volumes/'>Learn more</a></p> \
     <p>With Volumes Backup & Share you can easily create copies of your volumes and also share them with others through SSH or pushing them to a registry.</p> \
     <h2 id="-features">✨ What can you do with this extension?</h2> \
     <ul> \

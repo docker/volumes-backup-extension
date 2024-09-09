@@ -42,9 +42,10 @@ export const Header = () => (
       })}
     >
       <Typography variant="body1" sx={{ p: 2 }}>
-        The functionality in this extension is now available as a Beta feature
-        in the Volumes tab in Docker Desktop versions 4.29.0 and later. This
-        extension will be deprecated once the features are out of Beta.{" "}
+        The functionality in this extension has been available in the Volumes
+        tab of Docker Desktop in versions 4.29 and later.This extension will be
+        deprecated and removed from the marketplace effective September 30,
+        2024.{" "}
         <Link
           href="#"
           onClick={() => {
