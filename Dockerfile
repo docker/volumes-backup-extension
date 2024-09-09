@@ -95,7 +95,7 @@ LABEL org.opencontainers.image.title="Volumes Backup & Share" \
     com.docker.desktop.extension.icon="https://raw.githubusercontent.com/docker/volumes-backup-extension/main/icon.svg" \
     com.docker.extension.changelog="<ul>\
     <li>Fixed some security CVEs in JavaScript dependencies.</li> \
-    <li>Fixed extension not working in some cases with Docker Desktop Business with enforced login.</li> \
+    <li>Updated deprecation information.</li> \
     </ul>" \
     com.docker.extension.categories="volumes"
 
