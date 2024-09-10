@@ -55,7 +55,7 @@ ENV BUGSNAG_RELEASE_STAGE=$BUGSNAG_RELEASE_STAGE
 ENV BUGSNAG_APP_VERSION=$BUGSNAG_APP_VERSION
 
 LABEL org.opencontainers.image.title="Volumes Backup & Share" \
-    org.opencontainers.image.description="Backup, clone, restore, and share Docker volumes effortlessly. Also available as a Beta feature in the Volumes tab in Docker Desktop version 4.29.0 and later. This extension will be soon deprecated." \
+    org.opencontainers.image.description="Backup, clone, restore, and share Docker volumes effortlessly. Also available in the Volumes tab in Docker Desktop version 4.29.0 and later. This extension will be deprecated and removed from the marketplace effective September 30, 2024." \
     org.opencontainers.image.vendor="Docker Inc." \
     com.docker.desktop.extension.api.version=">= 0.2.3" \
     com.docker.extension.screenshots="[ \
