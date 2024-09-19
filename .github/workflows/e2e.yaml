@@ -33,8 +33,12 @@ jobs:
 
       - name: Change Desktop settings and allow installing non marketplace extensions
         run: |
-          jq '.onlyMarketplaceExtensions|=false' ~/.docker/desktop/settings.json >./new-settings.json
-          mv -f ./new-settings.json ~/.docker/desktop/settings.json
+          curl --unix-socket ~/.docker/desktop/backend.sock --data '{"onlyMarketplaceExtensions": false}' -H "content-type: application/json"  -X POST http://localhost/app/settings
+      - name: Disable login update prompt
+        run: |
+          curl --unix-socket ~/.docker/desktop/backend.sock http://localhost/features | jq . > features.json
+          jq '.LoginUpdatePrompt.enabled|=false' features.json > ./new-features.json
+          curl --unix-socket ~/.docker/desktop/backend.sock --data @new-features.json -H "content-type: application/json" http://localhost/features
 
       - name: Build extension
         run: |
